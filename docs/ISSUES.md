@@ -52,8 +52,10 @@
 
 验收：`/auto-review` 经原生 CommandRuntime 同时进入 TUI/RPC；运行期和冷恢复均折叠 session/global 指标；离线 evaluator 重建漏斗并检测 route/decision/result/ticket 关联异常；拒绝后精确重试、不同动作候选与停止分别统计。shadow 模式保留 reviewer 原始结论，执行态批准以 `AR-SHADOW` 明确区分。
 
-## ISSUE-005：Linux x86 安全与发布验收
+## ISSUE-005：Linux x86 安全与发布验收（完成）
 
 执行 bwrap/Landlock、partial enforcement、HMR、并发、snapshot、real API、packed artifact 和无网络 Docker E2E。
 
 并发门禁已覆盖两个 session 同时申请沙盒升级：每个 `(session, call)` 只消费自己的 `allowed-once`，原生 approval 事件和哈希审计链互不串线。
+
+最终验收：Linux x86_64 断网测试 38 项通过；真实 Landlock `partial` enforcement 下 workspace 写入成功、symlink 逃逸被拒绝；uncooperative reviewer 的总超时和调用者取消均能终止等待并销毁 Agent；3/10/50 滚动拒绝窗口覆盖交错拒绝；tarball 洁净安装、断网导入和原生 `dsh --dump-config` 组合通过。real-provider 是部署凭据门禁，不是发布包完整性前置条件。

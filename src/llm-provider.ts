@@ -159,6 +159,27 @@ function delay(ms: number, signal: AbortSignal): Promise<void> {
   })
 }
 
+function waitForIdle(promise: Promise<void>, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.reject(signal.reason)
+  return new Promise((resolve, reject) => {
+    const abort = (): void => {
+      signal.removeEventListener('abort', abort)
+      reject(signal.reason)
+    }
+    signal.addEventListener('abort', abort, { once: true })
+    promise.then(
+      () => {
+        signal.removeEventListener('abort', abort)
+        resolve()
+      },
+      (error: unknown) => {
+        signal.removeEventListener('abort', abort)
+        reject(error)
+      },
+    )
+  })
+}
+
 async function runAttempt(
   ctx: Context,
   config: ReturnType<typeof validateConfig>,
@@ -202,7 +223,7 @@ async function runAttempt(
       content: [{ type: 'text', text: payload }],
       source: { kind: 'plugin', plugin: 'dsh-auto-review' },
     }))
-    await handle.agent.whenIdle()
+    await waitForIdle(handle.agent.whenIdle(), signal)
     signal.throwIfAborted()
     return decisionFromSession(handle.agent.session.events)
   } finally {

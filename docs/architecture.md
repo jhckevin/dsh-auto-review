@@ -1,6 +1,6 @@
 # Auto Review 原生迁移架构
 
-状态：Permission Core、独立 Agent/Session Reviewer、精确人工授权、冷恢复、原生状态命令与离线漏斗评估，版本 `0.2.0-dev.3`。
+状态：Permission Core、独立 Agent/Session Reviewer、精确人工授权、冷恢复、原生状态命令与离线漏斗评估，版本 `0.2.0`。
 
 ## 固定上游
 

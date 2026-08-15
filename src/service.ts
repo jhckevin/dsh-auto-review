@@ -224,7 +224,7 @@ export class ActionReviewRuntime extends Service {
           const recentDenials = state.recent.filter(Boolean).length
           state.paused = state.paused
             || state.consecutive >= this.config.denialConsecutiveLimit
-            || (state.recent.length === this.config.denialWindowSize && recentDenials >= this.config.denialWindowLimit)
+            || recentDenials >= this.config.denialWindowLimit
           this.denialStates.set(key, state)
           if (denied) {
             this.lastDenied.set(sessionId, { actionDigest: data.actionDigest, turn, deniedAt: data.finishedAt })
@@ -615,7 +615,7 @@ export class ActionReviewRuntime extends Service {
     if (state.recent.length > this.config.denialWindowSize) state.recent.shift()
     const recentDenials = state.recent.filter(Boolean).length
     const mustPause = state.consecutive >= this.config.denialConsecutiveLimit
-      || (state.recent.length === this.config.denialWindowSize && recentDenials >= this.config.denialWindowLimit)
+      || recentDenials >= this.config.denialWindowLimit
     if (mustPause && !state.paused) {
       state.paused = true
       this.recordAudit('breaker', {

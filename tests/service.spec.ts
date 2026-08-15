@@ -181,6 +181,35 @@ describe('ActionReviewRuntime', () => {
       .toMatchObject({ state: 'opened', reason: 'denial-rate', consecutiveDenials: 3 })
   })
 
+  it('pauses after ten interleaved denials within the rolling last-fifty window', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    let calls = 0
+    ctx.actionReview.registerReviewer({
+      id: 'rolling-window-fixture',
+      review: async () => {
+        calls += 1
+        const denied = calls % 2 === 1
+        return {
+          schemaVersion: 1,
+          outcome: denied ? 'denied' : 'approved',
+          riskLevel: denied ? 'high' : 'low',
+          rationale: 'rolling-window fixture',
+          policyRuleIds: ['FIXTURE'],
+          uncertainty: '',
+        }
+      },
+    })
+    const scoped = { ...action, authority: { sessionId: 'rolling', turn: 7, transcript: [] } }
+    const signal = new AbortController().signal
+    for (let index = 0; index < 19; index += 1) await ctx.actionReview.review(scoped, undefined, signal)
+    await expect(ctx.actionReview.review(scoped, undefined, signal)).resolves.toMatchObject({
+      outcome: 'manual', policyRuleIds: ['AR-DENIAL-BREAKER'],
+    })
+    expect(ctx.actionReview.auditRecords().find(record => record.kind === 'breaker')?.data)
+      .toMatchObject({ state: 'opened', reason: 'denial-rate', recentDenials: 10, recentWindow: 19 })
+  })
+
   it('consumes one exact-action override and does not widen it to another digest', async () => {
     const ctx = new Context()
     await ctx.plugin(ActionReviewRuntime)

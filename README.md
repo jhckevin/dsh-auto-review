@@ -2,7 +2,7 @@
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
-当前版本：`0.2.0-dev.3`。
+当前版本：`0.2.0`。
 
 本项目不把 Auto Review 定义为“自动放行”。它在 DeepSeek Harness 原生工具管线中完成确定性动作分类、隔离模型审查、一次性用户审批回退、Linux 文件沙盒约束与可重放审计。
 
@@ -63,6 +63,16 @@ JSONL provider 启动时验证每个历史文件的完整 digest chain，并在�
 ## 执行票据
 
 执行票据不替代 DeepSeek Harness 的 execution token。token 是进程内调用身份，票据是在该身份上附加的授权证明：它带 HMAC、到期时间、一次性 nonce、action digest、policy digest、boundary digest 和 call id。任何缺票、过期、摘要不符、重复消费或认证失败都会在原生 Guard 阶段关闭执行。
+
+## 0.2.0 验收边界
+
+- 固定 DeepSeek Harness `0.1.0-rc.6` / 源码 `47f943859bef60e4160492346772ded9b24f765a`；
+- 38 项测试在 Linux x86_64、Node 24、断网 Docker 中通过；
+- 实际 Landlock 运行验证 workspace 写入、symlink 逃逸拒绝和执行审计关联；本验收主机的旧 ABI 报告 `partial`，该状态被保留而非伪装成 `full`；
+- 发布 tarball 在独立目录洁净安装，断网导入成功，`dsh --dump-config` 能组合五个插件角色；
+- 测试与运行容器没有端口映射，不形成公网服务。
+
+本项目按公开文档实现可观察行为与安全不变量，不声称复制任何未公开的模型权重、训练数据、内部策略或生产基础设施。
 
 ## 许可证
 

@@ -101,7 +101,7 @@ function assistantEvent(text: string): SessionEvent {
   } as SessionEvent
 }
 
-async function fixture(outputs: string[]) {
+async function fixture(outputs: string[], fixtureOptions: { hang?: boolean; timeoutMs?: number } = {}) {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt, {})
   await ctx.plugin(ToolRuntime)
@@ -126,7 +126,7 @@ async function fixture(outputs: string[]) {
         followup(message: { content: Array<{ type: string; text?: string }> }) {
           prompts.push(message.content.map(block => block.type === 'text' ? block.text ?? '' : '').join(''))
         },
-        whenIdle: async () => undefined,
+        whenIdle: fixtureOptions.hang === true ? () => new Promise<void>(() => undefined) : async () => undefined,
       } as unknown as Agent
       return {
         agent,
@@ -144,7 +144,7 @@ async function fixture(outputs: string[]) {
     reasoningEffort: 'low',
     maxInputBytes: 65536,
     maxOutputTokens: 512,
-    timeoutMs: 5000,
+    timeoutMs: fixtureOptions.timeoutMs ?? 5000,
     maxAttempts: 3,
     retryDelayMs: 0,
   })
@@ -168,6 +168,25 @@ describe('isolated reviewer agent provider', () => {
     const decision = await ctx.actionReview.review(action, undefined, new AbortController().signal)
     expect(decision.outcome).toBe('approved')
     expect(stats()).toMatchObject({ creates: 2, disposes: 2, setupCalls: 2 })
+  })
+
+  it('bounds an uncooperative reviewer by the total timeout and disposes its Agent', async () => {
+    const { ctx, stats } = await fixture([approved], { hang: true, timeoutMs: 20 })
+    const decision = await ctx.actionReview.review(action, undefined, new AbortController().signal)
+    expect(decision.outcome).toBe('unavailable')
+    expect(decision.policyRuleIds).toEqual(['AR-FAIL-CLOSED'])
+    expect(stats()).toMatchObject({ creates: 1, disposes: 1 })
+  })
+
+  it('propagates caller cancellation to the waiting boundary and disposes its Agent', async () => {
+    const { ctx, stats } = await fixture([approved], { hang: true, timeoutMs: 5000 })
+    const controller = new AbortController()
+    const review = ctx.actionReview.review(action, undefined, controller.signal)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    controller.abort(new Error('cancelled by fixture'))
+    const decision = await review
+    expect(decision.outcome).toBe('unavailable')
+    expect(stats()).toMatchObject({ creates: 1, disposes: 1 })
   })
 
   it('runs through the real AgentLoop with an empty tool surface and isolated prompt', async () => {
