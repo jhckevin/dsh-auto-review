@@ -8,11 +8,11 @@
 
 验收：rc.6 依赖面、三角色子路径、bundle patch、TypeScript 离线构建、packed artifact。
 
-## ISSUE-002：动作模型与确定性路由（实现，待完整集成门禁）
+## ISSUE-002：动作模型与确定性路由（完成）
 
 建立 resolver registry、内置 fs/bash/web/cordis 分类器、同步 hard guard、canonical digest 和 workspace/sandbox policy 绑定。
 
-已完成：v1 envelope、canonical SHA-256、workspace/sensitive/production/process/network 路由、未知扩展 manual、配置 hard deny。
+已完成：v1 envelope、canonical SHA-256、最近直接用户授权证据、workspace/sensitive/production/process/network/sandbox-escalation 路由、未知扩展 manual、配置 hard deny。
 
 ## ISSUE-003：隔离 LLM Reviewer（实现，待真实模型门禁）
 
@@ -20,12 +20,12 @@
 
 已完成：无工具 one-shot、严格闭集 JSON、结构/文本预算、密钥脱敏、timeout/cancellation、provider effect ownership。
 
-## ISSUE-004：审批、审计与断路器（部分完成）
+## ISSUE-004：审批、审计与断路器（执行闭环完成，待外部分析器）
 
 接入 `ask`、durable decision events、不可变 `tools/result` 关联、shadow/enforcing、拒绝循环控制和 hash-linked 可选归档。
 
-已完成：原生 `ask` 回退、decision/breaker session events、shadow/enforcing、fail-closed breaker。
-待完成：最终 `tools/result` 关联、拒绝后的 safer-alternative/stop 指标、hash-linked 外部归档。
+已完成：原生 `ask` 回退、sandbox escalation 一次性审批桥、routed/decision/result/breaker session events、shadow/enforcing、fail-closed breaker、最终冻结结果关联。
+待完成：拒绝后 safer-alternative/stop 的跨调用离线分析器、hash-linked 外部归档。
 
 ## ISSUE-005：Linux x86 安全与发布验收
 

@@ -17,6 +17,7 @@ const action: ActionEnvelope = Object.freeze({
   reason: 'process',
   sandbox: { mode: 'workspace-write', workspaceRoot: '/workspace' },
   paths: [],
+  authority: {},
 })
 
 describe('ActionReviewRuntime', () => {

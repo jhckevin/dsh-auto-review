@@ -6,6 +6,8 @@ import type {
   ActionReviewer,
   AutoReviewAuditRecord,
   AutoReviewConfig,
+  AutoReviewResultRecord,
+  AutoReviewRouteRecord,
   ResolvedAutoReviewConfig,
   ReviewDecision,
 } from './types.ts'
@@ -19,7 +21,9 @@ declare module '@deepseek-ai/cordis' {
 
 declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
+    'auto-review/routed': AutoReviewRouteRecord
     'auto-review/decision': AutoReviewAuditRecord
+    'auto-review/result': AutoReviewResultRecord
     'auto-review/breaker': {
       readonly state: 'opened' | 'closed'
       readonly failures: number

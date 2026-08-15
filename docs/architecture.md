@@ -1,6 +1,6 @@
 # Auto Review 原生迁移架构
 
-状态：设计基线，版本 `0.1.0-dev.0`。
+状态：原生执行闭环，版本 `0.1.0-dev.2`。
 
 ## 固定上游
 
@@ -12,13 +12,14 @@
 
 ```text
 frozen ToolExecution
-  -> ActionResolverRegistry
-  -> canonical action + digest
+  -> canonical action + authority + digest
   -> deterministic router
        in-boundary -> allow
-       review      -> isolated LLM reviewer -> allow/deny
+       review      -> isolated LLM reviewer -> allow/deny/manual
        manual      -> { kind: ask } -> native ApprovalService
        hard-deny   -> deny + monotonic guard
+       sandbox escalation approved
+                   -> native approval/request -> allowed-once
   -> native tool body
   -> native sandbox enforcement
   -> immutable tools/result
@@ -29,19 +30,19 @@ frozen ToolExecution
 
 ### Definition
 
-`ActionReviewRuntime` 拥有：动作描述、effect vocabulary、resolver registry、review request/result、稳定错误码和决策审计形状。
+`ActionReviewRuntime` 拥有：动作描述、effect vocabulary、review request/result、断路器与决策审计形状。`ActionRouter` 负责可复现的闭集动作分类；未知 extension 不猜测语义，转原生 manual。
 
 ### Provider
 
-`LlmActionReviewer` 使用 `ctx.llm.prepareCall()` 固定 adapter/config generation，发送不含工具 schema 的独立请求。输入只包含经过预算和脱敏的 action、用户授权证据、策略版本及必要历史。严格解析一个版本化 JSON object；超时、取消、adapter failure、非法输出、策略不一致和审计失败均 fail closed。
+`LlmActionReviewer` 使用 `ctx.llm.stream()` 发送不含工具 schema 的独立请求。输入只包含经过预算和脱敏的 action、最近一条直接用户消息形成的授权证据、sandbox 事实与显式升级目标。参数、命令、路径和 justification 均标为不可信数据。严格解析一个版本化 JSON object；超时、取消、adapter failure 和非法输出均 fail closed。
 
 ### Consumer
 
-Cordis 插件监听 `tools/pre-execute`，读取 `ToolExecution.arguments`、调用 resolver 和 reviewer，返回 `allow`、`deny` 或 `ask`。同步硬禁规则同时注册为 `ctx.tools.guard()`。最终观察只监听不可变 `tools/result`。
+Cordis 插件监听 `tools/pre-execute`，读取冻结的 `ToolExecution.arguments`、调用 router 和 reviewer，返回 `allow`、`deny` 或 `ask`。同步硬禁规则同时注册为 `ctx.tools.guard()`。显式 sandbox escalation 还监听 `approval/request`，仅消费与同一 session/call/tool/mode/justification 完全对应的一次性自动批准；其他请求全部委托。最终观察只监听不可变 `tools/result`。
 
 ## Sandbox 关系
 
-Auto Review 不决定沙盒边界。`ctx.sandboxPolicy.resolve({ session })` 是 workspace root 与 mode 的权威来源；Linux backend 报告的 `full/partial` enforcement 必须进入策略。`workspace-write` 只约束文件效果，因此网络、进程执行、权限修改和未知外部工具仍需 review/manual。
+Auto Review 不实现、替代或绕开沙盒。`ctx.sandboxPolicy.resolve({ session })` 是 workspace root 与 mode 的权威来源；bash/fs 工具仍调用 `approveEscalation()` 并将获批 mode 只盖到该次原生执行。Linux backend 的 bwrap/Landlock 才执行边界。`workspace-write` 只约束文件效果，因此网络、进程执行、权限修改和未知外部工具仍需 review/manual。
 
 ## 原生化替代
 
@@ -51,13 +52,13 @@ Auto Review 不决定沙盒边界。`ctx.sandboxPolicy.resolve({ session })` 是
 | Execution ticket store | Frozen `ToolExecution` + opaque execution token + one pipeline |
 | 手写用户审批状态 | `ctx.approval` 的 `allowed-once` closed outcome |
 | 自定义执行边界 | `ctx.sandboxPolicy` + Linux sandbox provider |
-| 独立 Agent reviewer | `ctx.llm.prepareCall()` 的无工具独立请求 |
-| 自定义审计广播 | merged Session events + `tools/result` correlation |
+| 独立 Agent reviewer | `ctx.llm.stream()` 的无工具独立请求 |
+| 自定义审计广播 | `auto-review/routed/decision/result` Session events + `tools/result` correlation |
 
 ## 模式
 
-- `disabled`：不注册 policy listener、guard、reviewer 或 audit projection；
-- `shadow`：计算并审计建议，但返回下游默认决定，不改变执行；
+- `disabled`：reviewer 返回批准，但确定性 hard-deny 仍保持单调；适合临时关闭模型审查，不表示关闭部署安全策略；
+- `shadow`：记录原始建议，在 reviewer 非批准时转换为带 `AR-SHADOW` 的批准；hard-deny 仍保持单调；
 - `enforcing`：按路由结果控制调用。
 
 模式变化必须以 durable session event 表示；运行时上下文只追加当前语义，不重写 system prompt。

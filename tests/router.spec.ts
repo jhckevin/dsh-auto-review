@@ -48,6 +48,23 @@ describe('ActionRouter', () => {
     })
   })
 
+  it('classifies an explicit native sandbox widening as a first-class escalation', () => {
+    const action = new ActionRouter().route(exec('bash', {
+      command: 'echo ok',
+      sandbox_permissions: 'danger-full-access',
+      justification: 'the requested diagnostic needs host visibility',
+    }), sandbox)
+    expect(action).toMatchObject({
+      actionKind: 'sandbox-escalation',
+      disposition: 'review',
+      requestedEscalation: {
+        mode: 'danger-full-access',
+        justification: 'the requested diagnostic needs host visibility',
+      },
+      authority: {},
+    })
+  })
+
   it('routes unknown extensions to manual and configured hard denies monotonically', () => {
     expect(new ActionRouter().route(exec('extension_magic', {}), sandbox)).toMatchObject({
       actionKind: 'extension-unknown', disposition: 'manual',

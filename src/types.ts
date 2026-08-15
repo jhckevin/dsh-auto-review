@@ -13,6 +13,7 @@ export type ActionKind =
   | 'destructive'
   | 'permission-change'
   | 'production-change'
+  | 'sandbox-escalation'
   | 'extension-unknown'
   | 'hard-deny'
 
@@ -35,6 +36,14 @@ export interface ActionEnvelope {
     readonly workspaceRoot: string
   }
   readonly paths: readonly string[]
+  readonly authority: {
+    readonly sessionId?: string
+    readonly currentUserRequest?: string
+  }
+  readonly requestedEscalation?: {
+    readonly mode: string
+    readonly justification: string
+  }
 }
 
 export interface ReviewDecision {
@@ -68,6 +77,44 @@ export interface AutoReviewAuditRecord {
   readonly reviewer?: string
   readonly decision: ReviewDecision
   readonly startedAt: number
+  readonly finishedAt: number
+}
+
+export interface AutoReviewRouteRecord {
+  readonly schemaVersion: 1
+  readonly actionId: string
+  readonly actionDigest: string
+  readonly callId: CallId
+  readonly rootCallId: CallId
+  readonly toolName: string
+  readonly actionKind: ActionKind
+  readonly disposition: ActionDisposition
+  readonly sandboxMode: SandboxMode
+  readonly pathCount: number
+  readonly routedAt: number
+}
+
+export type AutoReviewApprovalPath =
+  | 'inside-boundary'
+  | 'auto-review'
+  | 'native-manual'
+  | 'hard-deny'
+
+export interface AutoReviewResultRecord {
+  readonly schemaVersion: 1
+  readonly actionId: string
+  readonly actionDigest: string
+  readonly callId: CallId
+  readonly rootCallId: CallId
+  readonly toolName: string
+  readonly actionKind: ActionKind
+  readonly disposition: ActionDisposition
+  readonly approvalPath: AutoReviewApprovalPath
+  readonly reviewOutcome?: ReviewOutcome
+  readonly finalOutcome: 'success' | 'error'
+  readonly errorCode?: string
+  readonly resultDigest: string
+  readonly routedAt: number
   readonly finishedAt: number
 }
 

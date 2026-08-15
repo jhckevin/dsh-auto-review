@@ -26,6 +26,9 @@ const NETWORK_TOOLS = new Set([
 const DESTRUCTIVE_TOOLS = new Set([
   'delete_file', 'remove_file', 'remove_directory', 'move_file', 'overwrite_file',
 ])
+const ESCALATION_TOOLS = new Set([
+  'bash', 'pwsh', 'write', 'edit', 'write_file', 'edit_file',
+])
 const PATH_KEYS = new Set([
   'path', 'file', 'filepath', 'file_path', 'target', 'destination', 'source',
   'cwd', 'workdir', 'directory', 'root',
@@ -94,6 +97,48 @@ function shellCommand(arguments_: unknown): string {
   return typeof candidate.command === 'string' ? candidate.command : ''
 }
 
+function contentText(value: unknown, depth = 0): string {
+  if (depth > 12 || value === null || value === undefined) return ''
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.map(entry => contentText(entry, depth + 1)).filter(Boolean).join('\n')
+  if (typeof value !== 'object') return ''
+  const record = value as Record<string, unknown>
+  if (typeof record.text === 'string') return record.text
+  return 'content' in record ? contentText(record.content, depth + 1) : ''
+}
+
+function authorityOf(exec: Readonly<ToolExecution>): ActionEnvelope['authority'] {
+  const session = exec.agent?.session
+  if (session === undefined) return Object.freeze({})
+  let currentUserRequest: string | undefined
+  for (let index = session.events.length - 1; index >= 0; index -= 1) {
+    const event = session.events[index]
+    if (event?.type !== 'user/message' || event.data.source.kind !== 'user') continue
+    const text = contentText(event.data.content).trim()
+    if (text.length > 0) {
+      currentUserRequest = text.length <= 8192 ? text : text.slice(text.length - 8192)
+      break
+    }
+  }
+  return Object.freeze({
+    sessionId: session.id,
+    ...(currentUserRequest === undefined ? {} : { currentUserRequest }),
+  })
+}
+
+function requestedEscalation(
+  toolName: string,
+  arguments_: unknown,
+): ActionEnvelope['requestedEscalation'] | undefined {
+  if (!ESCALATION_TOOLS.has(toolName) || arguments_ === null || typeof arguments_ !== 'object') return undefined
+  const value = arguments_ as Record<string, unknown>
+  if (typeof value.sandbox_permissions !== 'string') return undefined
+  return Object.freeze({
+    mode: value.sandbox_permissions,
+    justification: typeof value.justification === 'string' ? value.justification : '',
+  })
+}
+
 function classifyCommand(command: string): Classification | undefined {
   if (/(^|[;&|]\s*)(?:sudo\s+)?(?:chmod|chown|chgrp|setfacl)\b/i.test(command)) {
     return { kind: 'permission-change', disposition: 'review', reason: 'Shell command changes permissions or ownership.' }
@@ -117,7 +162,9 @@ export class ActionRouter {
   route(exec: Readonly<ToolExecution>, sandbox: SandboxExecutionPolicy): ActionEnvelope {
     const arguments_ = toJsonValue(exec.arguments)
     const paths = Object.freeze(extractPaths(exec.arguments))
-    const classification = this.classify(exec.name, exec.arguments, paths, sandbox.workspaceRoot)
+    const authority = authorityOf(exec)
+    const escalation = requestedEscalation(exec.name, exec.arguments)
+    const classification = this.classify(exec.name, exec.arguments, paths, sandbox.workspaceRoot, escalation)
     const digestInput = {
       schemaVersion: 1,
       callId: exec.callId,
@@ -125,6 +172,8 @@ export class ActionRouter {
       toolName: exec.name,
       arguments: arguments_,
       sandbox: { mode: sandbox.mode, workspaceRoot: sandbox.workspaceRoot },
+      authority,
+      ...(escalation === undefined ? {} : { requestedEscalation: escalation }),
     }
     const actionDigest = sha256Json(toJsonValue(digestInput))
     return Object.freeze({
@@ -140,12 +189,23 @@ export class ActionRouter {
       reason: classification.reason,
       sandbox: Object.freeze({ mode: sandbox.mode, workspaceRoot: sandbox.workspaceRoot }),
       paths,
+      authority,
+      ...(escalation === undefined ? {} : { requestedEscalation: escalation }),
     })
   }
 
-  private classify(toolName: string, arguments_: unknown, paths: readonly string[], workspaceRoot: string): Classification {
+  private classify(
+    toolName: string,
+    arguments_: unknown,
+    paths: readonly string[],
+    workspaceRoot: string,
+    escalation: ActionEnvelope['requestedEscalation'],
+  ): Classification {
     if (this.config.hardDenyToolNames.includes(toolName)) {
       return { kind: 'hard-deny', disposition: 'hard-deny', reason: 'Tool is listed in deployment hard-deny policy.' }
+    }
+    if (escalation !== undefined) {
+      return { kind: 'sandbox-escalation', disposition: 'review', reason: 'Action asks to widen the native sandbox for this call.' }
     }
     if (containsMarker(paths, this.config.sensitiveMarkers)) {
       return { kind: 'sensitive-read', disposition: 'review', reason: 'Action targets a configured sensitive path.' }
