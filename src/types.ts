@@ -140,6 +140,7 @@ export interface AutoReviewAuditRecord {
   readonly decision: ReviewDecision
   readonly startedAt: number
   readonly finishedAt: number
+  readonly latencyMs: number
 }
 
 export interface AutoReviewRouteRecord {

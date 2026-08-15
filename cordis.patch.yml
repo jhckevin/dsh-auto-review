@@ -14,9 +14,14 @@
       config:
         provider: deepseek-official
         model: deepseek-v4-flash
+        reasoningEffort: low
         maxInputBytes: 16384
         maxOutputTokens: 768
-        timeoutMs: 60000
+        timeoutMs: 90000
+        maxAttempts: 3
+        retryDelayMs: 250
+        transcriptMaxEntries: 12
+        transcriptMaxBytes: 32768
 
     - id: auto-review-audit
       name: '@jhckevin/dsh-auto-review/audit-jsonl'

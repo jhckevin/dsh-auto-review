@@ -375,6 +375,7 @@ export class ActionReviewRuntime extends Service {
       })
       : decision
     this.recordReviewOutcome(action, decision, session)
+    const finishedAt = Date.now()
     this.recordAudit('decision', {
       schemaVersion: 1,
       actionId: action.actionId,
@@ -386,7 +387,8 @@ export class ActionReviewRuntime extends Service {
       ...(reviewer === undefined ? {} : { reviewer: reviewer.id }),
       decision,
       startedAt,
-      finishedAt: Date.now(),
+      finishedAt,
+      latencyMs: finishedAt - startedAt,
     }, session?.id)
     return effective
   }

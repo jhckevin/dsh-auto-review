@@ -1,6 +1,6 @@
 # Auto Review 原生迁移架构
 
-状态：Permission Core、扩展安全描述注册表与独立审计 provider，版本 `0.2.0-dev.0`。Reviewer 当前仍是隔离的无工具 LLM 请求；独立 Agent/Session reviewer 在下一阶段接入。
+状态：Permission Core、独立 Agent/Session Reviewer、扩展安全描述注册表与独立审计 provider，版本 `0.2.0-dev.1`。
 
 ## 固定上游
 
@@ -35,7 +35,7 @@ frozen ToolExecution
 
 ### Provider
 
-`LlmActionReviewer` 使用 `ctx.llm.stream()` 发送不含工具 schema 的独立请求。输入包含经过预算和脱敏的 action、分层标记信任来源的紧凑 transcript、sandbox 事实与显式升级目标。参数、命令、路径、模型消息、工具输出和 justification 均不构成用户授权。严格解析一个版本化 JSON object；超时、取消、adapter failure 和非法输出均 fail closed。该 provider 尚未满足独立 Agent/Session 的目标隔离级别。
+`LlmActionReviewer` 为每次尝试通过 `ctx.agents.create()` 建立独立 Agent/Session。其 scoped tool restriction 为空，system prompt assembly 被替换为 reviewer 专用内容，runtime contexts 与主 agent persona 不进入请求；模型选择固定为 provider 配置。输入包含经过预算和脱敏的 action、分层标记信任来源的紧凑 transcript、sandbox 事实与显式升级目标。参数、命令、路径、模型消息、工具输出和 justification 均不构成用户授权。严格解析一个版本化 JSON object；单次审查总超时 90 秒、最多三次新 Session 尝试，完成或失败后销毁 Agent/Session。超时、取消、adapter failure 和非法输出均 fail closed。
 
 ### Consumer
 
@@ -53,7 +53,7 @@ Auto Review 不实现、替代或绕开沙盒。`ctx.sandboxPolicy.resolve({ ses
 | Execution ticket store | HMAC ticket bound to frozen action, policy, boundary, call and opaque execution token |
 | 手写用户审批状态 | `ctx.approval` 的 `allowed-once` closed outcome |
 | 自定义执行边界 | `ctx.sandboxPolicy` + Linux sandbox provider |
-| 独立 Agent reviewer | 尚未完成；当前为 `ctx.llm.stream()` 的无工具隔离请求 |
+| 独立 Agent reviewer | 每次尝试创建无工具、独立 prompt、短生命周期的 Agent/Session |
 | 自定义审计广播 | `ctx.actionReview` hash-linked audit seam + JSONL sink + `tools/result` correlation |
 
 ## 模式

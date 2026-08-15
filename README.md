@@ -2,7 +2,7 @@
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
-当前版本：`0.2.0-dev.0`。
+当前版本：`0.2.0-dev.1`。
 
 本项目不把 Auto Review 定义为“自动放行”。它在 DeepSeek Harness 原生工具管线中完成确定性动作分类、隔离模型审查、一次性用户审批回退、Linux 文件沙盒约束与可重放审计。
 
@@ -12,7 +12,7 @@
 - `ctx.tools.guard()`：消费一次性执行票据，并固化任何后续插件都不能推翻的拒绝；
 - `ctx.sandboxPolicy` / `ctx.sandbox`：读取并执行 Linux 文件效果边界；
 - `ctx.approval`：处理必须由用户一次性决定的动作；
-- `ctx.llm.stream()`：执行不传工具 schema、独立预算与取消信号的隔离 reviewer 请求；
+- `ctx.agents.create()`：为每次审查建立独立 Agent/Session，并在完成后销毁；
 - `ctx.actionReview` 审计 seam：记录不进入模型上下文的 hash-linked 决定事实；默认 JSONL sink 每条同步落盘并 fsync；
 - `tools/result`：关联最终真实执行结果。
 
@@ -43,6 +43,10 @@
 - 精确 override：只匹配同一 action digest，只有一次重试机会，重试仍经过完整票据校验。
 
 每个进入管线的动作都会形成 `routed` audit record；实际调用 reviewer 时形成 `decision`；票据签发和消费形成 `ticket`；精确授权形成 `override`；最终冻结结果形成 `result`。记录由 action digest、call/root-call id 关联，并通过 `previousDigest/recordDigest` 串成不可静默改序的链，可直接统计 workspace 内动作、自动审查、自动批准、拒绝、人工回退与最终成功/失败，而无需解析自然语言日志。
+
+Reviewer Agent 的 system prompt 和 runtime context 由 provider 权威替换，工具可见集为空，模型选择固定为 reviewer 配置。每次尝试使用新的 Session；单次审查总超时默认 90 秒，最多三次尝试。紧凑 transcript 逐条标记信任级别，只有直接用户消息可作为授权，模型文本、工具输出和动作参数均是不可信证据。完成、失败、超时或取消都会销毁 reviewer Agent/Session。
+
+隔离范围是模型可见与模型可调用能力：reviewer 不获得 filesystem、shell、network、MCP、memory 或 delegation tool。进程内 Cordis 插件和 LLM adapter 属于受信任计算基；能修改全局 Agent 生命周期或 request waterfall 的宿主代码不在本插件可防御的攻击者范围内。
 
 Harness rc.6 的持久化读取器明确没有下游插件事件类型注册面，未知且未标记 `ignorable` 的 Session event 会导致冷恢复拒绝；而公开 `Session.append()` 又不能为下游事件设置该信封位。因此本插件不伪造或 monkey-patch `KNOWN_SESSION_EVENT_TYPES`，也不把审计塞入语义错误的内置事件。审计使用正式 capability/provider 分层和独立存储，原生 `approval/asked`/`approval/decided` 仍由 Harness Session Log 权威持久化。
 

@@ -34,9 +34,11 @@
 
 验收：所有允许路径必须签发票据；缺票、过期、重复消费、摘要不符和认证失败均在工具体前关闭执行；23 个离线测试通过。
 
-## ISSUE-007：独立 Agent/Session Reviewer
+## ISSUE-007：独立 Agent/Session Reviewer（完成）
 
-把 one-shot provider 替换为独立 Agent/Session，禁用工具、网络、MCP、插件和委派，只提供紧凑分层 transcript、精确动作、策略与沙盒事实；固定 90 秒、最多 3 次尝试并验证 provider trust policy。
+把 one-shot provider 替换为独立 Agent/Session，不向模型暴露工具、网络、MCP、memory 和委派能力，只提供紧凑分层 transcript、精确动作、策略与沙盒事实；固定 90 秒、最多 3 次尝试并验证 provider trust policy。进程内 Cordis 插件与 LLM adapter 明确属于受信任计算基。
+
+验收：真实 AgentLoop 测试确认 reviewer 请求工具集为空、主 agent persona 不进入 system prompt、模型与 reasoning effort 固定、结束后 AgentRegistry 与 SessionStore 均无残留；重试使用全新 Session。
 
 ## ISSUE-008：生命周期、命令与恢复
 
