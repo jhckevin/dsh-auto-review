@@ -66,6 +66,12 @@ export class ActionReviewRuntime extends Service {
   private readonly tickets = new Map<ToolExecutionToken, ActionExecutionTicket>()
   private readonly denialStates = new Map<string, { consecutive: number; recent: boolean[]; paused: boolean }>()
   private readonly overrides = new Map<string, { actionDigest: string; expiresAt: number; retriesRemaining: number }>()
+  private readonly lastDenied = new Map<string, { actionDigest: string; turn: number; deniedAt: number }>()
+  private readonly pendingDenials = new Map<string, {
+    actionDigest: string
+    turn: number
+    saferAlternativeSuggested: boolean
+  }>()
 
   constructor(ctx: Context, config: AutoReviewConfig = {}) {
     super(ctx, 'actionReview')
@@ -152,6 +158,60 @@ export class ActionReviewRuntime extends Service {
   auditRecords(sessionId?: string): readonly AutoReviewAuditEnvelope[] {
     const records = sessionId === undefined ? this.audit : this.audit.filter(record => record.sessionId === sessionId)
     return Object.freeze([...records])
+  }
+
+  restoreAudit(records: readonly AutoReviewAuditEnvelope[]): void {
+    for (const record of records) {
+      const sessionId = record.sessionId
+      if (sessionId === undefined) continue
+      switch (record.kind) {
+        case 'decision': {
+          const data = record.data as AutoReviewAuditPayloadMap['decision']
+          const turn = data.turn ?? 0
+          const key = `${sessionId}\u0000${turn}`
+          if (data.decision.outcome === 'unavailable') break
+          const state = this.denialStates.get(key) ?? { consecutive: 0, recent: [], paused: false }
+          const denied = data.decision.outcome === 'denied'
+          state.consecutive = denied ? state.consecutive + 1 : 0
+          state.recent.push(denied)
+          if (state.recent.length > this.config.denialWindowSize) state.recent.shift()
+          const recentDenials = state.recent.filter(Boolean).length
+          state.paused = state.paused
+            || state.consecutive >= this.config.denialConsecutiveLimit
+            || (state.recent.length === this.config.denialWindowSize && recentDenials >= this.config.denialWindowLimit)
+          this.denialStates.set(key, state)
+          if (denied) {
+            this.lastDenied.set(sessionId, { actionDigest: data.actionDigest, turn, deniedAt: data.finishedAt })
+            this.pendingDenials.set(sessionId, {
+              actionDigest: data.actionDigest,
+              turn,
+              saferAlternativeSuggested: data.decision.saferAlternative !== undefined,
+            })
+          } else {
+            this.lastDenied.delete(sessionId)
+            this.pendingDenials.delete(sessionId)
+          }
+          break
+        }
+        case 'override': {
+          const data = record.data as AutoReviewAuditPayloadMap['override']
+          if (data.state === 'armed') {
+            const expiresAt = data.at + this.config.overrideTtlMs
+            if (expiresAt > Date.now()) this.overrides.set(sessionId, { actionDigest: data.actionDigest, expiresAt, retriesRemaining: 1 })
+          } else {
+            this.overrides.delete(sessionId)
+          }
+          break
+        }
+        case 'postDenial':
+          if ((record.data as AutoReviewAuditPayloadMap['postDenial']).outcome !== 'retried-denied-action') {
+            this.pendingDenials.delete(sessionId)
+          }
+          break
+        default:
+          break
+      }
+    }
   }
 
   registerActionSemantics(contribution: ActionSemanticsContribution): () => void {
@@ -294,7 +354,13 @@ export class ActionReviewRuntime extends Service {
     this.tickets.delete(token)
   }
 
-  armExactOverride(sessionId: string, actionDigest: string): void {
+  armDeniedOverride(sessionId: string, requestedDigest?: string): string {
+    const denied = this.lastDenied.get(sessionId)
+    if (denied === undefined) throw new Error('auto-review: this session has no denied action to approve')
+    if (requestedDigest !== undefined && requestedDigest !== denied.actionDigest) {
+      throw new Error('auto-review: requested digest does not match the latest denied action')
+    }
+    const actionDigest = denied.actionDigest
     if (!/^[a-f0-9]{64}$/u.test(actionDigest)) throw new TypeError('auto-review: override requires an exact SHA-256 action digest')
     this.overrides.set(sessionId, {
       actionDigest,
@@ -302,26 +368,58 @@ export class ActionReviewRuntime extends Service {
       retriesRemaining: 1,
     })
     this.recordAudit('override', { state: 'armed', sessionId, actionDigest, retriesRemaining: 1, at: Date.now() }, sessionId)
+    return actionDigest
   }
 
-  consumeExactOverride(action: ActionEnvelope): boolean {
+  consumeExactOverride(action: ActionEnvelope): ActionEnvelope['authority']['exactApproval'] | undefined {
     const sessionId = action.authority.sessionId
-    if (sessionId === undefined) return false
+    if (sessionId === undefined) return undefined
     const override = this.overrides.get(sessionId)
-    if (override === undefined) return false
+    if (override === undefined) return undefined
     if (Date.now() > override.expiresAt) {
       this.overrides.delete(sessionId)
       this.recordAudit('override', { state: 'expired', sessionId, actionDigest: override.actionDigest, retriesRemaining: 0, at: Date.now() }, sessionId)
-      return false
+      return undefined
     }
-    if (override.actionDigest !== action.actionDigest || override.retriesRemaining !== 1) return false
+    if (override.actionDigest !== action.actionDigest || override.retriesRemaining !== 1) return undefined
     this.overrides.delete(sessionId)
-    this.recordAudit('override', { state: 'consumed', sessionId, actionDigest: override.actionDigest, retriesRemaining: 0, at: Date.now() }, sessionId)
-    return true
+    const approvedAt = Date.now()
+    this.recordAudit('override', { state: 'consumed', sessionId, actionDigest: override.actionDigest, retriesRemaining: 0, at: approvedAt }, sessionId)
+    return Object.freeze({ actionDigest: override.actionDigest, approvedAt, source: 'human-command' as const })
   }
 
   reviewPaused(action: ActionEnvelope): boolean {
     return this.denialStates.get(this.denialKey(action))?.paused ?? false
+  }
+
+  observeRoutedAction(action: ActionEnvelope): void {
+    const sessionId = action.authority.sessionId
+    if (sessionId === undefined) return
+    const pending = this.pendingDenials.get(sessionId)
+    if (pending === undefined) return
+    const same = pending.actionDigest === action.actionDigest
+    this.recordAudit('postDenial', {
+      outcome: same ? 'retried-denied-action' : 'continued-with-different-action',
+      deniedActionDigest: pending.actionDigest,
+      nextActionDigest: action.actionDigest,
+      turn: pending.turn,
+      saferAlternativeSuggested: pending.saferAlternativeSuggested,
+      at: Date.now(),
+    }, sessionId)
+    if (!same) this.pendingDenials.delete(sessionId)
+  }
+
+  observeTurnEnd(sessionId: string, turn: number): void {
+    const pending = this.pendingDenials.get(sessionId)
+    if (pending === undefined || pending.turn !== turn) return
+    this.pendingDenials.delete(sessionId)
+    this.recordAudit('postDenial', {
+      outcome: 'stopped-after-denial',
+      deniedActionDigest: pending.actionDigest,
+      turn,
+      saferAlternativeSuggested: pending.saferAlternativeSuggested,
+      at: Date.now(),
+    }, sessionId)
   }
 
   async review(action: ActionEnvelope, session: Session | undefined, signal: AbortSignal): Promise<ReviewDecision> {
@@ -383,6 +481,7 @@ export class ActionReviewRuntime extends Service {
       toolName: action.toolName,
       actionKind: action.actionKind,
       disposition: action.disposition,
+      turn: action.authority.turn ?? 0,
       mode: this.config.mode,
       ...(reviewer === undefined ? {} : { reviewer: reviewer.id }),
       decision,
@@ -418,6 +517,21 @@ export class ActionReviewRuntime extends Service {
     const key = this.denialKey(action)
     const state = this.denialStates.get(key) ?? { consecutive: 0, recent: [], paused: false }
     const denied = decision.outcome === 'denied'
+    if (denied && action.authority.sessionId !== undefined) {
+      this.lastDenied.set(action.authority.sessionId, {
+        actionDigest: action.actionDigest,
+        turn: action.authority.turn ?? 0,
+        deniedAt: Date.now(),
+      })
+      this.pendingDenials.set(action.authority.sessionId, {
+        actionDigest: action.actionDigest,
+        turn: action.authority.turn ?? 0,
+        saferAlternativeSuggested: decision.saferAlternative !== undefined,
+      })
+    } else if (action.authority.sessionId !== undefined) {
+      this.lastDenied.delete(action.authority.sessionId)
+      this.pendingDenials.delete(action.authority.sessionId)
+    }
     state.consecutive = denied ? state.consecutive + 1 : 0
     state.recent.push(denied)
     if (state.recent.length > this.config.denialWindowSize) state.recent.shift()

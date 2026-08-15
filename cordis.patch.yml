@@ -29,6 +29,7 @@
       config:
         root: !!js dshHomePath('auto-review/audit')
         fsync: true
+        replayMaxBytes: 268435456
 
     - id: auto-review-policy
       name: '@jhckevin/dsh-auto-review/policy'
@@ -45,3 +46,7 @@
           - .gnupg
           - .aws
           - .env
+
+    - id: auto-review-command
+      name: '@jhckevin/dsh-auto-review/command'
+      inject: [actionReview, commands]

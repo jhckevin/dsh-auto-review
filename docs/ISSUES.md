@@ -40,9 +40,11 @@
 
 验收：真实 AgentLoop 测试确认 reviewer 请求工具集为空、主 agent persona 不进入 system prompt、模型与 reasoning effort 固定、结束后 AgentRegistry 与 SessionStore 均无残留；重试使用全新 Session。
 
-## ISSUE-008：生命周期、命令与恢复
+## ISSUE-008：生命周期、命令与恢复（完成）
 
 接入 denied/alternative/stopped/manual/override 生命周期、精确 `/approve` 命令、turn/branch/fork/compaction 状态和冷恢复验证。
+
+验收：命令只接受最后一次真实拒绝的 digest，消费一次后仍重新审查；拒绝后的相同重试、不同动作和回合结束分别留痕；JSONL provider 验证历史 digest chain 并恢复同 session 状态，fork 不继承，compaction 按新 turn 重置拒绝窗口。
 
 ## ISSUE-009：RPC、TUI、评估与指标
 

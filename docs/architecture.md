@@ -1,6 +1,6 @@
 # Auto Review 原生迁移架构
 
-状态：Permission Core、独立 Agent/Session Reviewer、扩展安全描述注册表与独立审计 provider，版本 `0.2.0-dev.1`。
+状态：Permission Core、独立 Agent/Session Reviewer、精确人工授权、冷恢复与拒绝后行为审计，版本 `0.2.0-dev.2`。
 
 ## 固定上游
 
@@ -62,7 +62,7 @@ Auto Review 不实现、替代或绕开沙盒。`ctx.sandboxPolicy.resolve({ ses
 - `shadow`：记录原始建议，在 reviewer 非批准时转换为带 `AR-SHADOW` 的批准；hard-deny 仍保持单调；
 - `enforcing`：按路由结果控制调用。
 
-模式由部署配置固定。durable session policy event、分支恢复和 `/approve` 命令属于后续生命周期阶段；当前 API 只提供一次、精确 action digest 的 override primitive。
+模式由部署配置固定。`/approve` 只针对同一 session 最新的 denied action digest，并为下一次相同动作提供一次受信任证据；该重试仍经过 reviewer、hard policy、票据和原生 sandbox。外部 JSONL 审计通过完整链验证恢复同一 session 的拒绝窗口与未消费授权；fork 的新 session id 不继承状态，compaction 后的新 turn 使用新的 3/10/50 窗口。
 
 ## 最低验收
 

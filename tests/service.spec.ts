@@ -185,10 +185,54 @@ describe('ActionReviewRuntime', () => {
     const ctx = new Context()
     await ctx.plugin(ActionReviewRuntime)
     const scoped = { ...action, authority: { sessionId: 's1', turn: 2, transcript: [] } }
-    ctx.actionReview.armExactOverride('s1', action.actionDigest)
-    expect(ctx.actionReview.consumeExactOverride(scoped)).toBe(true)
-    expect(ctx.actionReview.consumeExactOverride(scoped)).toBe(false)
-    ctx.actionReview.armExactOverride('s1', action.actionDigest)
-    expect(ctx.actionReview.consumeExactOverride({ ...scoped, actionDigest: '0'.repeat(64) })).toBe(false)
+    ctx.actionReview.registerReviewer({
+      id: 'deny-fixture',
+      review: async () => ({
+        schemaVersion: 1,
+        outcome: 'denied',
+        riskLevel: 'high',
+        rationale: 'fixture denial',
+        policyRuleIds: ['FIXTURE'],
+        uncertainty: '',
+      }),
+    })
+    await ctx.actionReview.review(scoped, undefined, new AbortController().signal)
+    expect(ctx.actionReview.armDeniedOverride('s1', action.actionDigest)).toBe(action.actionDigest)
+    expect(ctx.actionReview.consumeExactOverride(scoped)).toMatchObject({
+      actionDigest: action.actionDigest, source: 'human-command',
+    })
+    expect(ctx.actionReview.consumeExactOverride(scoped)).toBeUndefined()
+    ctx.actionReview.armDeniedOverride('s1', action.actionDigest)
+    expect(ctx.actionReview.consumeExactOverride({ ...scoped, actionDigest: '0'.repeat(64) })).toBeUndefined()
+  })
+
+  it('records retry, different-action continuation, and turn-end stop after denials', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    ctx.actionReview.registerReviewer({
+      id: 'deny-fixture',
+      review: async () => ({
+        schemaVersion: 1,
+        outcome: 'denied',
+        riskLevel: 'high',
+        rationale: 'fixture denial',
+        policyRuleIds: ['FIXTURE'],
+        saferAlternative: 'Use a workspace-local read.',
+        uncertainty: '',
+      }),
+    })
+    const scoped = { ...action, authority: { sessionId: 'behavior', turn: 4, transcript: [] } }
+    const signal = new AbortController().signal
+    await ctx.actionReview.review(scoped, undefined, signal)
+    ctx.actionReview.observeRoutedAction(scoped)
+    ctx.actionReview.observeRoutedAction({ ...scoped, actionDigest: '0'.repeat(64) })
+    await ctx.actionReview.review(scoped, undefined, signal)
+    ctx.actionReview.observeTurnEnd('behavior', 4)
+    expect(ctx.actionReview.auditRecords('behavior').filter(record => record.kind === 'postDenial').map(record => record.data))
+      .toEqual([
+        expect.objectContaining({ outcome: 'retried-denied-action', saferAlternativeSuggested: true }),
+        expect.objectContaining({ outcome: 'continued-with-different-action', nextActionDigest: '0'.repeat(64) }),
+        expect.objectContaining({ outcome: 'stopped-after-denial', saferAlternativeSuggested: true }),
+      ])
   })
 })

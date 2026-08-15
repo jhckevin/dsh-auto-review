@@ -78,6 +78,11 @@ export interface ActionEnvelope {
     readonly turn?: number
     readonly currentUserRequest?: string
     readonly transcript: readonly ReviewTranscriptEntry[]
+    readonly exactApproval?: {
+      readonly actionDigest: string
+      readonly approvedAt: number
+      readonly source: 'human-command'
+    }
   }
   readonly requestedEscalation?: {
     readonly mode: string
@@ -135,6 +140,7 @@ export interface AutoReviewAuditRecord {
   readonly toolName: string
   readonly actionKind: ActionKind
   readonly disposition: ActionDisposition
+  readonly turn: number
   readonly mode: AutoReviewMode
   readonly reviewer?: string
   readonly decision: ReviewDecision
@@ -231,6 +237,15 @@ export interface AutoReviewOverrideRecord {
   readonly at: number
 }
 
+export interface AutoReviewPostDenialRecord {
+  readonly outcome: 'retried-denied-action' | 'continued-with-different-action' | 'stopped-after-denial'
+  readonly deniedActionDigest: string
+  readonly nextActionDigest?: string
+  readonly turn: number
+  readonly saferAlternativeSuggested: boolean
+  readonly at: number
+}
+
 export interface AutoReviewAuditPayloadMap {
   readonly routed: AutoReviewRouteRecord
   readonly decision: AutoReviewAuditRecord
@@ -238,6 +253,7 @@ export interface AutoReviewAuditPayloadMap {
   readonly breaker: AutoReviewBreakerRecord
   readonly ticket: AutoReviewTicketRecord
   readonly override: AutoReviewOverrideRecord
+  readonly postDenial: AutoReviewPostDenialRecord
 }
 
 export type AutoReviewAuditKind = keyof AutoReviewAuditPayloadMap
@@ -261,6 +277,7 @@ export interface ActionReviewAuditSink {
 export interface JsonlAuditConfig {
   readonly root: string
   readonly fsync?: boolean
+  readonly replayMaxBytes?: number
 }
 
 export interface AutoReviewConfig {

@@ -111,6 +111,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
       }
     }
     const action = router.route(exec, sandbox, contribution, ctx.actionReview.config.mode)
+    ctx.actionReview.observeRoutedAction(action)
     const pending: PendingReview = {
       action,
       routedAt: Date.now(),
@@ -171,22 +172,24 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
         return { kind: 'ask', reason: askReason(action, 'Auto Review routed the action to manual approval') }
       }
       case 'review': {
-        if (ctx.actionReview.consumeExactOverride(action)) {
-          pending.reviewOutcome = 'approved'
-          pending.approvalPath = 'auto-review'
-          ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'exact-override' })
-          if (action.actionKind === 'sandbox-escalation' && exec.agent !== undefined) {
-            escalationByCall.set(callKey(exec.agent.session.id, exec.callId), pending)
-          }
-          return next()
-        }
-        const decision = await ctx.actionReview.review(action, exec.agent?.session, exec.signal)
+        const exactApproval = ctx.actionReview.consumeExactOverride(action)
+        const reviewAction = exactApproval === undefined
+          ? action
+          : Object.freeze({
+              ...action,
+              authority: Object.freeze({ ...action.authority, exactApproval }),
+            })
+        const decision = await ctx.actionReview.review(reviewAction, exec.agent?.session, exec.signal)
         pending.reviewOutcome = decision.outcome
         exec.signal.throwIfAborted()
         switch (decision.outcome) {
           case 'approved': {
             pending.approvalPath = 'auto-review'
-            ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'auto-review' })
+            ctx.actionReview.issueTicket({
+              token: exec.token,
+              action,
+              grant: exactApproval === undefined ? 'auto-review' : 'exact-override',
+            })
             if (action.actionKind === 'sandbox-escalation' && exec.agent !== undefined) {
               escalationByCall.set(callKey(exec.agent.session.id, exec.callId), pending)
             }
@@ -248,6 +251,10 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
       routedAt: pending.routedAt,
       finishedAt: Date.now(),
     }, session?.id)
+  })
+
+  ctx.on('session/event', (session, event) => {
+    if (event.type === 'turn/end') ctx.actionReview.observeTurnEnd(session.id, event.data.turn)
   })
 }
 

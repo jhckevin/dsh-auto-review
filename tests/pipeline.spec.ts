@@ -43,7 +43,12 @@ async function harness(reviewOutcome: ReviewOutcome = 'approved') {
   await ctx.plugin(ApprovalService)
   await ctx.plugin(ActionReviewRuntime)
   await ctx.plugin({ inject: policyInject, apply: applyPolicy }, { hardDenyToolNames: ['root_destroy'] })
-  const reviewed: Array<{ authority: { currentUserRequest?: string } }> = []
+  const reviewed: Array<{
+    authority: {
+      currentUserRequest?: string
+      exactApproval?: { actionDigest: string; source: 'human-command' }
+    }
+  }> = []
   ctx.actionReview.registerReviewer({
     id: 'fixture',
     review: async (request) => {
@@ -217,6 +222,30 @@ describe('native tools pipeline composition', () => {
       reviewOutcome: 'denied',
       finalOutcome: 'error',
     })
+  })
+
+  it('re-reviews one exact human-approved retry instead of bypassing the reviewer', async () => {
+    const { ctx, executions, reviewed } = await harness('denied')
+    const { agent } = fakeAgent('session-rereview')
+    const arguments_ = { command: 'echo blocked' }
+    await ctx.tools.execute({
+      callId: CallId('denied-first'), name: 'bash', arguments: arguments_, agent, signal,
+    })
+    const routed = ctx.actionReview.auditRecords('session-rereview')
+      .find(record => record.kind === 'routed')
+    if (routed?.kind !== 'routed') throw new Error('missing routed record')
+    ctx.actionReview.armDeniedOverride('session-rereview', routed.data.actionDigest)
+
+    const retried = await ctx.tools.execute({
+      callId: CallId('denied-retry'), name: 'bash', arguments: arguments_, agent, signal,
+    })
+    expect(retried).toMatchObject({ isError: true })
+    expect(reviewed).toHaveLength(2)
+    expect(reviewed[1]?.authority.exactApproval).toMatchObject({
+      actionDigest: routed.data.actionDigest,
+      source: 'human-command',
+    })
+    expect(executions()).toBe(0)
   })
 
   it('isolates concurrent one-shot grants and audit chains by session and call', async () => {

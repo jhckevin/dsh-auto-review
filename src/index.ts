@@ -27,6 +27,7 @@ export type {
   AutoReviewBreakerRecord,
   AutoReviewTicketRecord,
   AutoReviewOverrideRecord,
+  AutoReviewPostDenialRecord,
   AutoReviewApprovalPath,
   AutoReviewConfig,
   AutoReviewMode,
