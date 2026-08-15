@@ -235,4 +235,54 @@ describe('ActionReviewRuntime', () => {
         expect.objectContaining({ outcome: 'stopped-after-denial', saferAlternativeSuggested: true }),
       ])
   })
+
+  it('folds the action funnel, execution outcomes, ticket failures, and post-denial behavior', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    const routed = {
+      schemaVersion: 1 as const,
+      actionId: action.actionId,
+      actionDigest: action.actionDigest,
+      callId: action.callId,
+      rootCallId: action.rootCallId,
+      toolName: action.toolName,
+      actionKind: action.actionKind,
+      disposition: action.disposition,
+      resolverId: action.resolverId,
+      sandboxMode: action.sandbox.mode,
+      pathCount: 0,
+      routedAt: 1,
+    }
+    ctx.actionReview.recordAudit('routed', routed, 'metrics')
+    ctx.actionReview.recordAudit('decision', {
+      schemaVersion: 1,
+      actionId: action.actionId,
+      actionDigest: action.actionDigest,
+      toolName: action.toolName,
+      actionKind: action.actionKind,
+      disposition: action.disposition,
+      turn: 1,
+      mode: 'enforcing',
+      reviewer: 'fixture',
+      decision: { schemaVersion: 1, outcome: 'denied', riskLevel: 'high', rationale: 'no', policyRuleIds: ['X'], uncertainty: '' },
+      startedAt: 10,
+      finishedAt: 25,
+      latencyMs: 15,
+    }, 'metrics')
+    ctx.actionReview.recordAudit('postDenial', {
+      outcome: 'stopped-after-denial', deniedActionDigest: action.actionDigest, turn: 1,
+      saferAlternativeSuggested: false, at: 30,
+    }, 'metrics')
+    expect(ctx.actionReview.metrics('metrics')).toMatchObject({
+      totalActions: 1,
+      autoReviewed: 1,
+      approved: 0,
+      denied: 1,
+      stoppedAfterDenial: 1,
+      approvalRate: 0,
+      effectiveAutomationRate: 0,
+      reviewerLatencyMs: { count: 1, mean: 15, max: 15 },
+      byActionKind: { process: 1 },
+    })
+  })
 })

@@ -246,6 +246,27 @@ export interface AutoReviewPostDenialRecord {
   readonly at: number
 }
 
+export interface AutoReviewMetricsSnapshot {
+  readonly totalActions: number
+  readonly insideBoundary: number
+  readonly autoReviewed: number
+  readonly approved: number
+  readonly denied: number
+  readonly manual: number
+  readonly unavailable: number
+  readonly hardDenied: number
+  readonly successfulActions: number
+  readonly failedActions: number
+  readonly ticketRejected: number
+  readonly retriedDeniedAction: number
+  readonly continuedWithDifferentAction: number
+  readonly stoppedAfterDenial: number
+  readonly reviewerLatencyMs: { readonly count: number; readonly mean: number; readonly max: number }
+  readonly approvalRate: number
+  readonly effectiveAutomationRate: number
+  readonly byActionKind: Readonly<Partial<Record<ActionKind, number>>>
+}
+
 export interface AutoReviewAuditPayloadMap {
   readonly routed: AutoReviewRouteRecord
   readonly decision: AutoReviewAuditRecord

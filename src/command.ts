@@ -6,6 +6,10 @@ export const inject = ['actionReview', 'commands']
 
 const SHA256 = /^[a-f0-9]{64}$/u
 
+function percent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`
+}
+
 export function apply(ctx: Context): void {
   ctx.commands.register({
     name: 'approve',
@@ -34,6 +38,27 @@ export function apply(ctx: Context): void {
           kind: 'error',
           text: error instanceof Error ? error.message : 'Auto Review could not arm the exact-action approval.',
         }
+      }
+    },
+  })
+
+  ctx.commands.register({
+    name: 'auto-review',
+    description: 'show Auto Review safety funnel and lifecycle metrics for this session',
+    handler(invocation) {
+      invocation.signal.throwIfAborted()
+      const metrics = ctx.actionReview.metrics(invocation.agent.session.id)
+      return {
+        kind: 'success',
+        text: [
+          'Auto Review session metrics',
+          `Actions: ${metrics.totalActions} total; ${metrics.insideBoundary} inside boundary; ${metrics.autoReviewed} reviewed; ${metrics.hardDenied} hard-denied.`,
+          `Review: ${metrics.approved} approved; ${metrics.denied} denied; ${metrics.manual} manual; ${metrics.unavailable} unavailable.`,
+          `Execution: ${metrics.successfulActions} succeeded; ${metrics.failedActions} failed; ${metrics.ticketRejected} ticket rejections.`,
+          `After denial: ${metrics.continuedWithDifferentAction} different-action candidates; ${metrics.retriedDeniedAction} exact retries; ${metrics.stoppedAfterDenial} stopped.`,
+          `Rates: ${percent(metrics.approvalRate)} reviewer approval; ${percent(metrics.effectiveAutomationRate)} effective automation.`,
+          `Reviewer latency: ${metrics.reviewerLatencyMs.count} samples; ${metrics.reviewerLatencyMs.mean.toFixed(1)} ms mean; ${metrics.reviewerLatencyMs.max.toFixed(1)} ms max.`,
+        ].join('\n'),
       }
     },
   })

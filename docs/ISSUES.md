@@ -46,9 +46,11 @@
 
 验收：命令只接受最后一次真实拒绝的 digest，消费一次后仍重新审查；拒绝后的相同重试、不同动作和回合结束分别留痕；JSONL provider 验证历史 digest chain 并恢复同 session 状态，fork 不继承，compaction 按新 turn 重置拒绝窗口。
 
-## ISSUE-009：RPC、TUI、评估与指标
+## ISSUE-009：RPC、TUI、评估与指标（完成）
 
 提供模型审查状态与人工接管界面、shadow replay、动作分流漏斗、拒绝后 safer-alternative/stop 统计和安全评估集。
+
+验收：`/auto-review` 经原生 CommandRuntime 同时进入 TUI/RPC；运行期和冷恢复均折叠 session/global 指标；离线 evaluator 重建漏斗并检测 route/decision/result/ticket 关联异常；拒绝后精确重试、不同动作候选与停止分别统计。shadow 模式保留 reviewer 原始结论，执行态批准以 `AR-SHADOW` 明确区分。
 
 ## ISSUE-005：Linux x86 安全与发布验收
 

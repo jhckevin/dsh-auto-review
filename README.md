@@ -2,7 +2,7 @@
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
-当前版本：`0.2.0-dev.2`。
+当前版本：`0.2.0-dev.3`。
 
 本项目不把 Auto Review 定义为“自动放行”。它在 DeepSeek Harness 原生工具管线中完成确定性动作分类、隔离模型审查、一次性用户审批回退、Linux 文件沙盒约束与可重放审计。
 
@@ -26,9 +26,10 @@
 - `@jhckevin/dsh-auto-review/llm-provider`：隔离 LLM reviewer provider；
 - `@jhckevin/dsh-auto-review/policy`：工具管线 consumer 与路由策略。
 - `@jhckevin/dsh-auto-review/audit-jsonl`：同步、hash-linked、按运行实例分段的本地 JSONL audit sink。
-- `@jhckevin/dsh-auto-review/command`：提供精确动作 `/approve` 人工命令。
+- `@jhckevin/dsh-auto-review/command`：提供精确动作 `/approve` 与会话级 `/auto-review` 状态命令；
+- `@jhckevin/dsh-auto-review/eval`：从归档审计重建动作漏斗并检查断裂关联。
 
-`cordis.patch.yml` 只负责组合这四个角色。profile 可以替换 reviewer 或 audit sink、关闭 policy，或切换 `shadow/enforcing`，而不修改实现。
+`cordis.patch.yml` 只负责组合运行时、reviewer、policy、audit 和 command 五个角色。profile 可以替换 reviewer 或 audit sink、关闭 policy，或切换 `shadow/enforcing`，而不修改实现。
 
 其他高级插件通过 `ctx.actionReview.registerToolSecurityDescriptor()` 声明闭集 effects、分类和 policy rule。工具名只能由一个 descriptor 占有；冲突会使插件加载失败，卸载/HMR 会撤销贡献。兼容 API `registerActionSemantics()` 只提供粗粒度分类。部署 hard-deny 与显式 sandbox escalation 始终优先于外部描述，避免扩展把硬边界重分类为快速路径。
 
@@ -46,6 +47,8 @@
 每个进入管线的动作都会形成 `routed` audit record；实际调用 reviewer 时形成 `decision`；票据签发和消费形成 `ticket`；精确授权形成 `override`；最终冻结结果形成 `result`。记录由 action digest、call/root-call id 关联，并通过 `previousDigest/recordDigest` 串成不可静默改序的链，可直接统计 workspace 内动作、自动审查、自动批准、拒绝、人工回退与最终成功/失败，而无需解析自然语言日志。
 
 拒绝后，下一次相同动作记为 `retried-denied-action`，不同动作记为 `continued-with-different-action`，没有后续动作而结束回合记为 `stopped-after-denial`。不同动作只是 safer-alternative 候选，最终是否属于安全替代由离线评估器判定，运行时不把字符串差异伪装为安全证明。
+
+`/auto-review` 通过 Harness 原生 CommandRuntime 暴露当前 session 的动作漏斗、review 结果、执行结果、票据拒绝、拒绝后行为和 reviewer 延迟；CommandRuntime 已提供 TUI/RPC 的统一 list/execute 面。`evaluateAutoReviewAudit()` 则在不启动 Harness、不访问模型的情况下从归档记录重建同一组指标，并报告 decision/result/ticket 的关联异常。图片中的数量是某次观测值，不是实现常量；实现保证分支语义和可测量性，而不追求固定比例。
 
 Reviewer Agent 的 system prompt 和 runtime context 由 provider 权威替换，工具可见集为空，模型选择固定为 reviewer 配置。每次尝试使用新的 Session；单次审查总超时默认 90 秒，最多三次尝试。紧凑 transcript 逐条标记信任级别，只有直接用户消息可作为授权，模型文本、工具输出和动作参数均是不可信证据。完成、失败、超时或取消都会销毁 reviewer Agent/Session。
 

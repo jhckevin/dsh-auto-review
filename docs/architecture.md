@@ -1,6 +1,6 @@
 # Auto Review 原生迁移架构
 
-状态：Permission Core、独立 Agent/Session Reviewer、精确人工授权、冷恢复与拒绝后行为审计，版本 `0.2.0-dev.2`。
+状态：Permission Core、独立 Agent/Session Reviewer、精确人工授权、冷恢复、原生状态命令与离线漏斗评估，版本 `0.2.0-dev.3`。
 
 ## 固定上游
 
@@ -63,6 +63,12 @@ Auto Review 不实现、替代或绕开沙盒。`ctx.sandboxPolicy.resolve({ ses
 - `enforcing`：按路由结果控制调用。
 
 模式由部署配置固定。`/approve` 只针对同一 session 最新的 denied action digest，并为下一次相同动作提供一次受信任证据；该重试仍经过 reviewer、hard policy、票据和原生 sandbox。外部 JSONL 审计通过完整链验证恢复同一 session 的拒绝窗口与未消费授权；fork 的新 session id 不继承状态，compaction 后的新 turn 使用新的 3/10/50 窗口。
+
+## 状态、RPC 与离线评估
+
+`/auto-review` 注册在 Harness 原生 CommandRuntime，因此 TUI 与 RPC 共用相同的命令发现、执行、Session 事件和取消语义。它只读取 session 级审计折叠状态，不接触 reviewer prompt 或隐藏推理。运行期累计与 JSONL 冷恢复都使用相同事件定义：routed、decision、ticket、result、postDenial。
+
+归档分析入口 `evaluateAutoReviewAudit()` 输出动作总数、边界内快速路径、自动审查、批准/拒绝/人工/不可用、hard deny、执行成败、票据拒绝、拒绝后分支、reviewer 延迟和按 action kind 分组，并检测 decision/result 无 route、ticket consume 无 issue 等关联异常。safer alternative 是否真正安全仍是安全评估集的判定目标，不能由“下一条命令不同”自动推断。
 
 ## 最低验收
 

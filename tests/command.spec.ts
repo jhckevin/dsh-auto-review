@@ -114,3 +114,37 @@ describe('/approve exact-action command', () => {
     )).resolves.toMatchObject({ result: { kind: 'error', text: expect.stringContaining('does not match') } })
   })
 })
+
+describe('/auto-review metrics command', () => {
+  it('reports the native per-session safety funnel', async () => {
+    const { ctx, agent } = await harness('metrics-session')
+    const reviewedAction = action(agent.session.id)
+    ctx.actionReview.recordAudit('routed', {
+      schemaVersion: 1,
+      actionId: reviewedAction.actionId,
+      actionDigest: reviewedAction.actionDigest,
+      callId: reviewedAction.callId,
+      rootCallId: reviewedAction.rootCallId,
+      toolName: reviewedAction.toolName,
+      actionKind: reviewedAction.actionKind,
+      disposition: reviewedAction.disposition,
+      resolverId: reviewedAction.resolverId,
+      sandboxMode: reviewedAction.sandbox.mode,
+      pathCount: reviewedAction.paths.length,
+      routedAt: 10,
+    }, agent.session.id)
+    ctx.actionReview.registerReviewer({
+      id: 'approve-fixture',
+      review: async () => ({
+        schemaVersion: 1, outcome: 'approved', riskLevel: 'low', rationale: 'bounded', policyRuleIds: ['FIXTURE'], uncertainty: '',
+      }),
+    })
+    await ctx.actionReview.review(reviewedAction, agent.session, new AbortController().signal)
+
+    const execution = await ctx.commands.execute(agent, '/auto-review', new AbortController().signal)
+    expect(execution?.result).toMatchObject({ kind: 'success' })
+    expect(execution?.result.text).toContain('1 total; 0 inside boundary; 1 reviewed')
+    expect(execution?.result.text).toContain('1 approved; 0 denied')
+    expect(execution?.result.text).toContain('100.0% reviewer approval')
+  })
+})

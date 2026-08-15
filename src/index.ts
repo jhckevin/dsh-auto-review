@@ -4,6 +4,8 @@ export { canonicalJson, sha256Json, toJsonValue } from './canonical.ts'
 export { parseReviewDecision } from './protocol.ts'
 export { redactJson, type RedactionOptions } from './redaction.ts'
 export { ActionRouter, resolveRouterConfig } from './router.ts'
+export { evaluateAutoReviewAudit } from './eval.ts'
+export type { AutoReviewEvaluation } from './eval.ts'
 export type {
   ActionDisposition,
   ActionEffect,
@@ -28,6 +30,7 @@ export type {
   AutoReviewTicketRecord,
   AutoReviewOverrideRecord,
   AutoReviewPostDenialRecord,
+  AutoReviewMetricsSnapshot,
   AutoReviewApprovalPath,
   AutoReviewConfig,
   AutoReviewMode,

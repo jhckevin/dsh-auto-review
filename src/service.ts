@@ -16,6 +16,7 @@ import type {
   AutoReviewAuditEnvelope,
   AutoReviewAuditKind,
   AutoReviewAuditPayloadMap,
+  AutoReviewMetricsSnapshot,
   AutoReviewConfig,
   ResolvedAutoReviewConfig,
   ReviewDecision,
@@ -36,6 +37,37 @@ function freezeJson<T>(value: T): T {
     Object.freeze(value)
   }
   return value
+}
+
+interface MutableMetrics {
+  totalActions: number
+  insideBoundary: number
+  autoReviewed: number
+  approved: number
+  denied: number
+  manual: number
+  unavailable: number
+  hardDenied: number
+  successfulActions: number
+  failedActions: number
+  ticketRejected: number
+  retriedDeniedAction: number
+  continuedWithDifferentAction: number
+  stoppedAfterDenial: number
+  reviewerLatencyCount: number
+  reviewerLatencySum: number
+  reviewerLatencyMax: number
+  byActionKind: Map<string, number>
+}
+
+function newMetrics(): MutableMetrics {
+  return {
+    totalActions: 0, insideBoundary: 0, autoReviewed: 0, approved: 0, denied: 0,
+    manual: 0, unavailable: 0, hardDenied: 0, successfulActions: 0, failedActions: 0,
+    ticketRejected: 0, retriedDeniedAction: 0, continuedWithDifferentAction: 0,
+    stoppedAfterDenial: 0, reviewerLatencyCount: 0, reviewerLatencySum: 0,
+    reviewerLatencyMax: 0, byActionKind: new Map(),
+  }
 }
 
 export class ActionReviewRuntime extends Service {
@@ -72,6 +104,8 @@ export class ActionReviewRuntime extends Service {
     turn: number
     saferAlternativeSuggested: boolean
   }>()
+  private readonly globalMetrics = newMetrics()
+  private readonly sessionMetrics = new Map<string, MutableMetrics>()
 
   constructor(ctx: Context, config: AutoReviewConfig = {}) {
     super(ctx, 'actionReview')
@@ -148,6 +182,12 @@ export class ActionReviewRuntime extends Service {
       recordDigest: sha256Json(toJsonValue(unsigned)),
     }) as AutoReviewAuditEnvelope<K>
     this.auditSink?.write(record)
+    this.applyMetrics(this.globalMetrics, record)
+    if (sessionId !== undefined) {
+      const metrics = this.sessionMetrics.get(sessionId) ?? newMetrics()
+      this.applyMetrics(metrics, record)
+      this.sessionMetrics.set(sessionId, metrics)
+    }
     this.auditSequence = sequence
     this.previousAuditDigest = record.recordDigest
     this.audit.push(record)
@@ -163,6 +203,12 @@ export class ActionReviewRuntime extends Service {
   restoreAudit(records: readonly AutoReviewAuditEnvelope[]): void {
     for (const record of records) {
       const sessionId = record.sessionId
+      this.applyMetrics(this.globalMetrics, record)
+      if (sessionId !== undefined) {
+        const metrics = this.sessionMetrics.get(sessionId) ?? newMetrics()
+        this.applyMetrics(metrics, record)
+        this.sessionMetrics.set(sessionId, metrics)
+      }
       if (sessionId === undefined) continue
       switch (record.kind) {
         case 'decision': {
@@ -212,6 +258,38 @@ export class ActionReviewRuntime extends Service {
           break
       }
     }
+  }
+
+  metrics(sessionId?: string): AutoReviewMetricsSnapshot {
+    const state = sessionId === undefined ? this.globalMetrics : this.sessionMetrics.get(sessionId) ?? newMetrics()
+    const approvalRate = state.autoReviewed === 0 ? 0 : state.approved / state.autoReviewed
+    const effectiveAutomationRate = state.totalActions === 0
+      ? 0
+      : (state.insideBoundary + state.approved) / state.totalActions
+    return freezeJson({
+      totalActions: state.totalActions,
+      insideBoundary: state.insideBoundary,
+      autoReviewed: state.autoReviewed,
+      approved: state.approved,
+      denied: state.denied,
+      manual: state.manual,
+      unavailable: state.unavailable,
+      hardDenied: state.hardDenied,
+      successfulActions: state.successfulActions,
+      failedActions: state.failedActions,
+      ticketRejected: state.ticketRejected,
+      retriedDeniedAction: state.retriedDeniedAction,
+      continuedWithDifferentAction: state.continuedWithDifferentAction,
+      stoppedAfterDenial: state.stoppedAfterDenial,
+      reviewerLatencyMs: {
+        count: state.reviewerLatencyCount,
+        mean: state.reviewerLatencyCount === 0 ? 0 : state.reviewerLatencySum / state.reviewerLatencyCount,
+        max: state.reviewerLatencyMax,
+      },
+      approvalRate,
+      effectiveAutomationRate,
+      byActionKind: Object.fromEntries([...state.byActionKind.entries()].sort(([left], [right]) => left < right ? -1 : 1)),
+    }) as AutoReviewMetricsSnapshot
   }
 
   registerActionSemantics(contribution: ActionSemanticsContribution): () => void {
@@ -546,6 +624,53 @@ export class ActionReviewRuntime extends Service {
       }, session?.id)
     }
     this.denialStates.set(key, state)
+  }
+
+  private applyMetrics(state: MutableMetrics, record: AutoReviewAuditEnvelope): void {
+    switch (record.kind) {
+      case 'routed': {
+        const data = record.data as AutoReviewAuditPayloadMap['routed']
+        state.totalActions += 1
+        if (data.disposition === 'inside-boundary') state.insideBoundary += 1
+        if (data.disposition === 'hard-deny') state.hardDenied += 1
+        state.byActionKind.set(data.actionKind, (state.byActionKind.get(data.actionKind) ?? 0) + 1)
+        break
+      }
+      case 'decision': {
+        const data = record.data as AutoReviewAuditPayloadMap['decision']
+        state.autoReviewed += 1
+        switch (data.decision.outcome) {
+          case 'approved': state.approved += 1; break
+          case 'denied': state.denied += 1; break
+          case 'manual': state.manual += 1; break
+          case 'unavailable': state.unavailable += 1; break
+        }
+        state.reviewerLatencyCount += 1
+        state.reviewerLatencySum += data.latencyMs
+        state.reviewerLatencyMax = Math.max(state.reviewerLatencyMax, data.latencyMs)
+        break
+      }
+      case 'result': {
+        const data = record.data as AutoReviewAuditPayloadMap['result']
+        if (data.finalOutcome === 'success') state.successfulActions += 1
+        else state.failedActions += 1
+        break
+      }
+      case 'ticket': {
+        const data = record.data as AutoReviewAuditPayloadMap['ticket']
+        if (data.state === 'rejected' || data.state === 'expired') state.ticketRejected += 1
+        break
+      }
+      case 'postDenial': {
+        const data = record.data as AutoReviewAuditPayloadMap['postDenial']
+        if (data.outcome === 'retried-denied-action') state.retriedDeniedAction += 1
+        else if (data.outcome === 'continued-with-different-action') state.continuedWithDifferentAction += 1
+        else state.stoppedAfterDenial += 1
+        break
+      }
+      default:
+        break
+    }
   }
 }
 
