@@ -1,6 +1,6 @@
 {
   "name": "@jhckevin/dsh-auto-review",
-  "version": "0.1.0-dev.3",
+  "version": "0.1.0-dev.4",
   "description": "Native Auto Review capability, reviewer provider and tool policy for DeepSeek Harness",
   "type": "module",
   "license": "MIT",
@@ -10,6 +10,7 @@
     ".": { "types": "./lib/index.d.ts", "default": "./lib/index.js" },
     "./policy": { "types": "./lib/policy.d.ts", "default": "./lib/policy.js" },
     "./llm-provider": { "types": "./lib/llm-provider.d.ts", "default": "./lib/llm-provider.js" },
+    "./audit-jsonl": { "types": "./lib/audit-jsonl.d.ts", "default": "./lib/audit-jsonl.js" },
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },

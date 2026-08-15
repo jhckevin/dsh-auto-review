@@ -131,16 +131,54 @@ export interface AutoReviewResultRecord {
   readonly finishedAt: number
 }
 
+export interface AutoReviewBreakerRecord {
+  readonly state: 'opened' | 'closed'
+  readonly failures: number
+  readonly until?: number
+}
+
+export interface AutoReviewAuditPayloadMap {
+  readonly routed: AutoReviewRouteRecord
+  readonly decision: AutoReviewAuditRecord
+  readonly result: AutoReviewResultRecord
+  readonly breaker: AutoReviewBreakerRecord
+}
+
+export type AutoReviewAuditKind = keyof AutoReviewAuditPayloadMap
+
+export interface AutoReviewAuditEnvelope<K extends AutoReviewAuditKind = AutoReviewAuditKind> {
+  readonly schemaVersion: 1
+  readonly processInstanceId: string
+  readonly sequence: number
+  readonly kind: K
+  readonly sessionId?: string
+  readonly data: AutoReviewAuditPayloadMap[K]
+  readonly previousDigest?: string
+  readonly recordDigest: string
+}
+
+export interface ActionReviewAuditSink {
+  readonly id: string
+  write(record: AutoReviewAuditEnvelope): void
+}
+
+export interface JsonlAuditConfig {
+  readonly root: string
+  readonly fsync?: boolean
+}
+
 export interface AutoReviewConfig {
   readonly mode?: AutoReviewMode
   readonly failureThreshold?: number
   readonly breakerCooldownMs?: number
+  readonly auditMemoryLimit?: number
 }
 
 export interface ResolvedAutoReviewConfig {
   readonly mode: AutoReviewMode
   readonly failureThreshold: number
   readonly breakerCooldownMs: number
+  readonly auditMemoryLimit: number
 }
 
 export interface RouterConfig {

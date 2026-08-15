@@ -1,6 +1,6 @@
 # Auto Review 原生迁移架构
 
-状态：原生执行闭环与扩展语义注册表，版本 `0.1.0-dev.3`。
+状态：原生执行闭环、扩展语义注册表与独立审计 provider，版本 `0.1.0-dev.4`。
 
 ## 固定上游
 
@@ -53,7 +53,7 @@ Auto Review 不实现、替代或绕开沙盒。`ctx.sandboxPolicy.resolve({ ses
 | 手写用户审批状态 | `ctx.approval` 的 `allowed-once` closed outcome |
 | 自定义执行边界 | `ctx.sandboxPolicy` + Linux sandbox provider |
 | 独立 Agent reviewer | `ctx.llm.stream()` 的无工具独立请求 |
-| 自定义审计广播 | `auto-review/routed/decision/result` Session events + `tools/result` correlation |
+| 自定义审计广播 | `ctx.actionReview` hash-linked audit seam + JSONL sink + `tools/result` correlation |
 
 ## 模式
 

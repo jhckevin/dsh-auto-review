@@ -99,4 +99,38 @@ describe('ActionReviewRuntime', () => {
     await dispose()
     expect(ctx.actionReview.classificationFor('fixture_read')).toBeUndefined()
   })
+
+  it('owns one effect-scoped audit sink and preserves a hash-linked memory tail', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime, { auditMemoryLimit: 2 })
+    const written: string[] = []
+    const dispose = ctx.actionReview.registerAuditSink({
+      id: 'fixture-audit',
+      write: record => { written.push(record.recordDigest) },
+    })
+    const routed = {
+      schemaVersion: 1 as const,
+      actionId: action.actionId,
+      actionDigest: action.actionDigest,
+      callId: action.callId,
+      rootCallId: action.rootCallId,
+      toolName: action.toolName,
+      actionKind: action.actionKind,
+      disposition: action.disposition,
+      resolverId: action.resolverId,
+      sandboxMode: action.sandbox.mode,
+      pathCount: 0,
+      routedAt: 1,
+    }
+    const first = ctx.actionReview.recordAudit('routed', routed, 's1')
+    const second = ctx.actionReview.recordAudit('routed', { ...routed, routedAt: 2 }, 's1')
+    ctx.actionReview.recordAudit('routed', { ...routed, routedAt: 3 }, 's2')
+    expect(written).toHaveLength(3)
+    expect(second.previousDigest).toBe(first.recordDigest)
+    expect(ctx.actionReview.auditRecords()).toHaveLength(2)
+    expect(ctx.actionReview.auditRecords('s1')).toHaveLength(1)
+    expect(() => ctx.actionReview.registerAuditSink({ id: 'conflict', write: () => undefined })).toThrow(/already registered/)
+    await dispose()
+    expect(() => ctx.actionReview.registerAuditSink({ id: 'replacement', write: () => undefined })).not.toThrow()
+  })
 })

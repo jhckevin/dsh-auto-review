@@ -147,19 +147,17 @@ describe('native tools pipeline composition', () => {
     expect(executions()).toBe(1)
     expect(manualAnswers).toBe(0)
     expect(reviewed[0]?.authority.currentUserRequest).toBe('Run the exact diagnostic command if needed.')
-    expect(appended.map(event => event.type)).toEqual([
-      'auto-review/routed',
-      'auto-review/decision',
-      'approval/asked',
-      'approval/decided',
-      'auto-review/result',
-    ])
+    expect(appended.map(event => event.type)).toEqual(['approval/asked', 'approval/decided'])
     expect(appended.find(event => event.type === 'approval/decided')?.data).toMatchObject({ outcome: 'allowed-once' })
-    expect(appended.find(event => event.type === 'auto-review/result')?.data).toMatchObject({
+    const audit = ctx.actionReview.auditRecords('session-auto-review')
+    expect(audit.map(record => record.kind)).toEqual(['routed', 'decision', 'result'])
+    expect(audit.find(record => record.kind === 'result')?.data).toMatchObject({
       approvalPath: 'auto-review',
       reviewOutcome: 'approved',
       finalOutcome: 'success',
     })
+    expect(audit[1]?.previousDigest).toBe(audit[0]?.recordDigest)
+    expect(audit[2]?.previousDigest).toBe(audit[1]?.recordDigest)
   })
 
   it('delegates an uncertain escalation to the native human answerer once', async () => {
@@ -184,7 +182,7 @@ describe('native tools pipeline composition', () => {
     expect(result).toMatchObject({ isError: false })
     expect(executions()).toBe(1)
     expect(manualAnswers).toBe(1)
-    expect(appended.find(event => event.type === 'auto-review/result')?.data).toMatchObject({
+    expect(ctx.actionReview.auditRecords('session-auto-review').find(record => record.kind === 'result')?.data).toMatchObject({
       approvalPath: 'native-manual',
       reviewOutcome: 'manual',
       finalOutcome: 'success',
@@ -213,7 +211,7 @@ describe('native tools pipeline composition', () => {
     expect(result).toMatchObject({ isError: true })
     expect(executions()).toBe(0)
     expect(manualAnswers).toBe(0)
-    expect(appended.find(event => event.type === 'auto-review/result')?.data).toMatchObject({
+    expect(ctx.actionReview.auditRecords('session-auto-review').find(record => record.kind === 'result')?.data).toMatchObject({
       approvalPath: 'auto-review',
       reviewOutcome: 'denied',
       finalOutcome: 'error',

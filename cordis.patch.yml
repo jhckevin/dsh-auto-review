@@ -18,6 +18,13 @@
         maxOutputTokens: 768
         timeoutMs: 60000
 
+    - id: auto-review-audit
+      name: '@jhckevin/dsh-auto-review/audit-jsonl'
+      inject: [actionReview]
+      config:
+        root: !!js dshHomePath('auto-review/audit')
+        fsync: true
+
     - id: auto-review-policy
       name: '@jhckevin/dsh-auto-review/policy'
       config:

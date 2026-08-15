@@ -20,12 +20,13 @@
 
 已完成：无工具 one-shot、严格闭集 JSON、结构/文本预算、密钥脱敏、timeout/cancellation、provider effect ownership。
 
-## ISSUE-004：审批、审计与断路器（执行闭环完成，待外部分析器）
+## ISSUE-004：审批、审计与断路器（完成）
 
 接入 `ask`、durable decision events、不可变 `tools/result` 关联、shadow/enforcing、拒绝循环控制和 hash-linked 可选归档。
 
-已完成：原生 `ask` 回退、sandbox escalation 一次性审批桥、routed/decision/result/breaker session events、shadow/enforcing、fail-closed breaker、最终冻结结果关联。
-待完成：拒绝后 safer-alternative/stop 的跨调用离线分析器、hash-linked 外部归档。
+已完成：原生 `ask` 回退、sandbox escalation 一次性审批桥、routed/decision/result/breaker 审计、shadow/enforcing、fail-closed breaker、最终冻结结果关联，以及 effect-scoped、同步 fsync、hash-linked JSONL sink。因 rc.6 没有下游 Session event 注册面，审计不再写入会破坏冷恢复的未知 Session event；原生 approval pair 仍留在 Session Log。
+
+拒绝后 safer-alternative/stop 的跨调用统计属于实验分析层，不进入授权执行核心。
 
 ## ISSUE-005：Linux x86 安全与发布验收
 

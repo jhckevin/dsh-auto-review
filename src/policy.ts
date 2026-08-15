@@ -89,7 +89,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
           : 'native-manual',
     }
     pendingByToken.set(exec.token, pending)
-    session?.append('auto-review/routed', {
+    ctx.actionReview.recordAudit('routed', {
       schemaVersion: 1,
       actionId: action.actionId,
       actionDigest: action.actionDigest,
@@ -102,7 +102,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
       sandboxMode: action.sandbox.mode,
       pathCount: action.paths.length,
       routedAt: pending.routedAt,
-    })
+    }, session?.id)
     return pending
   }
 
@@ -178,7 +178,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
     const session = exec.agent?.session
     if (session !== undefined) escalationByCall.delete(callKey(session.id, exec.callId))
     const code = errorCode(result)
-    session?.append('auto-review/result', {
+    ctx.actionReview.recordAudit('result', {
       schemaVersion: 1,
       actionId: pending.action.actionId,
       actionDigest: pending.action.actionDigest,
@@ -194,7 +194,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
       resultDigest: sha256Json(toJsonValue(result)),
       routedAt: pending.routedAt,
       finishedAt: Date.now(),
-    })
+    }, session?.id)
   })
 }
 
