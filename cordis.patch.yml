@@ -1,0 +1,35 @@
+# DeepSeek Harness native Auto Review bundle.
+# The capability service, reviewer provider and policy consumer remain separate
+# rows so profile overlays can replace or disable one role without forking code.
+- insert:
+    - id: auto-review
+      name: '@jhckevin/dsh-auto-review'
+      config:
+        mode: enforcing
+        failureThreshold: 3
+        breakerCooldownMs: 60000
+
+    - id: auto-review-llm
+      name: '@jhckevin/dsh-auto-review/llm-provider'
+      config:
+        provider: deepseek-official
+        model: deepseek-v4-flash
+        maxInputBytes: 16384
+        maxOutputTokens: 768
+        timeoutMs: 60000
+
+    - id: auto-review-policy
+      name: '@jhckevin/dsh-auto-review/policy'
+      config:
+        unknownTool: manual
+        allowWorkspaceReads: true
+        allowWorkspaceWrites: true
+        productionMarkers:
+          - production
+          - prod
+          - live
+        sensitiveMarkers:
+          - .ssh
+          - .gnupg
+          - .aws
+          - .env
