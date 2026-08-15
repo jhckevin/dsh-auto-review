@@ -2,7 +2,7 @@
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
-当前版本：`0.1.0-dev.2`。
+当前版本：`0.1.0-dev.3`。
 
 本项目不把 Auto Review 定义为“自动放行”。它在 DeepSeek Harness 原生工具管线中完成确定性动作分类、隔离模型审查、一次性用户审批回退、Linux 文件沙盒约束与可重放审计。
 
@@ -27,6 +27,8 @@
 - `@jhckevin/dsh-auto-review/policy`：工具管线 consumer 与路由策略。
 
 `cordis.patch.yml` 只负责组合这三个角色。profile 可以替换 reviewer、关闭 policy 或切换 `shadow/enforcing`，而不修改实现。
+
+其他高级插件可通过 `ctx.actionReview.registerActionSemantics()` 以 effect-scoped contribution 声明自己的工具语义。工具名只能由一个 contribution 占有；冲突会使插件加载失败，卸载/HMR 会撤销贡献。部署 hard-deny 与显式 sandbox escalation 始终优先于外部语义，避免扩展把硬边界重分类为快速路径。
 
 ## 当前动作路由
 

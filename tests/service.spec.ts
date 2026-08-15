@@ -15,6 +15,7 @@ const action: ActionEnvelope = Object.freeze({
   actionKind: 'process',
   disposition: 'review',
   reason: 'process',
+  resolverId: 'builtin',
   sandbox: { mode: 'workspace-write', workspaceRoot: '/workspace' },
   paths: [],
   authority: {},
@@ -66,5 +67,36 @@ describe('ActionReviewRuntime', () => {
     })
     await expect(ctx.actionReview.review(action, undefined, new AbortController().signal))
       .resolves.toMatchObject({ outcome: 'approved', policyRuleIds: ['FIXTURE', 'AR-SHADOW'] })
+  })
+
+  it('owns effect-scoped extension action semantics and rejects ambiguous claims', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    const dispose = ctx.actionReview.registerActionSemantics({
+      id: 'fixture-extension',
+      tools: {
+        fixture_read: {
+          actionKind: 'workspace-read',
+          disposition: 'inside-boundary',
+          reason: 'Fixture read is bounded by its capability provider.',
+        },
+      },
+    })
+    expect(ctx.actionReview.classificationFor('fixture_read')).toMatchObject({
+      resolverId: 'fixture-extension',
+      classification: { actionKind: 'workspace-read', disposition: 'inside-boundary' },
+    })
+    expect(() => ctx.actionReview.registerActionSemantics({
+      id: 'conflict',
+      tools: {
+        fixture_read: {
+          actionKind: 'extension-unknown',
+          disposition: 'manual',
+          reason: 'conflict',
+        },
+      },
+    })).toThrow(/already claimed/)
+    await dispose()
+    expect(ctx.actionReview.classificationFor('fixture_read')).toBeUndefined()
   })
 })

@@ -3,7 +3,9 @@ import z from '@deepseek-ai/schemastery'
 import type { Session } from '@deepseek-ai/dsh-session'
 import type {
   ActionEnvelope,
+  ActionClassification,
   ActionReviewer,
+  ActionSemanticsContribution,
   AutoReviewAuditRecord,
   AutoReviewConfig,
   AutoReviewResultRecord,
@@ -43,6 +45,7 @@ export class ActionReviewRuntime extends Service {
 
   readonly config: ResolvedAutoReviewConfig
   private reviewer: ActionReviewer | undefined
+  private readonly semantics = new Map<string, { owner: string; classification: ActionClassification }>()
   private failures = 0
   private breakerUntil = 0
 
@@ -70,6 +73,51 @@ export class ActionReviewRuntime extends Service {
         if (this.reviewer === reviewer) this.reviewer = undefined
       }
     }.bind(this), 'actionReview.registerReviewer()')
+  }
+
+  registerActionSemantics(contribution: ActionSemanticsContribution): () => void {
+    const id = contribution.id.trim()
+    if (id.length === 0) throw new TypeError('auto-review: action semantics id must be non-empty')
+    const entries = Object.entries(contribution.tools)
+    if (entries.length === 0) throw new TypeError(`auto-review: action semantics ${JSON.stringify(id)} has no tools`)
+    const normalized = entries.map(([toolName, classification]) => {
+      const tool = toolName.trim()
+      if (tool.length === 0) throw new TypeError(`auto-review: action semantics ${JSON.stringify(id)} has an empty tool name`)
+      if (classification.disposition === 'hard-deny' && classification.actionKind !== 'hard-deny') {
+        throw new TypeError('auto-review: only hard-deny actions may use the hard-deny disposition')
+      }
+      if (classification.actionKind === 'hard-deny' && classification.disposition !== 'hard-deny') {
+        throw new TypeError('auto-review: hard-deny actions must use the hard-deny disposition')
+      }
+      if (classification.reason.trim().length === 0) {
+        throw new TypeError(`auto-review: action semantics for ${JSON.stringify(tool)} must include a reason`)
+      }
+      return [tool, {
+        owner: id,
+        classification: Object.freeze({ ...classification }),
+      }] as const
+    })
+    for (const [toolName] of normalized) {
+      const existing = this.semantics.get(toolName)
+      if (existing !== undefined) {
+        throw new Error(`auto-review: tool ${JSON.stringify(toolName)} is already claimed by action semantics ${JSON.stringify(existing.owner)}`)
+      }
+    }
+    return this.ctx.effect(function* (this: ActionReviewRuntime) {
+      for (const [toolName, value] of normalized) this.semantics.set(toolName, value)
+      yield () => {
+        for (const [toolName, value] of normalized) {
+          if (this.semantics.get(toolName) === value) this.semantics.delete(toolName)
+        }
+      }
+    }.bind(this), `actionReview.registerActionSemantics(${JSON.stringify(id)})`)
+  }
+
+  classificationFor(toolName: string): { resolverId: string; classification: ActionClassification } | undefined {
+    const value = this.semantics.get(toolName)
+    return value === undefined
+      ? undefined
+      : Object.freeze({ resolverId: value.owner, classification: value.classification })
   }
 
   hardDenyReason(action: ActionEnvelope): string | undefined {

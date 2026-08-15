@@ -78,7 +78,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
     if (existing !== undefined) return existing
     const session = exec.agent?.session
     const sandbox = ctx.sandboxPolicy.resolve(session === undefined ? {} : { session })
-    const action = router.route(exec, sandbox)
+    const action = router.route(exec, sandbox, ctx.actionReview.classificationFor(exec.name))
     const pending: PendingReview = {
       action,
       routedAt: Date.now(),
@@ -98,6 +98,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
       toolName: action.toolName,
       actionKind: action.actionKind,
       disposition: action.disposition,
+      resolverId: action.resolverId,
       sandboxMode: action.sandbox.mode,
       pathCount: action.paths.length,
       routedAt: pending.routedAt,

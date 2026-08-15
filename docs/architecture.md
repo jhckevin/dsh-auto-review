@@ -1,6 +1,6 @@
 # Auto Review 原生迁移架构
 
-状态：原生执行闭环，版本 `0.1.0-dev.2`。
+状态：原生执行闭环与扩展语义注册表，版本 `0.1.0-dev.3`。
 
 ## 固定上游
 
@@ -30,7 +30,7 @@ frozen ToolExecution
 
 ### Definition
 
-`ActionReviewRuntime` 拥有：动作描述、effect vocabulary、review request/result、断路器与决策审计形状。`ActionRouter` 负责可复现的闭集动作分类；未知 extension 不猜测语义，转原生 manual。
+`ActionReviewRuntime` 拥有：动作描述、effect vocabulary、review request/result、断路器、决策审计形状和 effect-scoped 动作语义注册表。`ActionRouter` 负责可复现的闭集动作分类；未知 extension 不猜测语义，转原生 manual。外部 contribution 以唯一工具名声明语义，冲突拒绝加载，卸载时撤销；hard-deny 与 sandbox escalation 的内置分类优先级更高。
 
 ### Provider
 

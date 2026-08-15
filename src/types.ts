@@ -31,6 +31,7 @@ export interface ActionEnvelope {
   readonly actionKind: ActionKind
   readonly disposition: ActionDisposition
   readonly reason: string
+  readonly resolverId: string
   readonly sandbox: {
     readonly mode: SandboxMode
     readonly workspaceRoot: string
@@ -44,6 +45,17 @@ export interface ActionEnvelope {
     readonly mode: string
     readonly justification: string
   }
+}
+
+export interface ActionClassification {
+  readonly actionKind: ActionKind
+  readonly disposition: ActionDisposition
+  readonly reason: string
+}
+
+export interface ActionSemanticsContribution {
+  readonly id: string
+  readonly tools: Readonly<Record<string, ActionClassification>>
 }
 
 export interface ReviewDecision {
@@ -89,6 +101,7 @@ export interface AutoReviewRouteRecord {
   readonly toolName: string
   readonly actionKind: ActionKind
   readonly disposition: ActionDisposition
+  readonly resolverId: string
   readonly sandboxMode: SandboxMode
   readonly pathCount: number
   readonly routedAt: number

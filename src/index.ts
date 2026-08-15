@@ -6,10 +6,12 @@ export { redactJson, type RedactionOptions } from './redaction.ts'
 export { ActionRouter, resolveRouterConfig } from './router.ts'
 export type {
   ActionDisposition,
+  ActionClassification,
   ActionEnvelope,
   ActionKind,
   ActionReviewer,
   ActionReviewerRequest,
+  ActionSemanticsContribution,
   AutoReviewAuditRecord,
   AutoReviewApprovalPath,
   AutoReviewConfig,

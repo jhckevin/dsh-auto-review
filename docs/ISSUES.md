@@ -10,9 +10,9 @@
 
 ## ISSUE-002：动作模型与确定性路由（完成）
 
-建立 resolver registry、内置 fs/bash/web/cordis 分类器、同步 hard guard、canonical digest 和 workspace/sandbox policy 绑定。
+建立 action-semantics registry、内置 fs/bash/web 分类器、同步 hard guard、canonical digest 和 workspace/sandbox policy 绑定。
 
-已完成：v1 envelope、canonical SHA-256、最近直接用户授权证据、workspace/sensitive/production/process/network/sandbox-escalation 路由、未知扩展 manual、配置 hard deny。
+已完成：v1 envelope、canonical SHA-256、最近直接用户授权证据、workspace/sensitive/production/process/network/sandbox-escalation 路由、effect-scoped 外部工具语义贡献、冲突检测与卸载、未知扩展 manual、配置 hard deny。
 
 ## ISSUE-003：隔离 LLM Reviewer（实现，待真实模型门禁）
 

@@ -75,6 +75,29 @@ describe('ActionRouter', () => {
       })
   })
 
+  it('accepts registered extension semantics while hard deny and escalation stay authoritative', () => {
+    const contribution = {
+      resolverId: 'fixture-extension',
+      classification: {
+        actionKind: 'workspace-read' as const,
+        disposition: 'inside-boundary' as const,
+        reason: 'Bounded extension read.',
+      },
+    }
+    expect(new ActionRouter().route(exec('fixture_read', {}), sandbox, contribution)).toMatchObject({
+      actionKind: 'workspace-read', disposition: 'inside-boundary', resolverId: 'fixture-extension',
+    })
+    expect(new ActionRouter({ hardDenyToolNames: ['fixture_read'] })
+      .route(exec('fixture_read', {}), sandbox, contribution)).toMatchObject({
+        actionKind: 'hard-deny', disposition: 'hard-deny', resolverId: 'builtin',
+      })
+    expect(new ActionRouter().route(exec('bash', {
+      command: 'echo ok', sandbox_permissions: 'danger-full-access', justification: 'test',
+    }), sandbox, contribution)).toMatchObject({
+      actionKind: 'sandbox-escalation', disposition: 'review', resolverId: 'builtin',
+    })
+  })
+
   it('binds the immutable action digest to arguments and sandbox boundary', () => {
     const router = new ActionRouter()
     const first = router.route(exec('bash', { command: 'echo one' }), sandbox)

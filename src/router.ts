@@ -4,6 +4,7 @@ import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { sha256Json, toJsonValue } from './canonical.ts'
 import type {
   ActionDisposition,
+  ActionClassification,
   ActionEnvelope,
   ActionKind,
   ResolvedRouterConfig,
@@ -159,12 +160,28 @@ export class ActionRouter {
     this.config = resolveRouterConfig(config)
   }
 
-  route(exec: Readonly<ToolExecution>, sandbox: SandboxExecutionPolicy): ActionEnvelope {
+  route(
+    exec: Readonly<ToolExecution>,
+    sandbox: SandboxExecutionPolicy,
+    contributed?: { readonly resolverId: string; readonly classification: ActionClassification },
+  ): ActionEnvelope {
     const arguments_ = toJsonValue(exec.arguments)
     const paths = Object.freeze(extractPaths(exec.arguments))
     const authority = authorityOf(exec)
     const escalation = requestedEscalation(exec.name, exec.arguments)
-    const classification = this.classify(exec.name, exec.arguments, paths, sandbox.workspaceRoot, escalation)
+    const selectedContribution = contributed !== undefined
+      && !this.config.hardDenyToolNames.includes(exec.name)
+      && escalation === undefined
+      ? contributed
+      : undefined
+    const classification: Classification = selectedContribution !== undefined
+      ? {
+          kind: selectedContribution.classification.actionKind,
+          disposition: selectedContribution.classification.disposition,
+          reason: selectedContribution.classification.reason,
+        }
+      : this.classify(exec.name, exec.arguments, paths, sandbox.workspaceRoot, escalation)
+    const resolverId = selectedContribution?.resolverId ?? 'builtin'
     const digestInput = {
       schemaVersion: 1,
       callId: exec.callId,
@@ -172,6 +189,7 @@ export class ActionRouter {
       toolName: exec.name,
       arguments: arguments_,
       sandbox: { mode: sandbox.mode, workspaceRoot: sandbox.workspaceRoot },
+      resolverId,
       authority,
       ...(escalation === undefined ? {} : { requestedEscalation: escalation }),
     }
@@ -187,6 +205,7 @@ export class ActionRouter {
       actionKind: classification.kind,
       disposition: classification.disposition,
       reason: classification.reason,
+      resolverId,
       sandbox: Object.freeze({ mode: sandbox.mode, workspaceRoot: sandbox.workspaceRoot }),
       paths,
       authority,
