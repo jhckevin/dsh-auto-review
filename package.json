@@ -1,6 +1,6 @@
 {
   "name": "@jhckevin/dsh-auto-review",
-  "version": "0.1.0-dev.4",
+  "version": "0.1.0-dev.5",
   "description": "Native Auto Review capability, reviewer provider and tool policy for DeepSeek Harness",
   "type": "module",
   "license": "MIT",

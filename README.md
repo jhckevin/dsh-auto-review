@@ -2,7 +2,7 @@
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
-当前版本：`0.1.0-dev.4`。
+当前版本：`0.1.0-dev.5`。
 
 本项目不把 Auto Review 定义为“自动放行”。它在 DeepSeek Harness 原生工具管线中完成确定性动作分类、隔离模型审查、一次性用户审批回退、Linux 文件沙盒约束与可重放审计。
 
@@ -50,4 +50,4 @@ Pi 版 execution ticket 不原样复制。DeepSeek Harness 已经在执行前冻
 
 ## 许可证
 
-MIT。项目不署名或宣传任何 Codex/GPT 生成关系。
+MIT。

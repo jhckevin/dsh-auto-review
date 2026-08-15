@@ -31,3 +31,5 @@
 ## ISSUE-005：Linux x86 安全与发布验收
 
 执行 bwrap/Landlock、partial enforcement、HMR、并发、snapshot、real API、packed artifact 和无网络 Docker E2E。
+
+并发门禁已覆盖两个 session 同时申请沙盒升级：每个 `(session, call)` 只消费自己的 `allowed-once`，原生 approval 事件和哈希审计链互不串线。

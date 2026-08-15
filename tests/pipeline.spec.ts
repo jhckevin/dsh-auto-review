@@ -13,15 +13,15 @@ import type { ReviewOutcome } from '../src/types.ts'
 
 const signal = new AbortController().signal
 
-function fakeAgent() {
+function fakeAgent(id = 'session-auto-review', request = 'Run the exact diagnostic command if needed.') {
   const events = [
     { type: 'turn/start', data: {} },
-    { type: 'user/message', data: { content: [{ type: 'text', text: 'Run the exact diagnostic command if needed.' }], source: { kind: 'user' } } },
+    { type: 'user/message', data: { content: [{ type: 'text', text: request }], source: { kind: 'user' } } },
   ] as unknown as SessionEvent[]
   const appended: Array<{ type: string; data: Record<string, unknown> }> = []
   const agent = {
     session: {
-      id: 'session-auto-review',
+      id,
       header: { cwd: '/workspace' },
       events,
       append: (type: string, data: Record<string, unknown>) => {
@@ -216,5 +216,61 @@ describe('native tools pipeline composition', () => {
       reviewOutcome: 'denied',
       finalOutcome: 'error',
     })
+  })
+
+  it('isolates concurrent one-shot grants and audit chains by session and call', async () => {
+    const { ctx, executions } = await harness('approved')
+    const left = fakeAgent('session-left', 'Run only the left diagnostic.')
+    const right = fakeAgent('session-right', 'Run only the right diagnostic.')
+    let manualAnswers = 0
+    ctx.on('approval/request', () => {
+      manualAnswers += 1
+      return Promise.resolve('rejected' as const)
+    })
+
+    const [leftResult, rightResult] = await Promise.all([
+      ctx.tools.execute({
+        callId: CallId('concurrent-left'),
+        name: 'bash',
+        arguments: {
+          command: 'echo left',
+          sandbox_permissions: 'danger-full-access',
+          justification: 'run the left command outside the sandbox once',
+        },
+        agent: left.agent,
+        signal,
+      }),
+      ctx.tools.execute({
+        callId: CallId('concurrent-right'),
+        name: 'bash',
+        arguments: {
+          command: 'echo right',
+          sandbox_permissions: 'danger-full-access',
+          justification: 'run the right command outside the sandbox once',
+        },
+        agent: right.agent,
+        signal,
+      }),
+    ])
+
+    expect(leftResult).toMatchObject({ isError: false, value: 'ran' })
+    expect(rightResult).toMatchObject({ isError: false, value: 'ran' })
+    expect(executions()).toBe(2)
+    expect(manualAnswers).toBe(0)
+    for (const fixture of [left, right]) {
+      expect(fixture.appended.map(event => event.type)).toEqual(['approval/asked', 'approval/decided'])
+    }
+    for (const id of ['session-left', 'session-right']) {
+      const records = ctx.actionReview.auditRecords(id)
+      expect(records.map(record => record.kind)).toEqual(['routed', 'decision', 'result'])
+    }
+    const globalChain = ctx.actionReview.auditRecords()
+    expect(globalChain).toHaveLength(6)
+    expect(globalChain[0]?.previousDigest).toBeUndefined()
+    for (let index = 1; index < globalChain.length; index += 1) {
+      expect(globalChain[index]?.previousDigest).toBe(globalChain[index - 1]?.recordDigest)
+    }
+    expect(ctx.actionReview.auditRecords('session-left')[0]?.data).toMatchObject({ callId: 'concurrent-left' })
+    expect(ctx.actionReview.auditRecords('session-right')[0]?.data).toMatchObject({ callId: 'concurrent-right' })
   })
 })
