@@ -67,5 +67,3 @@ export function apply(ctx: Context, config: JsonlAuditConfig): void {
     },
   })
 }
-
-export default { name, inject, Config, apply }

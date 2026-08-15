@@ -10,6 +10,7 @@ import {
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { parseReviewDecision } from './protocol.ts'
 import { redactJson } from './redaction.ts'
+import { reviewerModelId } from './settings.ts'
 import type { ActionReviewer, LlmReviewerConfig, ReviewDecision } from './types.ts'
 
 export const name = 'auto-review-llm-provider'
@@ -39,7 +40,8 @@ const SYSTEM = [
   'Use denied for unsafe, unjustified, or suspicious actions. Supply a materially safer alternative when one is available. Use unavailable only when no security judgment can be made.',
   'Return exactly one JSON object and no Markdown, hidden reasoning, tool calls, or prose outside the object.',
   'Required schema:',
-  '{"schemaVersion":1,"outcome":"approved|denied|manual|unavailable","riskLevel":"low|medium|high|critical","rationale":"...","policyRuleIds":["..."],"saferAlternative":"optional","uncertainty":"..."}',
+  'Omit saferAlternative unless the outcome is denied and a materially safer alternative exists. Never emit it as null or an empty string.',
+  '{"schemaVersion":1,"outcome":"approved|denied|manual|unavailable","riskLevel":"low|medium|high|critical","rationale":"...","policyRuleIds":["..."],"uncertainty":"..."}',
 ].join('\n')
 
 function validateConfig(config: LlmReviewerConfig): Required<Omit<LlmReviewerConfig, 'reasoningEffort'>> & Pick<LlmReviewerConfig, 'reasoningEffort'> {
@@ -232,11 +234,25 @@ async function runAttempt(
 }
 
 export function apply(ctx: Context, input: LlmReviewerConfig): void {
-  const config = validateConfig(input)
+  const deployed = validateConfig(input)
   const reviewer: ActionReviewer = {
-    id: `agent:${config.provider}/${config.model}`,
+    get id() {
+      const ui = ctx.actionReview.uiSettings()
+      return `agent:${deployed.provider}/${ui === undefined ? deployed.model : reviewerModelId(ui.reviewerModel)}`
+    },
     async review(request) {
       request.signal.throwIfAborted()
+      const ui = ctx.actionReview.uiSettings()
+      const config = ui === undefined ? deployed : validateConfig({
+        ...deployed,
+        model: reviewerModelId(ui.reviewerModel),
+        maxInputBytes: ui.maxInputBytes,
+        maxOutputTokens: ui.maxOutputTokens,
+        timeoutMs: ui.timeoutMs,
+        maxAttempts: ui.maxAttempts,
+        transcriptMaxEntries: ui.transcriptMaxEntries,
+        transcriptMaxBytes: ui.transcriptMaxBytes,
+      })
       const payload = reviewerPayload(config, request.action)
       const timeoutSignal = AbortSignal.timeout(config.timeoutMs)
       const signal = AbortSignal.any([request.signal, timeoutSignal])
@@ -256,5 +272,3 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
   }
   ctx.actionReview.registerReviewer(reviewer)
 }
-
-export default { name, inject, Config, apply }

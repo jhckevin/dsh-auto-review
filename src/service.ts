@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { Context, Service } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import type { SettingsScope } from '@deepseek-ai/dsh-settings'
 import type { Session } from '@deepseek-ai/dsh-session'
 import type { ToolExecutionToken } from '@deepseek-ai/dsh-tools'
 import { canonicalJson, sha256Json, toJsonValue } from './canonical.ts'
@@ -18,10 +19,12 @@ import type {
   AutoReviewAuditPayloadMap,
   AutoReviewMetricsSnapshot,
   AutoReviewConfig,
+  AutoReviewUiSettings,
   ResolvedAutoReviewConfig,
   ReviewDecision,
 } from './types.ts'
 import { unavailableDecision } from './types.ts'
+import { autoReviewSettingsBase } from './settings.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -83,7 +86,9 @@ export class ActionReviewRuntime extends Service {
     overrideTtlMs: z.number().step(1).min(1).default(300000),
   })
 
-  readonly config: ResolvedAutoReviewConfig
+  private readonly deployedConfig: ResolvedAutoReviewConfig
+  private readonly settingsBase: AutoReviewUiSettings
+  private settingsScope: SettingsScope<AutoReviewUiSettings> | undefined
   private reviewer: ActionReviewer | undefined
   private auditSink: ActionReviewAuditSink | undefined
   private readonly semantics = new Map<string, { owner: string; classification: ActionClassification }>()
@@ -109,7 +114,7 @@ export class ActionReviewRuntime extends Service {
 
   constructor(ctx: Context, config: AutoReviewConfig = {}) {
     super(ctx, 'actionReview')
-    this.config = Object.freeze({
+    this.deployedConfig = Object.freeze({
       mode: config.mode ?? 'enforcing',
       failureThreshold: config.failureThreshold ?? 3,
       breakerCooldownMs: config.breakerCooldownMs ?? 60000,
@@ -120,23 +125,56 @@ export class ActionReviewRuntime extends Service {
       denialWindowLimit: config.denialWindowLimit ?? 10,
       overrideTtlMs: config.overrideTtlMs ?? 300000,
     })
-    if (!Number.isSafeInteger(this.config.failureThreshold) || this.config.failureThreshold < 1) {
+    this.settingsBase = Object.freeze(autoReviewSettingsBase(config))
+    if (!Number.isSafeInteger(this.deployedConfig.failureThreshold) || this.deployedConfig.failureThreshold < 1) {
       throw new TypeError('auto-review: failureThreshold must be a positive safe integer')
     }
-    if (!Number.isSafeInteger(this.config.breakerCooldownMs) || this.config.breakerCooldownMs < 1) {
+    if (!Number.isSafeInteger(this.deployedConfig.breakerCooldownMs) || this.deployedConfig.breakerCooldownMs < 1) {
       throw new TypeError('auto-review: breakerCooldownMs must be a positive safe integer')
     }
-    if (!Number.isSafeInteger(this.config.auditMemoryLimit) || this.config.auditMemoryLimit < 1 || this.config.auditMemoryLimit > 100000) {
+    if (!Number.isSafeInteger(this.deployedConfig.auditMemoryLimit) || this.deployedConfig.auditMemoryLimit < 1 || this.deployedConfig.auditMemoryLimit > 100000) {
       throw new TypeError('auto-review: auditMemoryLimit must be an integer from 1 to 100000')
     }
     for (const key of ['ticketTtlMs', 'denialConsecutiveLimit', 'denialWindowSize', 'denialWindowLimit', 'overrideTtlMs'] as const) {
-      if (!Number.isSafeInteger(this.config[key]) || this.config[key] < 1) {
+      if (!Number.isSafeInteger(this.deployedConfig[key]) || this.deployedConfig[key] < 1) {
         throw new TypeError(`auto-review: ${key} must be a positive safe integer`)
       }
     }
-    if (this.config.denialWindowLimit > this.config.denialWindowSize) {
+    if (this.deployedConfig.denialWindowLimit > this.deployedConfig.denialWindowSize) {
       throw new TypeError('auto-review: denialWindowLimit cannot exceed denialWindowSize')
     }
+  }
+
+  /** Composition defaults used by the explicit settings bridge row. */
+  settingsDefaults(): AutoReviewUiSettings {
+    return Object.freeze({ ...this.settingsBase })
+  }
+
+  /** Attach the one live settings owner; the bridge row owns its lifetime. */
+  attachSettings(scope: SettingsScope<AutoReviewUiSettings>): () => void {
+    if (this.settingsScope !== undefined) throw new Error('auto-review: settings scope is already attached')
+    this.settingsScope = scope
+    return () => {
+      if (this.settingsScope === scope) this.settingsScope = undefined
+    }
+  }
+
+  /** Effective runtime policy after the live WebUI layer is applied. */
+  get config(): ResolvedAutoReviewConfig {
+    const settings = this.uiSettings() ?? this.settingsBase
+    const deployedMode = this.deployedConfig.mode
+    return Object.freeze({
+      ...this.deployedConfig,
+      mode: settings.enabled ? (deployedMode === 'disabled' ? 'enforcing' : deployedMode) : 'disabled',
+      failureThreshold: settings.failureThreshold,
+      breakerCooldownMs: settings.breakerCooldownMs,
+    })
+  }
+
+  /** Read a detached snapshot for reviewer providers and diagnostics. */
+  uiSettings(): AutoReviewUiSettings | undefined {
+    const settings = this.settingsScope?.get()
+    return settings === undefined ? undefined : Object.freeze({ ...settings })
   }
 
   registerReviewer(reviewer: ActionReviewer): () => void {

@@ -161,6 +161,8 @@ describe('isolated reviewer agent provider', () => {
     expect(state.prompts[0]).toContain('trusted-user-intent')
     expect(state.prompts[0]).not.toContain('sk-secret')
     expect(ctx.agents.roots()).toEqual([])
+    const decisionAudit = ctx.actionReview.auditRecords().find(record => record.kind === 'decision')
+    expect(decisionAudit?.data).toMatchObject({ reviewer: 'agent:fixture-provider/fixture-reviewer' })
   })
 
   it('uses a fresh session for each retry and stops after a valid closed decision', async () => {

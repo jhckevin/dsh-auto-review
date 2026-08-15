@@ -257,5 +257,3 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
     if (event.type === 'turn/end') ctx.actionReview.observeTurnEnd(session.id, event.data.turn)
   })
 }
-
-export default { name, inject, Config, apply }

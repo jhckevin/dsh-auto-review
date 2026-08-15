@@ -356,6 +356,33 @@ export interface LlmReviewerConfig {
   readonly transcriptMaxBytes?: number
 }
 
+/** Models exposed by the Auto Review settings surface. */
+export type AutoReviewReviewerModel = 'flash' | 'pro'
+
+/** Live, user-editable Auto Review settings shared by the Host and WebUI. */
+export interface AutoReviewUiSettings {
+  /** Whether actions routed to review may be decided by the reviewer. */
+  readonly enabled: boolean
+  /** Reviewer model tier. Flash is the low-latency default. */
+  readonly reviewerModel: AutoReviewReviewerModel
+  /** Maximum redacted evidence payload accepted by the reviewer. */
+  readonly maxInputBytes: number
+  /** Maximum reviewer response tokens. */
+  readonly maxOutputTokens: number
+  /** Per-decision timeout. */
+  readonly timeoutMs: number
+  /** Bounded attempts for transient provider failures. */
+  readonly maxAttempts: number
+  /** Maximum recent transcript entries supplied as evidence. */
+  readonly transcriptMaxEntries: number
+  /** Maximum total transcript bytes supplied as evidence. */
+  readonly transcriptMaxBytes: number
+  /** Consecutive reviewer failures before the circuit breaker opens. */
+  readonly failureThreshold: number
+  /** Circuit-breaker cooling period. */
+  readonly breakerCooldownMs: number
+}
+
 export interface TicketIssueRequest {
   readonly token: ToolExecutionToken
   readonly action: ActionEnvelope

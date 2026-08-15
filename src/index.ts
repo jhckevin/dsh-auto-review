@@ -5,6 +5,12 @@ export { parseReviewDecision } from './protocol.ts'
 export { redactJson, type RedactionOptions } from './redaction.ts'
 export { ActionRouter, resolveRouterConfig } from './router.ts'
 export { evaluateAutoReviewAudit } from './eval.ts'
+export {
+  AUTO_REVIEW_SETTINGS_NAMESPACE,
+  AutoReviewUiSettingsSchema,
+  DEFAULT_AUTO_REVIEW_UI_SETTINGS,
+  reviewerModelId,
+} from './settings.ts'
 export type { AutoReviewEvaluation } from './eval.ts'
 export type {
   ActionDisposition,
@@ -33,6 +39,8 @@ export type {
   AutoReviewMetricsSnapshot,
   AutoReviewApprovalPath,
   AutoReviewConfig,
+  AutoReviewReviewerModel,
+  AutoReviewUiSettings,
   AutoReviewMode,
   AutoReviewResultRecord,
   AutoReviewRouteRecord,

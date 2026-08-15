@@ -9,12 +9,16 @@
         failureThreshold: 3
         breakerCooldownMs: 60000
 
+    - id: auto-review-settings
+      name: '@jhckevin/dsh-auto-review/settings-provider'
+      inject: [actionReview, settings]
+
     - id: auto-review-llm
       name: '@jhckevin/dsh-auto-review/llm-provider'
       config:
         provider: deepseek-official
         model: deepseek-v4-flash
-        reasoningEffort: low
+        reasoningEffort: off
         maxInputBytes: 16384
         maxOutputTokens: 768
         timeoutMs: 90000
