@@ -13,11 +13,11 @@ import type {
 } from './types.ts'
 
 const READ_TOOLS = new Set([
-  'read_file', 'read_text_file', 'list_directory', 'directory_tree',
+  'read', 'read_file', 'read_text_file', 'list_directory', 'directory_tree',
   'search_files', 'grep', 'glob', 'stat',
 ])
 const WRITE_TOOLS = new Set([
-  'write_file', 'edit_file', 'str_replace_editor', 'apply_patch', 'create_directory',
+  'write', 'edit', 'write_file', 'edit_file', 'str_replace_editor', 'apply_patch', 'create_directory',
 ])
 const PROCESS_TOOLS = new Set([
   'bash', 'shell', 'terminal', 'run_command', 'exec', 'process_start', 'run_code',

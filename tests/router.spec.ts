@@ -27,7 +27,13 @@ describe('ActionRouter', () => {
     expect(router.route(exec('read_file', { path: 'src/a.ts' }), sandbox)).toMatchObject({
       actionKind: 'workspace-read', disposition: 'inside-boundary',
     })
+    expect(router.route(exec('read', { file_path: 'src/a.ts' }), sandbox)).toMatchObject({
+      actionKind: 'workspace-read', disposition: 'inside-boundary',
+    })
     expect(router.route(exec('write_file', { path: '/workspace/src/a.ts', content: 'x' }), sandbox)).toMatchObject({
+      actionKind: 'workspace-write', disposition: 'inside-boundary',
+    })
+    expect(router.route(exec('edit', { file_path: '/workspace/src/a.ts', old_string: 'x', new_string: 'y' }), sandbox)).toMatchObject({
       actionKind: 'workspace-write', disposition: 'inside-boundary',
     })
   })

@@ -42,6 +42,8 @@ export function parseReviewDecision(text: string): ReviewDecision {
   }
   const policyRuleIds = record.policyRuleIds.map((entry, index) => boundedString(entry, `policyRuleIds[${index}]`, 80))
   const saferAlternative = record.saferAlternative === undefined
+    || record.saferAlternative === null
+    || (typeof record.saferAlternative === 'string' && record.saferAlternative.trim().length === 0)
     ? undefined
     : boundedString(record.saferAlternative, 'saferAlternative', 2048)
   return Object.freeze({
