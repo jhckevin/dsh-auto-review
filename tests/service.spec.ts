@@ -8,6 +8,8 @@ const action: ActionEnvelope = Object.freeze({
   schemaVersion: 1,
   actionId: 'call:deadbeef',
   actionDigest: 'd'.repeat(64),
+  policyDigest: 'e'.repeat(64),
+  boundaryDigest: 'f'.repeat(64),
   callId: CallId('call'),
   rootCallId: CallId('call'),
   toolName: 'bash',
@@ -16,9 +18,12 @@ const action: ActionEnvelope = Object.freeze({
   disposition: 'review',
   reason: 'process',
   resolverId: 'builtin',
+  effects: [{ type: 'process.exec', commandDigest: 'a'.repeat(64) }],
+  policy: { mode: 'enforcing', resolverId: 'builtin', disposition: 'review', ruleIds: ['TEST'] },
+  boundary: { sandboxMode: 'workspace-write', workspaceRoot: '/workspace', realpathVerified: false },
   sandbox: { mode: 'workspace-write', workspaceRoot: '/workspace' },
   paths: [],
-  authority: {},
+  authority: { transcript: [] },
 })
 
 describe('ActionReviewRuntime', () => {
@@ -132,5 +137,58 @@ describe('ActionReviewRuntime', () => {
     expect(() => ctx.actionReview.registerAuditSink({ id: 'conflict', write: () => undefined })).toThrow(/already registered/)
     await dispose()
     expect(() => ctx.actionReview.registerAuditSink({ id: 'replacement', write: () => undefined })).not.toThrow()
+  })
+
+  it('issues an authenticated exact-action ticket and consumes it only once', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    const token = Symbol('ticket') as never
+    const ticket = ctx.actionReview.issueTicket({ token, action, grant: 'auto-review' })
+    expect(ticket).toMatchObject({
+      actionDigest: action.actionDigest,
+      policyDigest: action.policyDigest,
+      boundaryDigest: action.boundaryDigest,
+      grant: 'auto-review',
+    })
+    expect(ctx.actionReview.consumeTicket(token, action)).toBeUndefined()
+    expect(ctx.actionReview.consumeTicket(token, action)).toMatch(/no execution ticket/)
+    expect(ctx.actionReview.auditRecords().filter(record => record.kind === 'ticket').map(record => record.data.state))
+      .toEqual(['issued', 'consumed'])
+  })
+
+  it('pauses automatic review after three consecutive denials in one turn', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    ctx.actionReview.registerReviewer({
+      id: 'deny-fixture',
+      review: async () => ({
+        schemaVersion: 1,
+        outcome: 'denied',
+        riskLevel: 'high',
+        rationale: 'fixture denial',
+        policyRuleIds: ['FIXTURE'],
+        uncertainty: '',
+      }),
+    })
+    const signal = new AbortController().signal
+    await ctx.actionReview.review(action, undefined, signal)
+    await ctx.actionReview.review(action, undefined, signal)
+    await ctx.actionReview.review(action, undefined, signal)
+    await expect(ctx.actionReview.review(action, undefined, signal)).resolves.toMatchObject({
+      outcome: 'manual', policyRuleIds: ['AR-DENIAL-BREAKER'],
+    })
+    expect(ctx.actionReview.auditRecords().find(record => record.kind === 'breaker')?.data)
+      .toMatchObject({ state: 'opened', reason: 'denial-rate', consecutiveDenials: 3 })
+  })
+
+  it('consumes one exact-action override and does not widen it to another digest', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    const scoped = { ...action, authority: { sessionId: 's1', turn: 2, transcript: [] } }
+    ctx.actionReview.armExactOverride('s1', action.actionDigest)
+    expect(ctx.actionReview.consumeExactOverride(scoped)).toBe(true)
+    expect(ctx.actionReview.consumeExactOverride(scoped)).toBe(false)
+    ctx.actionReview.armExactOverride('s1', action.actionDigest)
+    expect(ctx.actionReview.consumeExactOverride({ ...scoped, actionDigest: '0'.repeat(64) })).toBe(false)
   })
 })

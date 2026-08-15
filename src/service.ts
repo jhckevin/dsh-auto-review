@@ -1,14 +1,18 @@
-import { randomUUID } from 'node:crypto'
+import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { Context, Service } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Session } from '@deepseek-ai/dsh-session'
-import { sha256Json, toJsonValue } from './canonical.ts'
+import type { ToolExecutionToken } from '@deepseek-ai/dsh-tools'
+import { canonicalJson, sha256Json, toJsonValue } from './canonical.ts'
 import type {
+  ActionExecutionTicket,
   ActionEnvelope,
   ActionClassification,
   ActionReviewAuditSink,
   ActionReviewer,
   ActionSemanticsContribution,
+  TicketIssueRequest,
+  ToolSecurityDescriptor,
   AutoReviewAuditEnvelope,
   AutoReviewAuditKind,
   AutoReviewAuditPayloadMap,
@@ -40,18 +44,28 @@ export class ActionReviewRuntime extends Service {
     failureThreshold: z.number().step(1).min(1).default(3),
     breakerCooldownMs: z.number().step(1).min(1).default(60000),
     auditMemoryLimit: z.number().step(1).min(1).max(100000).default(4096),
+    ticketTtlMs: z.number().step(1).min(1).default(120000),
+    denialConsecutiveLimit: z.number().step(1).min(1).default(3),
+    denialWindowSize: z.number().step(1).min(1).default(50),
+    denialWindowLimit: z.number().step(1).min(1).default(10),
+    overrideTtlMs: z.number().step(1).min(1).default(300000),
   })
 
   readonly config: ResolvedAutoReviewConfig
   private reviewer: ActionReviewer | undefined
   private auditSink: ActionReviewAuditSink | undefined
   private readonly semantics = new Map<string, { owner: string; classification: ActionClassification }>()
+  private readonly descriptors = new Map<string, { owner: string; descriptor: ToolSecurityDescriptor }>()
   private readonly audit = new Array<AutoReviewAuditEnvelope>()
   private readonly processInstanceId = randomUUID()
   private auditSequence = 0
   private previousAuditDigest: string | undefined
   private failures = 0
   private breakerUntil = 0
+  private readonly ticketSecret = randomBytes(32)
+  private readonly tickets = new Map<ToolExecutionToken, ActionExecutionTicket>()
+  private readonly denialStates = new Map<string, { consecutive: number; recent: boolean[]; paused: boolean }>()
+  private readonly overrides = new Map<string, { actionDigest: string; expiresAt: number; retriesRemaining: number }>()
 
   constructor(ctx: Context, config: AutoReviewConfig = {}) {
     super(ctx, 'actionReview')
@@ -60,6 +74,11 @@ export class ActionReviewRuntime extends Service {
       failureThreshold: config.failureThreshold ?? 3,
       breakerCooldownMs: config.breakerCooldownMs ?? 60000,
       auditMemoryLimit: config.auditMemoryLimit ?? 4096,
+      ticketTtlMs: config.ticketTtlMs ?? 120000,
+      denialConsecutiveLimit: config.denialConsecutiveLimit ?? 3,
+      denialWindowSize: config.denialWindowSize ?? 50,
+      denialWindowLimit: config.denialWindowLimit ?? 10,
+      overrideTtlMs: config.overrideTtlMs ?? 300000,
     })
     if (!Number.isSafeInteger(this.config.failureThreshold) || this.config.failureThreshold < 1) {
       throw new TypeError('auto-review: failureThreshold must be a positive safe integer')
@@ -69,6 +88,14 @@ export class ActionReviewRuntime extends Service {
     }
     if (!Number.isSafeInteger(this.config.auditMemoryLimit) || this.config.auditMemoryLimit < 1 || this.config.auditMemoryLimit > 100000) {
       throw new TypeError('auto-review: auditMemoryLimit must be an integer from 1 to 100000')
+    }
+    for (const key of ['ticketTtlMs', 'denialConsecutiveLimit', 'denialWindowSize', 'denialWindowLimit', 'overrideTtlMs'] as const) {
+      if (!Number.isSafeInteger(this.config[key]) || this.config[key] < 1) {
+        throw new TypeError(`auto-review: ${key} must be a positive safe integer`)
+      }
+    }
+    if (this.config.denialWindowLimit > this.config.denialWindowSize) {
+      throw new TypeError('auto-review: denialWindowLimit cannot exceed denialWindowSize')
     }
   }
 
@@ -165,6 +192,34 @@ export class ActionReviewRuntime extends Service {
     }.bind(this), `actionReview.registerActionSemantics(${JSON.stringify(id)})`)
   }
 
+  registerToolSecurityDescriptor(descriptor: ToolSecurityDescriptor): () => void {
+    const id = descriptor.id.trim()
+    if (id.length === 0) throw new TypeError('auto-review: tool security descriptor id must be non-empty')
+    const names = [...new Set(descriptor.toolNames.map(name => name.trim()))]
+    if (names.length === 0 || names.some(name => name.length === 0)) {
+      throw new TypeError(`auto-review: tool security descriptor ${JSON.stringify(id)} must name at least one non-empty tool`)
+    }
+    for (const name of names) {
+      const existing = this.descriptors.get(name)
+      if (existing !== undefined) {
+        throw new Error(`auto-review: tool ${JSON.stringify(name)} is already claimed by security descriptor ${JSON.stringify(existing.owner)}`)
+      }
+    }
+    return this.ctx.effect(function* (this: ActionReviewRuntime) {
+      for (const name of names) this.descriptors.set(name, { owner: id, descriptor })
+      yield () => {
+        for (const name of names) {
+          if (this.descriptors.get(name)?.descriptor === descriptor) this.descriptors.delete(name)
+        }
+      }
+    }.bind(this), `actionReview.registerToolSecurityDescriptor(${JSON.stringify(id)})`)
+  }
+
+  securityDescriptorFor(toolName: string): { resolverId: string; descriptor: ToolSecurityDescriptor } | undefined {
+    const value = this.descriptors.get(toolName)
+    return value === undefined ? undefined : Object.freeze({ resolverId: value.owner, descriptor: value.descriptor })
+  }
+
   classificationFor(toolName: string): { resolverId: string; classification: ActionClassification } | undefined {
     const value = this.semantics.get(toolName)
     return value === undefined
@@ -176,6 +231,97 @@ export class ActionReviewRuntime extends Service {
     return action.disposition === 'hard-deny'
       ? `Auto Review hard policy denied ${action.toolName}: ${action.reason}`
       : undefined
+  }
+
+  issueTicket(request: TicketIssueRequest): ActionExecutionTicket {
+    if (this.tickets.has(request.token)) throw new Error('auto-review: execution token already has a ticket')
+    const issuedAt = Date.now()
+    const unsigned = {
+      schemaVersion: 1 as const,
+      ticketId: randomUUID(),
+      actionId: request.action.actionId,
+      actionDigest: request.action.actionDigest,
+      policyDigest: request.action.policyDigest,
+      boundaryDigest: request.action.boundaryDigest,
+      ...(request.action.authority.sessionId === undefined ? {} : { sessionId: request.action.authority.sessionId }),
+      callId: request.action.callId,
+      grant: request.grant,
+      issuedAt,
+      expiresAt: issuedAt + this.config.ticketTtlMs,
+      nonce: randomBytes(16).toString('hex'),
+    }
+    const ticket = freezeJson({
+      ...unsigned,
+      mac: createHmac('sha256', this.ticketSecret).update(canonicalJson(toJsonValue(unsigned))).digest('hex'),
+    }) as ActionExecutionTicket
+    this.tickets.set(request.token, ticket)
+    this.recordAudit('ticket', {
+      state: 'issued', ticketId: ticket.ticketId, actionId: ticket.actionId,
+      actionDigest: ticket.actionDigest, policyDigest: ticket.policyDigest,
+      boundaryDigest: ticket.boundaryDigest, callId: ticket.callId, grant: ticket.grant, at: issuedAt,
+    }, ticket.sessionId)
+    return ticket
+  }
+
+  consumeTicket(token: ToolExecutionToken, action: ActionEnvelope): string | undefined {
+    const ticket = this.tickets.get(token)
+    if (ticket === undefined) return 'Auto Review denied dispatch: no execution ticket was issued.'
+    this.tickets.delete(token)
+    const unsigned = { ...ticket } as Record<string, unknown>
+    delete unsigned.mac
+    const expected = createHmac('sha256', this.ticketSecret).update(canonicalJson(toJsonValue(unsigned))).digest('hex')
+    const authentic = ticket.mac.length === expected.length
+      && timingSafeEqual(Buffer.from(ticket.mac, 'hex'), Buffer.from(expected, 'hex'))
+    const now = Date.now()
+    const mismatch = !authentic
+      ? 'ticket authentication failed'
+      : now > ticket.expiresAt
+        ? 'ticket expired before dispatch'
+        : ticket.actionDigest !== action.actionDigest || ticket.policyDigest !== action.policyDigest
+          || ticket.boundaryDigest !== action.boundaryDigest || ticket.callId !== action.callId
+          ? 'ticket does not match the exact action, policy, boundary, and call'
+          : undefined
+    this.recordAudit('ticket', {
+      state: mismatch === undefined ? 'consumed' : now > ticket.expiresAt ? 'expired' : 'rejected',
+      ticketId: ticket.ticketId, actionId: ticket.actionId, actionDigest: ticket.actionDigest,
+      policyDigest: ticket.policyDigest, boundaryDigest: ticket.boundaryDigest,
+      callId: ticket.callId, grant: ticket.grant, at: now, ...(mismatch === undefined ? {} : { reason: mismatch }),
+    }, ticket.sessionId)
+    return mismatch === undefined ? undefined : `Auto Review denied dispatch: ${mismatch}.`
+  }
+
+  discardTicket(token: ToolExecutionToken): void {
+    this.tickets.delete(token)
+  }
+
+  armExactOverride(sessionId: string, actionDigest: string): void {
+    if (!/^[a-f0-9]{64}$/u.test(actionDigest)) throw new TypeError('auto-review: override requires an exact SHA-256 action digest')
+    this.overrides.set(sessionId, {
+      actionDigest,
+      expiresAt: Date.now() + this.config.overrideTtlMs,
+      retriesRemaining: 1,
+    })
+    this.recordAudit('override', { state: 'armed', sessionId, actionDigest, retriesRemaining: 1, at: Date.now() }, sessionId)
+  }
+
+  consumeExactOverride(action: ActionEnvelope): boolean {
+    const sessionId = action.authority.sessionId
+    if (sessionId === undefined) return false
+    const override = this.overrides.get(sessionId)
+    if (override === undefined) return false
+    if (Date.now() > override.expiresAt) {
+      this.overrides.delete(sessionId)
+      this.recordAudit('override', { state: 'expired', sessionId, actionDigest: override.actionDigest, retriesRemaining: 0, at: Date.now() }, sessionId)
+      return false
+    }
+    if (override.actionDigest !== action.actionDigest || override.retriesRemaining !== 1) return false
+    this.overrides.delete(sessionId)
+    this.recordAudit('override', { state: 'consumed', sessionId, actionDigest: override.actionDigest, retriesRemaining: 0, at: Date.now() }, sessionId)
+    return true
+  }
+
+  reviewPaused(action: ActionEnvelope): boolean {
+    return this.denialStates.get(this.denialKey(action))?.paused ?? false
   }
 
   async review(action: ActionEnvelope, session: Session | undefined, signal: AbortSignal): Promise<ReviewDecision> {
@@ -190,6 +336,16 @@ export class ActionReviewRuntime extends Service {
       })
     }
     const startedAt = Date.now()
+    if (this.reviewPaused(action)) {
+      return Object.freeze({
+        schemaVersion: 1,
+        outcome: 'manual',
+        riskLevel: 'high',
+        rationale: 'Automatic review is paused for this turn after repeated denials.',
+        policyRuleIds: Object.freeze(['AR-DENIAL-BREAKER']),
+        uncertainty: 'A human must approve an exact action digest or continue without the denied capability.',
+      })
+    }
     const reviewer = this.reviewer
     let decision: ReviewDecision
     if (reviewer === undefined) {
@@ -218,6 +374,7 @@ export class ActionReviewRuntime extends Service {
         uncertainty: decision.uncertainty,
       })
       : decision
+    this.recordReviewOutcome(action, decision, session)
     this.recordAudit('decision', {
       schemaVersion: 1,
       actionId: action.actionId,
@@ -239,7 +396,7 @@ export class ActionReviewRuntime extends Service {
     if (this.failures < this.config.failureThreshold || this.breakerUntil > Date.now()) return
     this.breakerUntil = Date.now() + this.config.breakerCooldownMs
     this.recordAudit('breaker', {
-      state: 'opened', failures: this.failures, until: this.breakerUntil,
+      state: 'opened', reason: 'reviewer-failure', failures: this.failures, until: this.breakerUntil,
     }, session?.id)
   }
 
@@ -247,7 +404,32 @@ export class ActionReviewRuntime extends Service {
     if (this.failures === 0 && this.breakerUntil === 0) return
     this.failures = 0
     this.breakerUntil = 0
-    this.recordAudit('breaker', { state: 'closed', failures: 0 }, session?.id)
+    this.recordAudit('breaker', { state: 'closed', reason: 'reviewer-failure', failures: 0 }, session?.id)
+  }
+
+  private denialKey(action: ActionEnvelope): string {
+    return `${action.authority.sessionId ?? '<unscoped>'}\u0000${action.authority.turn ?? 0}`
+  }
+
+  private recordReviewOutcome(action: ActionEnvelope, decision: ReviewDecision, session: Session | undefined): void {
+    if (decision.outcome === 'unavailable') return
+    const key = this.denialKey(action)
+    const state = this.denialStates.get(key) ?? { consecutive: 0, recent: [], paused: false }
+    const denied = decision.outcome === 'denied'
+    state.consecutive = denied ? state.consecutive + 1 : 0
+    state.recent.push(denied)
+    if (state.recent.length > this.config.denialWindowSize) state.recent.shift()
+    const recentDenials = state.recent.filter(Boolean).length
+    const mustPause = state.consecutive >= this.config.denialConsecutiveLimit
+      || (state.recent.length === this.config.denialWindowSize && recentDenials >= this.config.denialWindowLimit)
+    if (mustPause && !state.paused) {
+      state.paused = true
+      this.recordAudit('breaker', {
+        state: 'opened', reason: 'denial-rate', consecutiveDenials: state.consecutive,
+        recentDenials, recentWindow: state.recent.length,
+      }, session?.id)
+    }
+    this.denialStates.set(key, state)
   }
 }
 

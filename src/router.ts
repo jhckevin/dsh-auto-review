@@ -3,6 +3,7 @@ import type { SandboxExecutionPolicy } from '@deepseek-ai/dsh-sandbox'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { sha256Json, toJsonValue } from './canonical.ts'
 import type {
+  ActionEffect,
   ActionDisposition,
   ActionClassification,
   ActionEnvelope,
@@ -108,22 +109,48 @@ function contentText(value: unknown, depth = 0): string {
   return 'content' in record ? contentText(record.content, depth + 1) : ''
 }
 
-function authorityOf(exec: Readonly<ToolExecution>): ActionEnvelope['authority'] {
+function transcriptOf(exec: Readonly<ToolExecution>): ActionEnvelope['authority'] {
   const session = exec.agent?.session
-  if (session === undefined) return Object.freeze({})
+  if (session === undefined) return Object.freeze({ transcript: Object.freeze([]) })
   let currentUserRequest: string | undefined
+  let turn: number | undefined
+  const transcript: Array<ActionEnvelope['authority']['transcript'][number]> = []
   for (let index = session.events.length - 1; index >= 0; index -= 1) {
     const event = session.events[index]
-    if (event?.type !== 'user/message' || event.data.source.kind !== 'user') continue
-    const text = contentText(event.data.content).trim()
-    if (text.length > 0) {
-      currentUserRequest = text.length <= 8192 ? text : text.slice(text.length - 8192)
-      break
+    if (event?.type === 'turn/start' && turn === undefined) {
+      const candidate = (event.data as { turn?: unknown }).turn
+      if (typeof candidate === 'number' && Number.isSafeInteger(candidate)) turn = candidate
+    }
+    if (transcript.length >= 12) continue
+    if (event?.type === 'user/message') {
+      const text = contentText(event.data.content).trim()
+      if (text.length === 0) continue
+      const isDirectUser = event.data.source.kind === 'user'
+      if (isDirectUser && currentUserRequest === undefined) {
+        currentUserRequest = text.length <= 8192 ? text : text.slice(text.length - 8192)
+      }
+      transcript.push(Object.freeze({
+        role: 'user',
+        trust: isDirectUser ? 'trusted-user-intent' : 'untrusted-tool-output',
+        text: text.slice(-4096),
+      }))
+      continue
+    }
+    if (event?.type === 'assistant/message') {
+      const text = contentText((event.data as { content?: unknown }).content).trim()
+      if (text.length > 0) transcript.push(Object.freeze({ role: 'assistant', trust: 'untrusted-model', text: text.slice(-4096) }))
+      continue
+    }
+    if (event?.type === 'tool/result') {
+      const text = contentText((event.data as { content?: unknown }).content).trim()
+      if (text.length > 0) transcript.push(Object.freeze({ role: 'tool', trust: 'untrusted-tool-output', text: text.slice(-4096) }))
     }
   }
   return Object.freeze({
     sessionId: session.id,
+    ...(turn === undefined ? {} : { turn }),
     ...(currentUserRequest === undefined ? {} : { currentUserRequest }),
+    transcript: Object.freeze(transcript.reverse()),
   })
 }
 
@@ -153,6 +180,56 @@ function classifyCommand(command: string): Classification | undefined {
   return undefined
 }
 
+function networkTargets(arguments_: unknown): readonly string[] {
+  const values: string[] = []
+  const visit = (value: unknown, depth = 0): void => {
+    if (depth > 6) return
+    if (typeof value === 'string') {
+      for (const match of value.matchAll(/(?:https?|ssh):\/\/[^\s'"`]+/gi)) values.push(match[0])
+      return
+    }
+    if (Array.isArray(value)) {
+      for (const entry of value.slice(0, 64)) visit(entry, depth + 1)
+      return
+    }
+    if (value === null || typeof value !== 'object') return
+    for (const entry of Object.values(value)) visit(entry, depth + 1)
+  }
+  visit(arguments_)
+  return Object.freeze([...new Set(values)].slice(0, 64))
+}
+
+function effectsFor(
+  classification: Classification,
+  toolName: string,
+  arguments_: unknown,
+  paths: readonly string[],
+  contributed?: readonly ActionEffect[],
+): readonly ActionEffect[] {
+  if (contributed !== undefined) return Object.freeze([...contributed])
+  const command = shellCommand(arguments_)
+  switch (classification.kind) {
+    case 'workspace-read': return Object.freeze([{ type: 'fs.read', paths }])
+    case 'workspace-write': return Object.freeze([{ type: 'fs.write', paths, destructive: false }])
+    case 'sensitive-read': return Object.freeze([{ type: 'credential.read', paths }])
+    case 'destructive': return Object.freeze([{ type: 'fs.write', paths, destructive: true }])
+    case 'permission-change': return Object.freeze([{ type: 'permission.change', paths }])
+    case 'production-change': return Object.freeze([{ type: 'production.change', targets: paths }])
+    case 'network': return Object.freeze([{ type: 'network.connect', targets: networkTargets(arguments_) }])
+    case 'process':
+    case 'sandbox-escalation': return Object.freeze([{
+      type: 'process.exec',
+      commandDigest: sha256Json(toJsonValue(command)),
+      ...(arguments_ !== null && typeof arguments_ === 'object' && typeof (arguments_ as Record<string, unknown>).cwd === 'string'
+        ? { cwd: (arguments_ as Record<string, string>).cwd }
+        : {}),
+    }])
+    case 'extension-unknown': return Object.freeze([{ type: 'opaque', reason: `No security descriptor is registered for ${toolName}.` }])
+    case 'hard-deny': return Object.freeze([{ type: 'opaque', reason: 'Deployment policy hard-denies this tool.' }])
+    default: return Object.freeze([{ type: 'external.tool', name: toolName }])
+  }
+}
+
 export class ActionRouter {
   readonly config: ResolvedRouterConfig
 
@@ -163,11 +240,17 @@ export class ActionRouter {
   route(
     exec: Readonly<ToolExecution>,
     sandbox: SandboxExecutionPolicy,
-    contributed?: { readonly resolverId: string; readonly classification: ActionClassification },
+    contributed?: {
+      readonly resolverId: string
+      readonly classification: ActionClassification
+      readonly effects?: readonly ActionEffect[]
+      readonly ruleIds?: readonly string[]
+    },
+    mode: ActionEnvelope['policy']['mode'] = 'enforcing',
   ): ActionEnvelope {
     const arguments_ = toJsonValue(exec.arguments)
     const paths = Object.freeze(extractPaths(exec.arguments))
-    const authority = authorityOf(exec)
+    const authority = transcriptOf(exec)
     const escalation = requestedEscalation(exec.name, exec.arguments)
     const selectedContribution = contributed !== undefined
       && !this.config.hardDenyToolNames.includes(exec.name)
@@ -182,22 +265,36 @@ export class ActionRouter {
         }
       : this.classify(exec.name, exec.arguments, paths, sandbox.workspaceRoot, escalation)
     const resolverId = selectedContribution?.resolverId ?? 'builtin'
-    const digestInput = {
+    const effects = effectsFor(classification, exec.name, exec.arguments, paths, selectedContribution === undefined ? undefined : contributed?.effects)
+    const policy = Object.freeze({
+      mode,
+      resolverId,
+      disposition: classification.disposition,
+      ruleIds: Object.freeze([
+        ...(selectedContribution === undefined ? [] : contributed?.ruleIds ?? []),
+        classification.disposition === 'hard-deny' ? 'AR-HARD-DENY' : `AR-ROUTE-${classification.kind.toUpperCase()}`,
+      ]),
+    })
+    const boundary = Object.freeze({
+      sandboxMode: sandbox.mode,
+      workspaceRoot: sandbox.workspaceRoot,
+      realpathVerified: false,
+    })
+    const actionDigest = sha256Json(toJsonValue({
       schemaVersion: 1,
-      callId: exec.callId,
-      rootCallId: exec.rootCallId,
       toolName: exec.name,
       arguments: arguments_,
-      sandbox: { mode: sandbox.mode, workspaceRoot: sandbox.workspaceRoot },
-      resolverId,
-      authority,
+      effects,
       ...(escalation === undefined ? {} : { requestedEscalation: escalation }),
-    }
-    const actionDigest = sha256Json(toJsonValue(digestInput))
+    }))
+    const policyDigest = sha256Json(toJsonValue(policy))
+    const boundaryDigest = sha256Json(toJsonValue({ ...boundary, paths }))
     return Object.freeze({
       schemaVersion: 1,
       actionId: `${exec.callId}:${actionDigest.slice(0, 16)}`,
       actionDigest,
+      policyDigest,
+      boundaryDigest,
       callId: exec.callId,
       rootCallId: exec.rootCallId,
       toolName: exec.name,
@@ -206,6 +303,9 @@ export class ActionRouter {
       disposition: classification.disposition,
       reason: classification.reason,
       resolverId,
+      effects,
+      policy,
+      boundary,
       sandbox: Object.freeze({ mode: sandbox.mode, workspaceRoot: sandbox.workspaceRoot }),
       paths,
       authority,

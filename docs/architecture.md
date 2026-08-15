@@ -1,6 +1,6 @@
 # Auto Review 原生迁移架构
 
-状态：原生执行闭环、扩展语义注册表与独立审计 provider，版本 `0.1.0-dev.4`。
+状态：Permission Core、扩展安全描述注册表与独立审计 provider，版本 `0.2.0-dev.0`。Reviewer 当前仍是隔离的无工具 LLM 请求；独立 Agent/Session reviewer 在下一阶段接入。
 
 ## 固定上游
 
@@ -12,14 +12,15 @@
 
 ```text
 frozen ToolExecution
-  -> canonical action + authority + digest
+  -> canonical effects + authority + action/policy/boundary digest
   -> deterministic router
-       in-boundary -> allow
-       review      -> isolated LLM reviewer -> allow/deny/manual
-       manual      -> { kind: ask } -> native ApprovalService
-       hard-deny   -> deny + monotonic guard
+       in-boundary -> signed one-shot ticket
+       review      -> reviewer -> signed one-shot ticket / deny / manual
+       manual      -> { kind: ask } -> native ApprovalService -> ticket
+       hard-deny   -> structured error + monotonic guard
        sandbox escalation approved
                    -> native approval/request -> allowed-once
+  -> monotonic guard verifies and consumes exact ticket
   -> native tool body
   -> native sandbox enforcement
   -> immutable tools/result
@@ -30,15 +31,15 @@ frozen ToolExecution
 
 ### Definition
 
-`ActionReviewRuntime` 拥有：动作描述、effect vocabulary、review request/result、断路器、决策审计形状和 effect-scoped 动作语义注册表。`ActionRouter` 负责可复现的闭集动作分类；未知 extension 不猜测语义，转原生 manual。外部 contribution 以唯一工具名声明语义，冲突拒绝加载，卸载时撤销；hard-deny 与 sandbox escalation 的内置分类优先级更高。
+`ActionReviewRuntime` 拥有动作描述、闭集 effect vocabulary、review request/result、一次性执行票据、拒绝断路器、精确 override、决策审计和 effect-scoped 工具安全描述注册表。`ActionRouter` 负责可复现的闭集动作分类；未知 extension 不猜测语义，转原生 manual。外部 descriptor 以唯一工具名声明 effects 与策略规则，冲突拒绝加载，卸载时撤销；hard-deny 与 sandbox escalation 的内置分类优先级更高。
 
 ### Provider
 
-`LlmActionReviewer` 使用 `ctx.llm.stream()` 发送不含工具 schema 的独立请求。输入只包含经过预算和脱敏的 action、最近一条直接用户消息形成的授权证据、sandbox 事实与显式升级目标。参数、命令、路径和 justification 均标为不可信数据。严格解析一个版本化 JSON object；超时、取消、adapter failure 和非法输出均 fail closed。
+`LlmActionReviewer` 使用 `ctx.llm.stream()` 发送不含工具 schema 的独立请求。输入包含经过预算和脱敏的 action、分层标记信任来源的紧凑 transcript、sandbox 事实与显式升级目标。参数、命令、路径、模型消息、工具输出和 justification 均不构成用户授权。严格解析一个版本化 JSON object；超时、取消、adapter failure 和非法输出均 fail closed。该 provider 尚未满足独立 Agent/Session 的目标隔离级别。
 
 ### Consumer
 
-Cordis 插件监听 `tools/pre-execute`，读取冻结的 `ToolExecution.arguments`、调用 router 和 reviewer，返回 `allow`、`deny` 或 `ask`。同步硬禁规则同时注册为 `ctx.tools.guard()`。显式 sandbox escalation 还监听 `approval/request`，仅消费与同一 session/call/tool/mode/justification 完全对应的一次性自动批准；其他请求全部委托。最终观察只监听不可变 `tools/result`。
+Cordis 插件监听 `tools/pre-execute`，读取冻结的 `ToolExecution.arguments`、调用 router 和 reviewer，并为每条获准路径签发一次性票据。`ctx.tools.guard()` 在工具体之前校验并消费票据；缺票和摘要不匹配均拒绝。显式 sandbox escalation 还监听 `approval/request`，仅消费与同一 session/call/tool/mode/justification 完全对应的一次性自动批准；其他请求全部委托。最终观察只监听不可变 `tools/result`。
 
 ## Sandbox 关系
 
@@ -48,11 +49,11 @@ Auto Review 不实现、替代或绕开沙盒。`ctx.sandboxPolicy.resolve({ ses
 
 | Pi 机制 | DeepSeek Harness 原生替代 |
 |---|---|
-| PermissionBroker | `tools/pre-execute` waterfall |
-| Execution ticket store | Frozen `ToolExecution` + opaque execution token + one pipeline |
+| PermissionBroker | `tools/pre-execute` waterfall + monotonic `ctx.tools.guard()` |
+| Execution ticket store | HMAC ticket bound to frozen action, policy, boundary, call and opaque execution token |
 | 手写用户审批状态 | `ctx.approval` 的 `allowed-once` closed outcome |
 | 自定义执行边界 | `ctx.sandboxPolicy` + Linux sandbox provider |
-| 独立 Agent reviewer | `ctx.llm.stream()` 的无工具独立请求 |
+| 独立 Agent reviewer | 尚未完成；当前为 `ctx.llm.stream()` 的无工具隔离请求 |
 | 自定义审计广播 | `ctx.actionReview` hash-linked audit seam + JSONL sink + `tools/result` correlation |
 
 ## 模式
@@ -61,7 +62,7 @@ Auto Review 不实现、替代或绕开沙盒。`ctx.sandboxPolicy.resolve({ ses
 - `shadow`：记录原始建议，在 reviewer 非批准时转换为带 `AR-SHADOW` 的批准；hard-deny 仍保持单调；
 - `enforcing`：按路由结果控制调用。
 
-模式变化必须以 durable session event 表示；运行时上下文只追加当前语义，不重写 system prompt。
+模式由部署配置固定。durable session policy event、分支恢复和 `/approve` 命令属于后续生命周期阶段；当前 API 只提供一次、精确 action digest 的 override primitive。
 
 ## 最低验收
 

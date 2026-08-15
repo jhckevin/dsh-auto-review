@@ -5,10 +5,10 @@ import { ActionRouter } from '../src/router.ts'
 
 const signal = new AbortController().signal
 
-function exec(name: string, args: unknown): ToolExecution {
+function exec(name: string, args: unknown, callId = 'call-1'): ToolExecution {
   return {
-    callId: CallId('call-1'),
-    rootCallId: CallId('call-1'),
+    callId: CallId(callId),
+    rootCallId: CallId(callId),
     name,
     arguments: args,
     signal,
@@ -103,8 +103,11 @@ describe('ActionRouter', () => {
     const first = router.route(exec('bash', { command: 'echo one' }), sandbox)
     const same = router.route(exec('bash', { command: 'echo one' }), sandbox)
     const changed = router.route(exec('bash', { command: 'echo two' }), sandbox)
+    const retried = router.route(exec('bash', { command: 'echo one' }, 'call-2'), sandbox)
     expect(first.actionDigest).toBe(same.actionDigest)
+    expect(first.actionDigest).toBe(retried.actionDigest)
     expect(first.actionDigest).not.toBe(changed.actionDigest)
+    expect(first.actionId).not.toBe(retried.actionId)
     expect(first.actionId).toContain(first.actionDigest.slice(0, 16))
   })
 })

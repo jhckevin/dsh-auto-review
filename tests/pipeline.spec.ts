@@ -150,14 +150,15 @@ describe('native tools pipeline composition', () => {
     expect(appended.map(event => event.type)).toEqual(['approval/asked', 'approval/decided'])
     expect(appended.find(event => event.type === 'approval/decided')?.data).toMatchObject({ outcome: 'allowed-once' })
     const audit = ctx.actionReview.auditRecords('session-auto-review')
-    expect(audit.map(record => record.kind)).toEqual(['routed', 'decision', 'result'])
+    expect(audit.map(record => record.kind)).toEqual(['routed', 'decision', 'ticket', 'ticket', 'result'])
     expect(audit.find(record => record.kind === 'result')?.data).toMatchObject({
       approvalPath: 'auto-review',
       reviewOutcome: 'approved',
       finalOutcome: 'success',
     })
-    expect(audit[1]?.previousDigest).toBe(audit[0]?.recordDigest)
-    expect(audit[2]?.previousDigest).toBe(audit[1]?.recordDigest)
+    for (let index = 1; index < audit.length; index += 1) {
+      expect(audit[index]?.previousDigest).toBe(audit[index - 1]?.recordDigest)
+    }
   })
 
   it('delegates an uncertain escalation to the native human answerer once', async () => {
@@ -262,10 +263,10 @@ describe('native tools pipeline composition', () => {
     }
     for (const id of ['session-left', 'session-right']) {
       const records = ctx.actionReview.auditRecords(id)
-      expect(records.map(record => record.kind)).toEqual(['routed', 'decision', 'result'])
+      expect(records.map(record => record.kind)).toEqual(['routed', 'decision', 'ticket', 'ticket', 'result'])
     }
     const globalChain = ctx.actionReview.auditRecords()
-    expect(globalChain).toHaveLength(6)
+    expect(globalChain).toHaveLength(10)
     expect(globalChain[0]?.previousDigest).toBeUndefined()
     for (let index = 1; index < globalChain.length; index += 1) {
       expect(globalChain[index]?.previousDigest).toBe(globalChain[index - 1]?.recordDigest)

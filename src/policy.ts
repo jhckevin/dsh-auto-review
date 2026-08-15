@@ -1,5 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { HarnessError } from '@deepseek-ai/dsh-llm'
 import type { ApprovalOutcome, ApprovalRequest } from '@deepseek-ai/dsh-user-approval'
 import type {
   PreToolDecision,
@@ -34,6 +35,13 @@ function askReason(action: ReturnType<ActionRouter['route']>, prefix: string): s
     ? ' A human decision is required because this extension has no registered action semantics.'
     : ''
   return `${prefix}: ${action.reason}${alternative}`
+}
+
+function denialMessage(toolName: string, rationale: string, saferAlternative?: string): string {
+  const alternative = saferAlternative === undefined
+    ? 'Stop and ask the user before attempting another action with the same effect.'
+    : `Use this materially safer alternative if it still satisfies the task: ${saferAlternative}`
+  return `Auto Review denied ${toolName}: ${rationale} Do not retry the same action or an equivalent bypass. ${alternative}`
 }
 
 interface PendingReview {
@@ -78,7 +86,31 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
     if (existing !== undefined) return existing
     const session = exec.agent?.session
     const sandbox = ctx.sandboxPolicy.resolve(session === undefined ? {} : { session })
-    const action = router.route(exec, sandbox, ctx.actionReview.classificationFor(exec.name))
+    const descriptor = ctx.actionReview.securityDescriptorFor(exec.name)
+    let contribution: Parameters<ActionRouter['route']>[2] = ctx.actionReview.classificationFor(exec.name)
+    if (descriptor !== undefined) {
+      try {
+        const described = descriptor.descriptor.describe(exec)
+        contribution = {
+          resolverId: descriptor.resolverId,
+          classification: described.classification,
+          effects: described.effects,
+          ...(described.ruleIds === undefined ? {} : { ruleIds: described.ruleIds }),
+        }
+      } catch {
+        contribution = {
+          resolverId: descriptor.resolverId,
+          classification: {
+            actionKind: 'extension-unknown',
+            disposition: 'manual',
+            reason: 'Registered extension security descriptor failed closed.',
+          },
+          effects: [{ type: 'opaque', reason: 'Security descriptor failed to describe this action.' }],
+          ruleIds: ['AR-DESCRIPTOR-FAILED'],
+        }
+      }
+    }
+    const action = router.route(exec, sandbox, contribution, ctx.actionReview.config.mode)
     const pending: PendingReview = {
       action,
       routedAt: Date.now(),
@@ -107,7 +139,8 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
   }
 
   ctx.tools.guard((exec) => {
-    return ctx.actionReview.hardDenyReason(route(exec).action)
+    const action = route(exec).action
+    return ctx.actionReview.hardDenyReason(action) ?? ctx.actionReview.consumeTicket(exec.token, action)
   })
 
   ctx.on('approval/request', async (request: ApprovalRequest, next: () => Promise<ApprovalOutcome>) => {
@@ -124,19 +157,36 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
     const pending = route(exec)
     const action = pending.action
     switch (action.disposition) {
-      case 'inside-boundary':
+      case 'inside-boundary': {
+        ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'inside-boundary' })
         return next()
+      }
       case 'hard-deny':
-        return { kind: 'deny', reason: askReason(action, 'Auto Review hard policy denied the action') }
-      case 'manual':
+        throw new HarnessError(
+          `${askReason(action, 'Auto Review hard policy denied the action')} Do not retry or bypass this prohibition.`,
+          'AUTO_REVIEW_HARD_DENY',
+        )
+      case 'manual': {
+        ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'native-manual' })
         return { kind: 'ask', reason: askReason(action, 'Auto Review routed the action to manual approval') }
+      }
       case 'review': {
+        if (ctx.actionReview.consumeExactOverride(action)) {
+          pending.reviewOutcome = 'approved'
+          pending.approvalPath = 'auto-review'
+          ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'exact-override' })
+          if (action.actionKind === 'sandbox-escalation' && exec.agent !== undefined) {
+            escalationByCall.set(callKey(exec.agent.session.id, exec.callId), pending)
+          }
+          return next()
+        }
         const decision = await ctx.actionReview.review(action, exec.agent?.session, exec.signal)
         pending.reviewOutcome = decision.outcome
         exec.signal.throwIfAborted()
         switch (decision.outcome) {
           case 'approved': {
             pending.approvalPath = 'auto-review'
+            ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'auto-review' })
             if (action.actionKind === 'sandbox-escalation' && exec.agent !== undefined) {
               escalationByCall.set(callKey(exec.agent.session.id, exec.callId), pending)
             }
@@ -144,17 +194,19 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
           }
           case 'denied':
             pending.approvalPath = 'auto-review'
-            return {
-              kind: 'deny',
-              reason: `Auto Review denied ${exec.name}: ${decision.rationale}${decision.saferAlternative === undefined ? '' : ` Safer alternative: ${decision.saferAlternative}`}`,
-            }
+            throw new HarnessError(
+              denialMessage(exec.name, decision.rationale, decision.saferAlternative),
+              'AUTO_REVIEW_DENIED',
+            )
           case 'manual':
             pending.approvalPath = 'native-manual'
+            ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'native-manual' })
             return action.actionKind === 'sandbox-escalation'
               ? next()
               : { kind: 'ask', reason: `Auto Review requires manual approval: ${decision.rationale}` }
           case 'unavailable':
             pending.approvalPath = 'native-manual'
+            ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'native-manual' })
             return action.actionKind === 'sandbox-escalation'
               ? next()
               : { kind: 'ask', reason: `Auto Review failed closed and requires manual approval: ${decision.rationale}` }
@@ -175,6 +227,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
     const pending = pendingByToken.get(exec.token)
     if (pending === undefined) return
     pendingByToken.delete(exec.token)
+    ctx.actionReview.discardTicket(exec.token)
     const session = exec.agent?.session
     if (session !== undefined) escalationByCall.delete(callKey(session.id, exec.callId))
     const code = errorCode(result)
