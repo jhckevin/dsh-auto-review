@@ -2,7 +2,7 @@
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
-当前版本：`0.2.0`。
+当前版本：`0.4.0`。
 
 本项目不把 Auto Review 定义为“自动放行”。它在 DeepSeek Harness 原生工具管线中完成确定性动作分类、隔离模型审查、一次性用户审批回退、Linux 文件沙盒约束与可重放审计。
 
@@ -20,7 +20,7 @@
 
 ## Bundle 角色
 
-同一个安装包公开五个可独立装卸的 Cordis 角色：
+同一个安装包公开六个可独立装卸的 Cordis 角色：
 
 - `@jhckevin/dsh-auto-review`：`ctx.actionReview` capability definition；
 - `@jhckevin/dsh-auto-review/llm-provider`：隔离 LLM reviewer provider；
@@ -45,6 +45,8 @@
 - 精确 override：只匹配同一 action digest，只有一次重试机会，重试仍经过完整票据校验。
 
 每个进入管线的动作都会形成 `routed` audit record；实际调用 reviewer 时形成 `decision`；票据签发和消费形成 `ticket`；精确授权形成 `override`；最终冻结结果形成 `result`。记录由 action digest、call/root-call id 关联，并通过 `previousDigest/recordDigest` 串成不可静默改序的链，可直接统计 workspace 内动作、自动审查、自动批准、拒绝、人工回退与最终成功/失败，而无需解析自然语言日志。
+
+WebUI 只在动作实际进入独立 reviewer 时，于对应工具调用右侧显示小号 shield-terminal 标记；审查进行中为中性色并轻微呼吸，拒绝后保留红色标记和红色斜杠。inside-boundary、hard-deny、manual、reviewer 缺失、断路器已打开及已暂停的动作都不会伪装成“正在审查”。客户端按可见 session 共享一个有界轮询器，不把审查证据、提示词或凭据暴露给页面。
 
 拒绝后，下一次相同动作记为 `retried-denied-action`，不同动作记为 `continued-with-different-action`，没有后续动作而结束回合记为 `stopped-after-denial`。不同动作只是 safer-alternative 候选，最终是否属于安全替代由离线评估器判定，运行时不把字符串差异伪装为安全证明。
 

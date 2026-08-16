@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0
+
+- 为 Harness 核心 Tool call tree 增加原生、可组合的 `tool.call.badges` list slot，不替换既有或第三方 tool renderer。
+- 仅为真正进入 reviewer 的动作投影 `reviewing`/`denied` 状态；批准、人工回退、不可用、shadow 放行和普通沙盒内动作不显示误导性标记。
+- 使用 Codex Desktop Auto Review 的 shield-terminal SVG；拒绝态使用红色并叠加红色斜杠，加入中英文可访问标签和减少动态效果支持。
+- 增加按 session 共享的有界状态轮询、冷恢复 denied 投影、RPC 输入校验、精确 call-id 绑定与组合渲染测试。
+
 ## 0.3.0
 
 - 增加 DeepSeek Harness 原生 WebUI 设置页，支持启用开关、Flash/Pro 模型选择和有界高级参数，默认使用 Flash。

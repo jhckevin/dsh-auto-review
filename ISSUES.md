@@ -2,6 +2,12 @@
 
 每个 ISSUE 单独分支、单独提交组；关闭前必须重新查看固定 Harness 源码和本 ISSUE 改动。
 
+## ISSUE-011：工具调用审查状态标识（完成）
+
+在 Harness 核心新增原生 `tool.call.badges` list slot；Auto Review 通过非秘密状态投影，只为实际进入 reviewer 的精确 call id 显示 shield-terminal 图标，拒绝态显示红色斜杠。普通沙盒内动作、同步 hard deny、manual/unavailable 和断路器绕过 reviewer 的路径保持无标记。
+
+验收：核心 slot 组合与递归 sub-call 测试、reviewing/denied 生命周期与恢复测试、远程输入校验、无关 call 零渲染、原始 SVG/拒绝斜杠渲染、客户端单 session 单轮询器和断网全套测试。详细边界见 `docs/review-status-badges.md`。
+
 ## ISSUE-010：WebUI 设置与 Flash 真实验收（完成）
 
 通过原生 client module 和 Typert Remote 增加 Auto Review 设置页，默认 Flash，可切换 Pro 并调整有界 reviewer 参数；补齐 Harness 原生工具名、Flash 协议兼容与真实浏览器/Agent 审查验收。详细边界见 `docs/webui-flash.md`。

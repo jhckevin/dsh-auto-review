@@ -2,7 +2,7 @@
 
 ## 原生接入
 
-Auto Review 通过 DeepSeek Harness 的 client-module 与 Typert Remote 机制提供设置页，不修改 Harness 核心源码。服务端只公开闭集的 `read`、`update`、`reset` 方法；客户端不能读取凭据、宿主路径或任意配置命名空间。
+Auto Review 通过 DeepSeek Harness 的 client-module 与 Typert Remote 机制提供设置页。ISSUE-011 额外在 Harness 核心增加通用、可组合的 `tool.call.badges` 插槽；插件只注册该插槽，不替换既有 Tool renderer。服务端只公开闭集的 `read`、`update`、`reset`、`reviewStatus` 方法；客户端不能读取凭据、宿主路径、审查证据或任意配置命名空间。
 
 设置页支持：
 
