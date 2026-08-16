@@ -30,6 +30,8 @@ describe('explicit settings provider', () => {
     expect(ctx.actionReview.config.failureThreshold).toBe(5)
     const reset = await ctx.actionReviewSettings.reset({ expectedRevision: updated.revision })
     expect(reset).toMatchObject({ value: { reviewerModel: 'flash', failureThreshold: 3 }, user: {} })
+    expect(ctx.actionReviewSettings.reviewStatus({ sessionId: 's1' })).toEqual({ revision: 0, indicators: [] })
+    expect(() => ctx.actionReviewSettings.reviewStatus({ sessionId: '' })).toThrow(/sessionId must be a non-empty string/)
   })
 
   it('rejects fields outside the closed extension settings vocabulary', async () => {

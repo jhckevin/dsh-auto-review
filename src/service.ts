@@ -18,6 +18,8 @@ import type {
   AutoReviewAuditKind,
   AutoReviewAuditPayloadMap,
   AutoReviewMetricsSnapshot,
+  AutoReviewIndicator,
+  AutoReviewIndicatorSnapshot,
   AutoReviewConfig,
   AutoReviewUiSettings,
   ResolvedAutoReviewConfig,
@@ -97,6 +99,8 @@ export class ActionReviewRuntime extends Service {
   private readonly processInstanceId = randomUUID()
   private auditSequence = 0
   private previousAuditDigest: string | undefined
+  private indicatorRevision = 0
+  private readonly reviewIndicators = new Map<string, AutoReviewIndicator>()
   private failures = 0
   private breakerUntil = 0
   private readonly ticketSecret = randomBytes(32)
@@ -238,6 +242,55 @@ export class ActionReviewRuntime extends Service {
     return Object.freeze([...records])
   }
 
+  /** Return a detached, non-secret reviewer state projection for one session. */
+  reviewIndicatorSnapshot(sessionId: string): AutoReviewIndicatorSnapshot {
+    if (sessionId.trim().length === 0) throw new TypeError('auto-review: session id must be non-empty')
+    const indicators = [...this.reviewIndicators.values()]
+      .filter(indicator => indicator.sessionId === sessionId)
+      .sort((left, right) => left.startedAt - right.startedAt || left.callId.localeCompare(right.callId))
+    return Object.freeze({
+      revision: this.indicatorRevision,
+      indicators: Object.freeze(indicators.map(indicator => Object.freeze({ ...indicator }))),
+    })
+  }
+
+  private indicatorKey(sessionId: string, callId: string): string {
+    return `${sessionId}\u0000${callId}`
+  }
+
+  private setReviewIndicator(
+    action: Pick<ActionEnvelope, 'actionId' | 'callId' | 'rootCallId' | 'toolName'>,
+    sessionId: string,
+    state: AutoReviewIndicator['state'] | undefined,
+    startedAt: number,
+    finishedAt?: number,
+  ): void {
+    const key = this.indicatorKey(sessionId, action.callId)
+    if (state === undefined) {
+      if (this.reviewIndicators.delete(key)) this.indicatorRevision += 1
+      return
+    }
+    const next: AutoReviewIndicator = Object.freeze({
+      schemaVersion: 1,
+      sessionId,
+      callId: action.callId,
+      rootCallId: action.rootCallId,
+      actionId: action.actionId,
+      toolName: action.toolName,
+      state,
+      startedAt,
+      ...(finishedAt === undefined ? {} : { finishedAt }),
+    })
+    this.reviewIndicators.delete(key)
+    this.reviewIndicators.set(key, next)
+    while (this.reviewIndicators.size > this.config.auditMemoryLimit) {
+      const oldest = this.reviewIndicators.keys().next().value as string | undefined
+      if (oldest === undefined) break
+      this.reviewIndicators.delete(oldest)
+    }
+    this.indicatorRevision += 1
+  }
+
   restoreAudit(records: readonly AutoReviewAuditEnvelope[]): void {
     for (const record of records) {
       const sessionId = record.sessionId
@@ -254,6 +307,21 @@ export class ActionReviewRuntime extends Service {
           const turn = data.turn ?? 0
           const key = `${sessionId}\u0000${turn}`
           if (data.decision.outcome === 'unavailable') break
+          if (data.callId !== undefined && data.rootCallId !== undefined) {
+            const restoredAction: Pick<ActionEnvelope, 'actionId' | 'callId' | 'rootCallId' | 'toolName'> = {
+              actionId: data.actionId,
+              callId: data.callId,
+              rootCallId: data.rootCallId,
+              toolName: data.toolName,
+            }
+            this.setReviewIndicator(
+              restoredAction,
+              sessionId,
+              data.decision.outcome === 'denied' && this.config.mode !== 'shadow' ? 'denied' : undefined,
+              data.startedAt,
+              data.finishedAt,
+            )
+          }
           const state = this.denialStates.get(key) ?? { consecutive: 0, recent: [], paused: false }
           const denied = data.decision.outcome === 'denied'
           state.consecutive = denied ? state.consecutive + 1 : 0
@@ -550,6 +618,9 @@ export class ActionReviewRuntime extends Service {
       })
     }
     const startedAt = Date.now()
+    const indicatorSessionId = action.authority.sessionId ?? session?.id
+    const indicatorEligible = action.disposition === 'review' && indicatorSessionId !== undefined
+    let reviewerInvoked = false
     if (this.reviewPaused(action)) {
       return Object.freeze({
         schemaVersion: 1,
@@ -568,11 +639,16 @@ export class ActionReviewRuntime extends Service {
       decision = unavailableDecision(`Auto Review circuit breaker is open until ${this.breakerUntil}.`)
     } else {
       try {
+        if (indicatorEligible) {
+          this.setReviewIndicator(action, indicatorSessionId, 'reviewing', startedAt)
+          reviewerInvoked = true
+        }
         decision = await reviewer.review({ action, signal })
         signal.throwIfAborted()
         if (decision.outcome === 'unavailable') this.recordFailure(session)
         else this.recordSuccess(session)
       } catch (error) {
+        if (indicatorEligible && reviewerInvoked) this.setReviewIndicator(action, indicatorSessionId, undefined, startedAt)
         decision = unavailableDecision(error instanceof Error ? error.message : String(error))
         this.recordFailure(session)
       }
@@ -590,10 +666,21 @@ export class ActionReviewRuntime extends Service {
       : decision
     this.recordReviewOutcome(action, decision, session)
     const finishedAt = Date.now()
+    if (indicatorEligible && reviewerInvoked) {
+      this.setReviewIndicator(
+        action,
+        indicatorSessionId,
+        effective.outcome === 'denied' ? 'denied' : undefined,
+        startedAt,
+        finishedAt,
+      )
+    }
     this.recordAudit('decision', {
       schemaVersion: 1,
       actionId: action.actionId,
       actionDigest: action.actionDigest,
+      callId: action.callId,
+      rootCallId: action.rootCallId,
       toolName: action.toolName,
       actionKind: action.actionKind,
       disposition: action.disposition,

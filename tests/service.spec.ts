@@ -56,6 +56,68 @@ describe('ActionReviewRuntime', () => {
       .resolves.toMatchObject({ outcome: 'unavailable' })
   })
 
+  it('publishes reviewing and denied markers only for exact reviewer calls', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    let entered!: () => void
+    let finish!: (decision: Awaited<ReturnType<ActionReviewer['review']>>) => void
+    const reviewerEntered = new Promise<void>(resolve => { entered = resolve })
+    const reviewerDecision = new Promise<Awaited<ReturnType<ActionReviewer['review']>>>(resolve => { finish = resolve })
+    ctx.actionReview.registerReviewer({
+      id: 'deferred-fixture',
+      review: () => {
+        entered()
+        return reviewerDecision
+      },
+    })
+    const scoped = Object.freeze({
+      ...action,
+      authority: Object.freeze({ sessionId: 'status-session', turn: 1, transcript: [] }),
+    })
+    const pending = ctx.actionReview.review(scoped, undefined, new AbortController().signal)
+    await reviewerEntered
+    expect(ctx.actionReview.reviewIndicatorSnapshot('status-session')).toMatchObject({
+      revision: 1,
+      indicators: [{ callId: 'call', state: 'reviewing', toolName: 'bash' }],
+    })
+    finish({
+      schemaVersion: 1,
+      outcome: 'denied',
+      riskLevel: 'high',
+      rationale: 'fixture denial',
+      policyRuleIds: ['FIXTURE'],
+      uncertainty: '',
+    })
+    await pending
+    const denied = ctx.actionReview.reviewIndicatorSnapshot('status-session')
+    expect(denied.revision).toBe(2)
+    expect(denied.indicators).toMatchObject([{ callId: 'call', state: 'denied', toolName: 'bash' }])
+    expect(denied.indicators[0]?.finishedAt).toEqual(expect.any(Number))
+    expect(() => ctx.actionReview.reviewIndicatorSnapshot('')).toThrow(/session id must be non-empty/)
+  })
+
+  it('does not retain a marker when the reviewer approves or is unavailable', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    ctx.actionReview.registerReviewer({
+      id: 'approve-fixture',
+      review: async () => ({
+        schemaVersion: 1,
+        outcome: 'approved',
+        riskLevel: 'low',
+        rationale: 'fixture approval',
+        policyRuleIds: ['FIXTURE'],
+        uncertainty: '',
+      }),
+    })
+    const scoped = Object.freeze({
+      ...action,
+      authority: Object.freeze({ sessionId: 'approved-session', turn: 1, transcript: [] }),
+    })
+    await ctx.actionReview.review(scoped, undefined, new AbortController().signal)
+    expect(ctx.actionReview.reviewIndicatorSnapshot('approved-session').indicators).toEqual([])
+  })
+
   it('records the recommendation but allows continuation in shadow mode', async () => {
     const ctx = new Context()
     await ctx.plugin(ActionReviewRuntime, { mode: 'shadow' })

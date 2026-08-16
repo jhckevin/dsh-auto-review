@@ -3,7 +3,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { settingsNamespace, type SettingsScope } from '@deepseek-ai/dsh-settings'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from './service.ts'
-import type { AutoReviewUiSettings } from './types.ts'
+import type { AutoReviewIndicatorSnapshot, AutoReviewUiSettings } from './types.ts'
 import {
   AUTO_REVIEW_SETTINGS_NAMESPACE,
   AutoReviewUiSettingsSchema,
@@ -32,6 +32,10 @@ export interface AutoReviewSettingsUpdate {
 
 export interface AutoReviewSettingsReset {
   readonly expectedRevision: number
+}
+
+export interface AutoReviewStatusRequest {
+  readonly sessionId: string
 }
 
 const SETTINGS_NS = settingsNamespace(AUTO_REVIEW_SETTINGS_NAMESPACE)
@@ -72,6 +76,15 @@ export class AutoReviewSettingsBridge extends TypertRemoteService {
       revision: descriptor.revision,
       writable: this.ctx.settings.writable,
     })
+  }
+
+  /** Read only the reviewer lifecycle marks needed by Tool-call badges. */
+  @Remote('reviewStatus')
+  reviewStatus(request: AutoReviewStatusRequest): AutoReviewIndicatorSnapshot {
+    if (typeof request.sessionId !== 'string' || request.sessionId.trim().length === 0) {
+      throw new TypeError('auto-review: sessionId must be a non-empty string')
+    }
+    return this.ctx.actionReview.reviewIndicatorSnapshot(request.sessionId)
   }
 
   /** Atomically validate and persist one bounded patch. */

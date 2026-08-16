@@ -137,6 +137,8 @@ export interface AutoReviewAuditRecord {
   readonly schemaVersion: 1
   readonly actionId: string
   readonly actionDigest: string
+  readonly callId?: CallId
+  readonly rootCallId?: CallId
   readonly toolName: string
   readonly actionKind: ActionKind
   readonly disposition: ActionDisposition
@@ -147,6 +149,26 @@ export interface AutoReviewAuditRecord {
   readonly startedAt: number
   readonly finishedAt: number
   readonly latencyMs: number
+}
+
+export type AutoReviewIndicatorState = 'reviewing' | 'denied'
+
+/** Non-secret WebUI projection for one exact Tool call that entered the reviewer. */
+export interface AutoReviewIndicator {
+  readonly schemaVersion: 1
+  readonly sessionId: string
+  readonly callId: CallId
+  readonly rootCallId: CallId
+  readonly actionId: string
+  readonly toolName: string
+  readonly state: AutoReviewIndicatorState
+  readonly startedAt: number
+  readonly finishedAt?: number
+}
+
+export interface AutoReviewIndicatorSnapshot {
+  readonly revision: number
+  readonly indicators: readonly AutoReviewIndicator[]
 }
 
 export interface AutoReviewRouteRecord {
