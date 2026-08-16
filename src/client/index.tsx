@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode, type SVGProps } from 'react'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -6,6 +6,7 @@ import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { AutoReviewUiSettings } from '../types.ts'
 import type { AutoReviewSettingsSnapshot } from '../settings-provider.ts'
+import { ReviewStatusClient } from './review-status.ts'
 
 const LOCALE_NAMESPACE = 'settings.autoReview'
 const STYLE_ID = '@jhckevin/dsh-auto-review/webui'
@@ -18,6 +19,7 @@ const zh = {
   maxAttempts: '最多尝试次数', transcriptMaxEntries: '历史条目上限', transcriptMaxBytes: '历史字节上限',
   failureThreshold: '熔断失败阈值', breakerCooldownMs: '熔断冷却（毫秒）', save: '保存', reset: '恢复部署默认值',
   saved: '设置已保存并实时生效。', failed: '设置未能保存，请检查参数或连接。', inherited: '继承', overridden: '用户覆盖',
+  reviewing: 'Auto Review 正在审查此工具调用', denied: 'Auto Review 已拒绝此工具调用',
 }
 const en = {
   nav: 'Auto Review', title: 'Auto Review', subtitle: 'Use an isolated reviewer only for actions that cross the native sandbox boundary.',
@@ -27,6 +29,7 @@ const en = {
   maxAttempts: 'Maximum attempts', transcriptMaxEntries: 'Transcript entry limit', transcriptMaxBytes: 'Transcript byte limit',
   failureThreshold: 'Failure breaker threshold', breakerCooldownMs: 'Breaker cooldown (ms)', save: 'Save', reset: 'Restore deployment defaults',
   saved: 'Settings saved and applied live.', failed: 'Settings could not be saved. Check the values or connection.', inherited: 'Inherited', overridden: 'User override',
+  reviewing: 'Auto Review is checking this tool call', denied: 'Auto Review denied this tool call',
 }
 
 type LocaleKey = keyof typeof en
@@ -43,6 +46,29 @@ interface AutoReviewSettingsInjected {
   reset: (expectedRevision: number, signal?: AbortSignal) => Promise<AutoReviewSettingsSnapshot>
 }
 
+interface AutoReviewBadgeInjected {
+  readonly reviewStatus: ReviewStatusClient
+}
+
+interface AutoReviewBadgeOwner {
+  readonly sessionId: string
+  readonly callId: string
+}
+
+interface AutoReviewBadgeSlots {
+  inject(name: 'tool.call.badges', register: () => unknown): unknown
+  register(
+    options: {
+      name: 'tool.call.badges'
+      id: string
+      order: number
+      locale: typeof LOCALE_NAMESPACE
+      inject: () => AutoReviewBadgeInjected
+    },
+    component: (props: BadgeProps) => ReactNode,
+  ): unknown
+}
+
 interface PageSnapshot {
   readonly status: 'loading' | 'ready' | 'unavailable'
   readonly value?: AutoReviewUiSettings
@@ -52,12 +78,49 @@ interface PageSnapshot {
 }
 
 type Props = PropsRuntime<'settings.section'> & PropsLocale<'settings.autoReview'> & InjectFace<AutoReviewSettingsInjected>
+type BadgeProps = AutoReviewBadgeOwner & PropsLocale<'settings.autoReview'> & InjectFace<AutoReviewBadgeInjected>
 type NumericField = Exclude<keyof AutoReviewUiSettings, 'enabled' | 'reviewerModel'>
 
 const NUMERIC_FIELDS: readonly NumericField[] = [
   'maxInputBytes', 'maxOutputTokens', 'timeoutMs', 'maxAttempts', 'transcriptMaxEntries',
   'transcriptMaxBytes', 'failureThreshold', 'breakerCooldownMs',
 ]
+
+/** Exact 20px Codex Desktop Auto Review glyph, scaled into Harness's 24px icon grid. */
+export function ReviewerShieldIcon({ denied = false, ...props }: SVGProps<SVGSVGElement> & { denied?: boolean }): ReactNode {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" {...props}>
+      <g transform="scale(1.2)">
+        <path fillRule="evenodd" clipRule="evenodd" d="M9.06543 1.95123C9.66107 1.69076 10.3389 1.69071 10.9346 1.95123L15.9346 4.13873C16.7832 4.51008 17.3311 5.34917 17.3311 6.27545V10.5528C17.3309 14.6017 14.0489 17.8847 10 17.8848C5.95108 17.8846 2.66813 14.6017 2.66797 10.5528V6.27545C2.66797 5.34924 3.21695 4.51012 4.06543 4.13873L9.06543 1.95123ZM10.4014 3.16998C10.1456 3.05814 9.85444 3.05819 9.59863 3.16998L4.59863 5.35748C4.23427 5.51708 3.99805 5.87764 3.99805 6.27545V10.5528C3.99821 13.8671 6.68563 16.5546 10 16.5547C13.3144 16.5546 16.0008 13.8671 16.001 10.5528V6.27545C16.001 5.87756 15.7658 5.51703 15.4014 5.35748L10.4014 3.16998Z" fill="currentColor" />
+        <path d="M13.4678 11.4318L13.333 11.4182H10.833C10.466 11.4183 10.1682 11.7162 10.168 12.0832C10.168 12.4504 10.4659 12.7481 10.833 12.7482H13.333L13.4678 12.7346C13.7706 12.6724 13.9981 12.4044 13.9981 12.0832C13.9979 11.7621 13.7706 11.494 13.4678 11.4318Z" fill="currentColor" />
+        <path d="M7.65336 12.426C7.46431 12.7406 7.05607 12.8424 6.74125 12.6535C6.42646 12.4646 6.32395 12.0563 6.51274 11.7414L7.55668 10.0002L6.51274 8.25899C6.32395 7.94412 6.42646 7.53583 6.74125 7.34688C7.05607 7.15799 7.46431 7.25975 7.65336 7.57442L8.90336 9.6584C9.0296 9.86893 9.0296 10.1315 8.90336 10.342L7.65336 12.426Z" fill="currentColor" />
+      </g>
+      {denied ? <path d="m2 2 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /> : null}
+    </svg>
+  )
+}
+
+export function AutoReviewCallBadge({ sessionId, callId, reviewStatus, t }: BadgeProps): ReactNode {
+  const subscribe = useCallback((listener: () => void) => reviewStatus.subscribe(sessionId, listener), [reviewStatus, sessionId])
+  const getSnapshot = useCallback(() => reviewStatus.snapshot(sessionId), [reviewStatus, sessionId])
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
+  const indicator = snapshot.indicators.find(item => item.callId === callId)
+  if (indicator === undefined) return null
+  const denied = indicator.state === 'denied'
+  const label = t(denied ? 'denied' : 'reviewing')
+  return (
+    <span
+      className="ar-call-badge"
+      data-auto-review-state={indicator.state}
+      role="status"
+      aria-live="polite"
+      aria-label={label}
+      title={label}
+    >
+      <ReviewerShieldIcon denied={denied} />
+    </span>
+  )
+}
 
 function AutoReviewSettingsSection({ read, update, reset: resetSettings, t }: Props): ReactNode {
   const [snapshot, setSnapshot] = useState<PageSnapshot>({ status: 'loading', revision: 0, writable: false })
@@ -155,12 +218,16 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, t }: Pr
 
 const CSS = `
 .ar-page{max-width:760px;padding:8px 4px 36px;color:var(--dsw-alias-label-primary)}.ar-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:18px}.ar-header h2{font-size:22px;margin:0 0 6px}.ar-header p,.ar-card p{margin:0;color:var(--dsw-alias-label-secondary);line-height:1.5}.ar-live{font:600 10px/1.8 ui-monospace,monospace;color:var(--dsw-alias-state-success-primary);border:1px solid color-mix(in srgb,var(--dsw-alias-state-success-primary) 35%,transparent);border-radius:999px;padding:0 8px}.ar-card{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:18px;margin:12px 0}.ar-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:22px}.ar-toggle-row strong,.ar-card h3{display:block;margin:0 0 5px;font-size:14px}.ar-switch{width:44px;height:24px;border:0;border-radius:999px;padding:3px;background:var(--dsw-alias-border-l2);cursor:pointer}.ar-switch span{display:block;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}.ar-switch[aria-checked=true]{background:var(--dsw-alias-brand-primary)}.ar-switch[aria-checked=true] span{transform:translateX(20px)}.ar-model-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.ar-model{display:flex;flex-direction:column;gap:5px;text-align:left;padding:14px;border-radius:10px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-2);color:inherit;cursor:pointer}.ar-model[aria-pressed=true]{border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 1px var(--dsw-alias-brand-primary)}.ar-model span{font-size:12px;color:var(--dsw-alias-label-secondary)}.ar-advanced summary{cursor:pointer;font-weight:600}.ar-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.ar-field-grid label{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px;font-size:12px}.ar-field-grid input{grid-column:1/3;width:100%;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;padding:8px;background:var(--dsw-alias-bg-base);color:inherit}.ar-field-grid small{grid-column:1/3;color:var(--dsw-alias-label-secondary)}.ar-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.ar-actions button{border-radius:8px;padding:8px 15px;cursor:pointer}.ar-secondary{background:transparent;color:inherit;border:1px solid var(--dsw-alias-border-l2)}.ar-primary{background:var(--dsw-alias-brand-primary);color:white;border:1px solid var(--dsw-alias-brand-primary)}.ar-actions button:disabled{opacity:.45;cursor:not-allowed}.ar-notice{font-size:12px;text-align:right}.ar-saved{color:var(--dsw-alias-state-success-primary)}.ar-failed{color:var(--dsw-alias-state-error-primary)}.ar-muted{color:var(--dsw-alias-label-secondary)}@media(max-width:680px){.ar-model-grid,.ar-field-grid{grid-template-columns:1fr}}
+.ar-call-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;color:var(--dsw-alias-label-secondary);background:color-mix(in srgb,var(--dsw-alias-bg-layer-1) 88%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,currentColor 16%,transparent)}
+.ar-call-badge[data-auto-review-state=reviewing]{animation:ar-review-pulse 1.15s ease-in-out infinite}
+.ar-call-badge[data-auto-review-state=denied]{color:var(--dsw-alias-state-error-primary);background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 8%,var(--dsw-alias-bg-layer-1))}
+@keyframes ar-review-pulse{0%,100%{opacity:.52}50%{opacity:1}}@media(prefers-reduced-motion:reduce){.ar-call-badge{animation:none!important}}
 `
 
 /** Client services required by settings scopes and the settings slot. */
 export const inject = ['slots', 'locale', 'connection', 'remote']
 
-/** Register the Auto Review settings page without modifying Harness core UI code. */
+/** Register settings and additive per-call review state badges in Harness WebUI. */
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(LOCALE_NAMESPACE, { zh, en }), 'auto-review webui: dictionaries')
   ctx.effect(() => {
@@ -175,11 +242,21 @@ export function apply(ctx: ClientContext): void {
   }, 'auto-review webui: styles')
   const connection = ctx.get('connection') as ConnectionHandle
   const api = createSettingsRemote(connection)
+  const reviewStatus = createReviewStatusClient(connection)
+  ctx.effect(() => () => { reviewStatus.dispose() }, 'auto-review webui: review status client')
   const t = ctx.locale.bind(LOCALE_NAMESPACE)
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section', id: 'auto-review', order: 17, label: () => t('nav'), locale: LOCALE_NAMESPACE,
     inject: (): AutoReviewSettingsInjected => api,
   }, AutoReviewSettingsSection))
+  // The badge slot is introduced by the paired Harness core change and is not
+  // present in the published rc.6 type catalog, so keep this compatibility
+  // adapter local instead of globally augmenting SlotMap with a duplicate owner.
+  const badgeSlots = ctx.slots as unknown as AutoReviewBadgeSlots
+  badgeSlots.inject('tool.call.badges', () => badgeSlots.register({
+    name: 'tool.call.badges', id: 'auto-review', order: 20, locale: LOCALE_NAMESPACE,
+    inject: (): AutoReviewBadgeInjected => ({ reviewStatus }),
+  }, AutoReviewCallBadge))
 }
 
 function createSettingsRemote(connection: ConnectionHandle): AutoReviewSettingsInjected {
@@ -193,4 +270,14 @@ function createSettingsRemote(connection: ConnectionHandle): AutoReviewSettingsI
     update: (patch, expectedRevision, signal) => call('update', { request: { patch, expectedRevision } }, signal),
     reset: (expectedRevision, signal) => call('reset', { request: { expectedRevision } }, signal),
   }
+}
+
+function createReviewStatusClient(connection: ConnectionHandle): ReviewStatusClient {
+  return new ReviewStatusClient({
+    read: async (sessionId, signal) => {
+      const result = await connection.rpc.call('/api', 'actionReviewSettings/reviewStatus', { args: { request: { sessionId } } }, signal)
+      if (!result.ok) throw new Error(`actionReviewSettings/reviewStatus failed: ${result.error.code}: ${result.error.message}`)
+      return result.value as import('../types.ts').AutoReviewIndicatorSnapshot
+    },
+  })
 }
