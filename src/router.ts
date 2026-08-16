@@ -167,14 +167,30 @@ function requestedEscalation(
   })
 }
 
-function classifyCommand(command: string): Classification | undefined {
+function commandContainsSensitiveMarker(command: string, markers: readonly string[]): boolean {
+  const normalized = command.replaceAll('\\', '/').toLocaleLowerCase()
+  return markers.some(marker => {
+    const escaped = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    if (marker === '.env') {
+      return new RegExp(`(?:^|[\\s'\"=:/])${escaped}(?:$|[\\s'\"/])`, 'i').test(normalized)
+    }
+    return normalized.includes(`/${marker}/`)
+      || new RegExp(`(?:^|[\\s'\"=])(?:~?/)?${escaped}/`, 'i').test(normalized)
+      || new RegExp(`/${escaped}(?:$|[\\s'\"<>])`, 'i').test(normalized)
+  })
+}
+
+function classifyCommand(command: string, sensitiveMarkers: readonly string[]): Classification | undefined {
   if (/(^|[;&|]\s*)(?:sudo\s+)?(?:chmod|chown|chgrp|setfacl)\b/i.test(command)) {
     return { kind: 'permission-change', disposition: 'review', reason: 'Shell command changes permissions or ownership.' }
   }
   if (/(^|[;&|]\s*)(?:sudo\s+)?(?:rm|rmdir|shred|mkfs|wipefs|dd)\b/i.test(command)) {
     return { kind: 'destructive', disposition: 'review', reason: 'Shell command can delete or overwrite data.' }
   }
-  if (/\b(?:curl|wget|ssh|scp|rsync|git\s+(?:clone|fetch|pull|push)|npm\s+(?:install|publish)|pnpm\s+(?:install|publish)|pip\s+install)\b/i.test(command)) {
+  if (commandContainsSensitiveMarker(command, sensitiveMarkers)) {
+    return { kind: 'sensitive-read', disposition: 'review', reason: 'Shell command references a configured sensitive path.' }
+  }
+  if (/(^|[;&|]\s*)(?:sudo\s+)?(?:curl|wget|ssh|scp|rsync|git\s+(?:clone|fetch|pull|push)|npm\s+(?:install|publish)|pnpm\s+(?:install|publish)|pip\s+install)\b/i.test(command)) {
     return { kind: 'network', disposition: 'review', reason: 'Shell command can access the network or publish data.' }
   }
   return undefined
@@ -336,7 +352,7 @@ export class ActionRouter {
       return { kind: 'destructive', disposition: 'review', reason: 'Tool has destructive filesystem semantics.' }
     }
     if (PROCESS_TOOLS.has(toolName)) {
-      return classifyCommand(shellCommand(arguments_))
+      return classifyCommand(shellCommand(arguments_), this.config.sensitiveMarkers)
         ?? { kind: 'process', disposition: 'review', reason: 'Process execution crosses the workspace action boundary.' }
     }
     if (NETWORK_TOOLS.has(toolName)) {

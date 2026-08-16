@@ -54,6 +54,22 @@ describe('ActionRouter', () => {
     })
   })
 
+  it('does not confuse sensitive .ssh paths with the ssh network command', () => {
+    const router = new ActionRouter()
+    expect(router.route(exec('bash', { command: 'cat /root/.ssh/id_rsa' }), sandbox)).toMatchObject({
+      actionKind: 'sensitive-read', disposition: 'review',
+    })
+    expect(router.route(exec('bash', { command: 'cat ~/.ssh/config' }), sandbox)).toMatchObject({
+      actionKind: 'sensitive-read', disposition: 'review',
+    })
+    expect(router.route(exec('bash', { command: 'ssh example.com' }), sandbox)).toMatchObject({
+      actionKind: 'network', disposition: 'review',
+    })
+    expect(router.route(exec('bash', { command: 'printf ".ssh is a directory name\\n"' }), sandbox)).toMatchObject({
+      actionKind: 'process', disposition: 'review',
+    })
+  })
+
   it('classifies an explicit native sandbox widening as a first-class escalation', () => {
     const action = new ActionRouter().route(exec('bash', {
       command: 'echo ok',

@@ -2,6 +2,12 @@
 
 每个 ISSUE 单独分支、单独提交组；关闭前必须重新查看固定 Harness 源码和本 ISSUE 改动。
 
+## ISSUE-012：敏感 Shell 路径分类精度（完成）
+
+修复 shell 命令分类器把 `/root/.ssh/id_rsa` 路径片段中的 `.ssh` 误识别成 `ssh` 网络命令的问题。敏感路径检测现在先于网络命令检测，网络命令必须出现在命令段起点；普通文本中的 `.ssh` 不会被误判。
+
+验收：`cat /root/.ssh/id_rsa` 与 `cat ~/.ssh/config` 为 `sensitive-read`，`ssh example.com` 仍为 `network`，普通包含 `.ssh` 文本的 `printf` 为 `process`；Linux x86、Node 24、断网容器内 59 项测试全部通过。
+
 ## ISSUE-011：工具调用审查状态标识（完成）
 
 在 Harness 核心新增原生 `tool.call.badges` list slot；Auto Review 通过非秘密状态投影，只为实际进入 reviewer 的精确 call id 显示 shield-terminal 图标，拒绝态显示红色斜杠。普通沙盒内动作、同步 hard deny、manual/unavailable 和断路器绕过 reviewer 的路径保持无标记。

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1
+
+- 修复 shell 参数中的 `.ssh` 路径被网络命令正则误分类为 `network` 的问题。
+- 对配置的敏感路径标记执行命令级检测，并让 `sensitive-read` 优先于网络路由。
+- 收紧 `ssh`、`curl`、`git push` 等网络分类的命令段边界，避免普通参数和文本误命中。
+
 ## 0.4.0
 
 - 为 Harness 核心 Tool call tree 增加原生、可组合的 `tool.call.badges` list slot，不替换既有或第三方 tool renderer。
