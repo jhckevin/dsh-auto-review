@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.0 - 2026-08-17
+
 - 增加统一生产门禁：构建、77 项测试、Guardian 来源摘要与 npm packed artifact 离线洁净导入。
 - 增加 256 动作并发压力测试，验证 session 隔离、唯一 action digest 与 hash-linked audit 顺序。
 - 增加 Ubuntu 24.04 / Node 24 CI；发布前必须通过无网络、只读、无 capability 的 Linux x86 Docker 测试。
