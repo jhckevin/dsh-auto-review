@@ -120,6 +120,15 @@ export function ReviewerShieldIcon({ denied = false, ...props }: SVGProps<SVGSVG
   )
 }
 
+/** Product mark: the same canonical Auto Review glyph, never the denied variant. */
+export function AutoReviewLogo(): ReactNode {
+  return (
+    <span className="ar-product-logo" data-auto-review-logo="canonical" aria-hidden="true">
+      <ReviewerShieldIcon width={24} height={24} />
+    </span>
+  )
+}
+
 export function AutoReviewCallBadge({ sessionId, callId, reviewStatus, t }: BadgeProps): ReactNode {
   const subscribe = useCallback((listener: () => void) => reviewStatus.subscribe(sessionId, listener), [reviewStatus, sessionId])
   const getSnapshot = useCallback(() => reviewStatus.snapshot(sessionId), [reviewStatus, sessionId])
@@ -243,7 +252,7 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics
 
   return (
     <section className="ar-page">
-      <header className="ar-header"><div><h2>{t('title')}</h2><p>{t('subtitle')}</p></div><span className="ar-live">LIVE</span></header>
+      <header className="ar-header"><div className="ar-header-title"><AutoReviewLogo /><div><h2>{t('title')}</h2><p>{t('subtitle')}</p></div></div><span className="ar-live">LIVE</span></header>
       {snapshot.metrics === undefined ? null : <AutoReviewFunnel metrics={snapshot.metrics} t={t} />}
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('enabled')}</strong><p>{t('enabledHint')}</p></div>
@@ -281,6 +290,7 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics
 }
 
 const CSS = `
+.ar-header-title{display:flex;align-items:flex-start;gap:10px}.ar-product-logo{display:inline-grid;place-items:center;flex:0 0 auto;width:30px;height:30px;color:var(--dsw-alias-label-primary)}
 .ar-page{max-width:760px;padding:8px 4px 36px;color:var(--dsw-alias-label-primary)}.ar-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:18px}.ar-header h2{font-size:22px;margin:0 0 6px}.ar-header p,.ar-card p{margin:0;color:var(--dsw-alias-label-secondary);line-height:1.5}.ar-live{font:600 10px/1.8 ui-monospace,monospace;color:var(--dsw-alias-state-success-primary);border:1px solid color-mix(in srgb,var(--dsw-alias-state-success-primary) 35%,transparent);border-radius:999px;padding:0 8px}.ar-card{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:18px;margin:12px 0}.ar-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:22px}.ar-toggle-row strong,.ar-card h3{display:block;margin:0 0 5px;font-size:14px}.ar-switch{width:44px;height:24px;border:0;border-radius:999px;padding:3px;background:var(--dsw-alias-border-l2);cursor:pointer}.ar-switch span{display:block;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}.ar-switch[aria-checked=true]{background:var(--dsw-alias-brand-primary)}.ar-switch[aria-checked=true] span{transform:translateX(20px)}.ar-select-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:10px 0}.ar-select-row select,.ar-profile-grid input{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;padding:8px;background:var(--dsw-alias-bg-base);color:inherit}.ar-profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ar-profile-grid fieldset{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:12px}.ar-profile-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;margin:8px 0}.ar-check{display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12px}.ar-kind-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px;font-size:12px}.ar-kind-grid label{display:flex;align-items:center;gap:5px}.ar-advanced summary{cursor:pointer;font-weight:600}.ar-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.ar-field-grid label{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px;font-size:12px}.ar-field-grid input{grid-column:1/3;width:100%;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;padding:8px;background:var(--dsw-alias-bg-base);color:inherit}.ar-field-grid small{grid-column:1/3;color:var(--dsw-alias-label-secondary)}.ar-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.ar-actions button{border-radius:8px;padding:8px 15px;cursor:pointer}.ar-secondary{background:transparent;color:inherit;border:1px solid var(--dsw-alias-border-l2)}.ar-primary{background:var(--dsw-alias-brand-primary);color:white;border:1px solid var(--dsw-alias-brand-primary)}.ar-actions button:disabled{opacity:.45;cursor:not-allowed}.ar-notice{font-size:12px;text-align:right}.ar-saved{color:var(--dsw-alias-state-success-primary)}.ar-failed{color:var(--dsw-alias-state-error-primary)}.ar-muted{color:var(--dsw-alias-label-secondary)}@media(max-width:680px){.ar-profile-grid,.ar-field-grid{grid-template-columns:1fr}.ar-kind-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ar-funnel{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:12px}.ar-funnel div{display:flex;flex-direction:column;gap:3px;padding:10px;border-radius:8px;background:var(--dsw-alias-bg-base);text-align:center}.ar-funnel strong{font:700 18px/1.2 ui-monospace,monospace}.ar-funnel span{font-size:10px;color:var(--dsw-alias-label-secondary)}
 .ar-funnel-meta{margin-top:10px!important;font-size:11px!important}

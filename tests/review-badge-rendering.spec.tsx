@@ -2,7 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { CallId } from '@deepseek-ai/dsh-llm'
-import { AutoReviewCallBadge } from '../src/client/index.tsx'
+import { AutoReviewCallBadge, AutoReviewLogo } from '../src/client/index.tsx'
 import type { AutoReviewIndicatorSnapshot } from '../src/types.ts'
 
 function renderBadge(snapshot: AutoReviewIndicatorSnapshot, callId = 'call-reviewed'): string {
@@ -55,5 +55,13 @@ describe('AutoReviewCallBadge', () => {
     expect(html).toContain('aria-label="denied"')
     expect(html).toContain('M9.06543 1.95123')
     expect(html).toContain('m2 2 20 20')
+  })
+
+  it('uses the same canonical glyph as the Auto Review product logo', () => {
+    const html = renderToStaticMarkup(createElement(AutoReviewLogo))
+    expect(html).toContain('data-auto-review-logo="canonical"')
+    expect(html).toContain('M9.06543 1.95123')
+    expect(html).not.toContain('m2 2 20 20')
+    expect(html).toContain('width="24"')
   })
 })

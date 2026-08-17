@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.5.1 - 2026-08-18
+
+- 统一 Auto Review 产品标识：设置页、审查中状态与拒绝状态共用既定 shield-terminal SVG；拒绝态仅额外叠加红色斜杠。
+
 ## 0.5.0 - 2026-08-17
 
 - 增加统一生产门禁：构建、77 项测试、Guardian 来源摘要与 npm packed artifact 离线洁净导入。
