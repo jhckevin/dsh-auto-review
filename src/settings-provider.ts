@@ -41,6 +41,7 @@ export interface AutoReviewStatusRequest {
 const SETTINGS_NS = settingsNamespace(AUTO_REVIEW_SETTINGS_NAMESPACE)
 const SETTINGS_FIELDS = new Set<keyof AutoReviewUiSettings>([
   'enabled', 'reviewerModel', 'maxInputBytes', 'maxOutputTokens', 'timeoutMs',
+  'sandboxDefaultAllow',
   'maxAttempts', 'transcriptMaxEntries', 'transcriptMaxBytes', 'failureThreshold',
   'breakerCooldownMs',
 ])

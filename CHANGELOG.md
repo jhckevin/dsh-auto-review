@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Auto Review 关闭后完全回到 Harness 原生工具与审批链，不再隐式批准、路由或硬拒绝动作。
+- `danger-full-access` 不再进入 Auto Review；设置页明确该权限档位没有原生沙盒审批边界。
+- 新增默认开启的“原生沙盒内默认通过”设置；关闭时可让 confined actions 也进入 reviewer，执行仍由原生 sandbox 约束。
+- 普通 sandboxed process 改走原生 fast path；敏感路径、网络动作和显式 sandbox escalation 继续审查。
+
 ## 0.4.1
 
 - 修复 shell 参数中的 `.ssh` 路径被网络命令正则误分类为 `network` 的问题。

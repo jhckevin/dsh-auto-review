@@ -18,16 +18,16 @@ describe('explicit settings provider', () => {
     await ctx.plugin(AutoReviewSettingsBridge)
 
     const section = ctx.settings.describe().find(item => item.ns === 'auto-review')
-    expect(section?.value).toMatchObject({ enabled: true, reviewerModel: 'flash' })
+    expect(section?.value).toMatchObject({ enabled: true, sandboxDefaultAllow: true, reviewerModel: 'flash' })
     const initial = ctx.actionReviewSettings.read()
     expect(initial).toMatchObject({ value: { reviewerModel: 'flash' }, revision: 0, writable: true })
     const updated = await ctx.actionReviewSettings.update({
-      patch: { reviewerModel: 'pro', failureThreshold: 5 },
+      patch: { reviewerModel: 'pro', sandboxDefaultAllow: false, failureThreshold: 5 },
       expectedRevision: initial.revision,
     })
     expect(updated).toMatchObject({ value: { reviewerModel: 'pro', failureThreshold: 5 }, revision: 1 })
     expect(ctx.actionReview.uiSettings()).toMatchObject({ reviewerModel: 'pro', failureThreshold: 5 })
-    expect(ctx.actionReview.config.failureThreshold).toBe(5)
+    expect(ctx.actionReview.config).toMatchObject({ failureThreshold: 5, sandboxDefaultAllow: false })
     const reset = await ctx.actionReviewSettings.reset({ expectedRevision: updated.revision })
     expect(reset).toMatchObject({ value: { reviewerModel: 'flash', failureThreshold: 3 }, user: {} })
     expect(ctx.actionReviewSettings.reviewStatus({ sessionId: 's1' })).toEqual({ revision: 0, indicators: [] })

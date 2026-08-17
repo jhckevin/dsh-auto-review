@@ -263,6 +263,7 @@ export class ActionRouter {
       readonly ruleIds?: readonly string[]
     },
     mode: ActionEnvelope['policy']['mode'] = 'enforcing',
+    sandboxDefaultAllow = true,
   ): ActionEnvelope {
     const arguments_ = toJsonValue(exec.arguments)
     const paths = Object.freeze(extractPaths(exec.arguments))
@@ -273,17 +274,21 @@ export class ActionRouter {
       && escalation === undefined
       ? contributed
       : undefined
-    const classification: Classification = selectedContribution !== undefined
+    const describedClassification: Classification = selectedContribution !== undefined
       ? {
           kind: selectedContribution.classification.actionKind,
           disposition: selectedContribution.classification.disposition,
           reason: selectedContribution.classification.reason,
         }
-      : this.classify(exec.name, exec.arguments, paths, sandbox.workspaceRoot, escalation)
+      : this.classify(exec.name, exec.arguments, paths, sandbox, escalation, sandboxDefaultAllow)
+    const classification: Classification = !sandboxDefaultAllow && describedClassification.disposition === 'inside-boundary'
+      ? { ...describedClassification, disposition: 'review', reason: `${describedClassification.reason} Native sandbox default-allow is disabled.` }
+      : describedClassification
     const resolverId = selectedContribution?.resolverId ?? 'builtin'
     const effects = effectsFor(classification, exec.name, exec.arguments, paths, selectedContribution === undefined ? undefined : contributed?.effects)
     const policy = Object.freeze({
       mode,
+      sandboxDefaultAllow,
       resolverId,
       disposition: classification.disposition,
       ruleIds: Object.freeze([
@@ -333,8 +338,9 @@ export class ActionRouter {
     toolName: string,
     arguments_: unknown,
     paths: readonly string[],
-    workspaceRoot: string,
+    sandbox: SandboxExecutionPolicy,
     escalation: ActionEnvelope['requestedEscalation'],
+    sandboxDefaultAllow: boolean,
   ): Classification {
     if (this.config.hardDenyToolNames.includes(toolName)) {
       return { kind: 'hard-deny', disposition: 'hard-deny', reason: 'Tool is listed in deployment hard-deny policy.' }
@@ -342,31 +348,41 @@ export class ActionRouter {
     if (escalation !== undefined) {
       return { kind: 'sandbox-escalation', disposition: 'review', reason: 'Action asks to widen the native sandbox for this call.' }
     }
+    if (sandbox.mode === 'danger-full-access') {
+      return { kind: 'process', disposition: 'inside-boundary', reason: 'Danger full access has no native sandbox approval boundary; Auto Review does not intercept this mode.' }
+    }
     if (containsMarker(paths, this.config.sensitiveMarkers)) {
       return { kind: 'sensitive-read', disposition: 'review', reason: 'Action targets a configured sensitive path.' }
     }
     if (containsMarker(paths, this.config.productionMarkers)) {
       return { kind: 'production-change', disposition: 'review', reason: 'Action targets a configured production marker.' }
     }
-    if (DESTRUCTIVE_TOOLS.has(toolName)) {
-      return { kind: 'destructive', disposition: 'review', reason: 'Tool has destructive filesystem semantics.' }
-    }
     if (PROCESS_TOOLS.has(toolName)) {
-      return classifyCommand(shellCommand(arguments_), this.config.sensitiveMarkers)
-        ?? { kind: 'process', disposition: 'review', reason: 'Process execution crosses the workspace action boundary.' }
+      const elevated = classifyCommand(shellCommand(arguments_), this.config.sensitiveMarkers)
+      if (elevated?.kind === 'network' || elevated?.kind === 'sensitive-read') return elevated
+      if (sandboxDefaultAllow) {
+        return { kind: elevated?.kind ?? 'process', disposition: 'inside-boundary', reason: 'Process remains confined by the native sandbox for this call.' }
+      }
+      return elevated ?? { kind: 'process', disposition: 'review', reason: 'Native sandbox default-allow is disabled for process execution.' }
     }
     if (NETWORK_TOOLS.has(toolName)) {
       return { kind: 'network', disposition: 'review', reason: 'Network access crosses the workspace action boundary.' }
     }
-    const allInside = paths.length > 0 && paths.every(path => insideWorkspace(path, workspaceRoot))
+    const allInside = paths.length > 0 && paths.every(path => insideWorkspace(path, sandbox.workspaceRoot))
+    if (DESTRUCTIVE_TOOLS.has(toolName)) {
+      if (sandboxDefaultAllow && allInside) {
+        return { kind: 'destructive', disposition: 'inside-boundary', reason: 'Destructive filesystem action remains confined to the native workspace boundary.' }
+      }
+      return { kind: 'destructive', disposition: 'review', reason: 'Destructive filesystem action is outside the default native sandbox fast path.' }
+    }
     if (READ_TOOLS.has(toolName)) {
-      if (this.config.allowWorkspaceReads && allInside) {
+      if (sandboxDefaultAllow && this.config.allowWorkspaceReads && allInside) {
         return { kind: 'workspace-read', disposition: 'inside-boundary', reason: 'Read stays inside the session workspace.' }
       }
       return { kind: 'sensitive-read', disposition: 'review', reason: 'Read is outside the session workspace or has no bounded path.' }
     }
     if (WRITE_TOOLS.has(toolName)) {
-      if (this.config.allowWorkspaceWrites && allInside) {
+      if (sandboxDefaultAllow && this.config.allowWorkspaceWrites && allInside) {
         return { kind: 'workspace-write', disposition: 'inside-boundary', reason: 'Non-destructive write stays inside the session workspace.' }
       }
       return { kind: 'workspace-write', disposition: 'review', reason: 'Write is outside the session workspace or has no bounded path.' }

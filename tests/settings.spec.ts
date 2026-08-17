@@ -9,6 +9,7 @@ describe('Auto Review WebUI settings contract', () => {
   it('defaults to the low-latency Flash reviewer', () => {
     expect(DEFAULT_AUTO_REVIEW_UI_SETTINGS).toMatchObject({
       enabled: true,
+      sandboxDefaultAllow: true,
       reviewerModel: 'flash',
       maxAttempts: 3,
       failureThreshold: 3,
@@ -19,7 +20,7 @@ describe('Auto Review WebUI settings contract', () => {
 
   it('projects deployed composition values into the editable settings base', () => {
     expect(autoReviewSettingsBase(
-      { mode: 'shadow', failureThreshold: 5, breakerCooldownMs: 12_000 },
+      { mode: 'shadow', sandboxDefaultAllow: false, failureThreshold: 5, breakerCooldownMs: 12_000 },
       {
         provider: 'deepseek-official',
         model: 'deepseek-v4-pro',
@@ -34,6 +35,7 @@ describe('Auto Review WebUI settings contract', () => {
       },
     )).toEqual({
       enabled: true,
+      sandboxDefaultAllow: false,
       reviewerModel: 'pro',
       maxInputBytes: 24_000,
       maxOutputTokens: 900,

@@ -13,7 +13,8 @@ const STYLE_ID = '@jhckevin/dsh-auto-review/webui'
 
 const zh = {
   nav: '自动审批审查', title: 'Auto Review', subtitle: '仅对越出原生沙盒边界的动作调用独立审查模型。',
-  enabled: '启用 Auto Review', enabledHint: '关闭后恢复原生人工审批；明确硬禁行为仍会直接拒绝。',
+  enabled: '启用 Auto Review', enabledHint: '关闭后完全回到 Harness 原生审批链，扩展不再路由、批准或拒绝动作。',
+  sandboxDefaultAllow: '原生沙盒内默认通过', sandboxDefaultAllowHint: '默认开启。read-only / workspace-write 中已由原生文件沙盒约束的动作不调用模型；关闭后沙盒内动作也进入 reviewer。Full Access 没有沙盒边界，始终不进入 Auto Review。',
   model: '审查模型', flash: 'Flash（默认）', flashHint: '低延迟，适合动作关键路径。', pro: 'Pro', proHint: '更高审查能力，延迟与成本更高。',
   advanced: '高级参数', maxInputBytes: '最大证据字节', maxOutputTokens: '最大输出 token', timeoutMs: '超时（毫秒）',
   maxAttempts: '最多尝试次数', transcriptMaxEntries: '历史条目上限', transcriptMaxBytes: '历史字节上限',
@@ -23,7 +24,8 @@ const zh = {
 }
 const en = {
   nav: 'Auto Review', title: 'Auto Review', subtitle: 'Use an isolated reviewer only for actions that cross the native sandbox boundary.',
-  enabled: 'Enable Auto Review', enabledHint: 'When disabled, native manual approval resumes; explicit hard denials remain denied.',
+  enabled: 'Enable Auto Review', enabledHint: 'When disabled, the extension leaves routing, approval, and denial entirely to the native Harness chain.',
+  sandboxDefaultAllow: 'Allow native-sandbox actions by default', sandboxDefaultAllowHint: 'On by default. Actions confined by read-only/workspace-write bypass the model; when off, sandboxed actions are reviewed too. Full Access has no sandbox boundary and never enters Auto Review.',
   model: 'Reviewer model', flash: 'Flash (default)', flashHint: 'Low latency for the action critical path.', pro: 'Pro', proHint: 'Higher review capability with greater latency and cost.',
   advanced: 'Advanced parameters', maxInputBytes: 'Maximum evidence bytes', maxOutputTokens: 'Maximum output tokens', timeoutMs: 'Timeout (ms)',
   maxAttempts: 'Maximum attempts', transcriptMaxEntries: 'Transcript entry limit', transcriptMaxBytes: 'Transcript byte limit',
@@ -79,7 +81,7 @@ interface PageSnapshot {
 
 type Props = PropsRuntime<'settings.section'> & PropsLocale<'settings.autoReview'> & InjectFace<AutoReviewSettingsInjected>
 type BadgeProps = AutoReviewBadgeOwner & PropsLocale<'settings.autoReview'> & InjectFace<AutoReviewBadgeInjected>
-type NumericField = Exclude<keyof AutoReviewUiSettings, 'enabled' | 'reviewerModel'>
+type NumericField = Exclude<keyof AutoReviewUiSettings, 'enabled' | 'sandboxDefaultAllow' | 'reviewerModel'>
 
 const NUMERIC_FIELDS: readonly NumericField[] = [
   'maxInputBytes', 'maxOutputTokens', 'timeoutMs', 'maxAttempts', 'transcriptMaxEntries',
@@ -188,6 +190,10 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, t }: Pr
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('enabled')}</strong><p>{t('enabledHint')}</p></div>
         <button className="ar-switch" type="button" role="switch" aria-checked={draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, enabled: !draft.enabled }) }}><span /></button>
+      </div>
+      <div className="ar-card ar-toggle-row">
+        <div><strong>{t('sandboxDefaultAllow')}</strong><p>{t('sandboxDefaultAllowHint')}</p></div>
+        <button className="ar-switch" type="button" role="switch" aria-checked={draft.sandboxDefaultAllow} disabled={!draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, sandboxDefaultAllow: !draft.sandboxDefaultAllow }) }}><span /></button>
       </div>
       <div className="ar-card">
         <h3>{t('model')}</h3>

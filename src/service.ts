@@ -78,6 +78,7 @@ function newMetrics(): MutableMetrics {
 export class ActionReviewRuntime extends Service {
   static Config: z<AutoReviewConfig> = z.object({
     mode: z.union(['disabled', 'shadow', 'enforcing'] as const).default('enforcing'),
+    sandboxDefaultAllow: z.boolean().default(true),
     failureThreshold: z.number().step(1).min(1).default(3),
     breakerCooldownMs: z.number().step(1).min(1).default(60000),
     auditMemoryLimit: z.number().step(1).min(1).max(100000).default(4096),
@@ -120,6 +121,7 @@ export class ActionReviewRuntime extends Service {
     super(ctx, 'actionReview')
     this.deployedConfig = Object.freeze({
       mode: config.mode ?? 'enforcing',
+      sandboxDefaultAllow: config.sandboxDefaultAllow ?? true,
       failureThreshold: config.failureThreshold ?? 3,
       breakerCooldownMs: config.breakerCooldownMs ?? 60000,
       auditMemoryLimit: config.auditMemoryLimit ?? 4096,
@@ -170,6 +172,7 @@ export class ActionReviewRuntime extends Service {
     return Object.freeze({
       ...this.deployedConfig,
       mode: settings.enabled ? (deployedMode === 'disabled' ? 'enforcing' : deployedMode) : 'disabled',
+      sandboxDefaultAllow: settings.sandboxDefaultAllow,
       failureThreshold: settings.failureThreshold,
       breakerCooldownMs: settings.breakerCooldownMs,
     })

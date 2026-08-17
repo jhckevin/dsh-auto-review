@@ -2,6 +2,12 @@
 
 每个 ISSUE 单独分支、单独提交组；关闭前必须重新查看固定 Harness 源码和本 ISSUE 改动。
 
+## ISSUE-013：原生 Sandbox Boundary 与权限矩阵（完成）
+
+Auto Review 关闭时完全退出工具路由、guard 和 approval answerer；`danger-full-access` 同样不虚构不存在的沙盒审批边界。新增默认开启的 `sandboxDefaultAllow`：开启时，`read-only` / `workspace-write` 中由原生文件沙盒约束的普通动作不调用 reviewer，敏感读取、网络和明确沙盒升级仍审查；关闭时，沙盒内动作也进入 reviewer，但最终执行仍受原生 sandbox 约束。
+
+验收：覆盖默认 fast path、严格全量审查、disabled no-op、Full Access no-op、原生 escalation 一次性 grant、敏感/网络路由和 WebUI 设置持久化；构建、63/63 测试及 Linux x86 原生 Landlock symlink-escape E2E 全部通过。
+
 ## ISSUE-001：仓库、Bundle 与契约骨架（完成）
 
 建立 package、Config schema、Cordis 导出、bundle patch、错误码和 Loader composition 测试。

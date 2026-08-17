@@ -81,11 +81,21 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
   const pendingByToken = new Map<ToolExecutionToken, PendingReview>()
   const escalationByCall = new Map<string, PendingReview>()
 
+  const sandboxFor = (exec: Readonly<ToolExecution>) => {
+    const session = exec.agent?.session
+    return ctx.sandboxPolicy.resolve(session === undefined ? {} : { session })
+  }
+
+  const autoReviewActive = (exec: Readonly<ToolExecution>): boolean => (
+    ctx.actionReview.config.mode !== 'disabled'
+    && sandboxFor(exec).mode !== 'danger-full-access'
+  )
+
   const route = (exec: Readonly<ToolExecution>): PendingReview => {
     const existing = pendingByToken.get(exec.token)
     if (existing !== undefined) return existing
     const session = exec.agent?.session
-    const sandbox = ctx.sandboxPolicy.resolve(session === undefined ? {} : { session })
+    const sandbox = sandboxFor(exec)
     const descriptor = ctx.actionReview.securityDescriptorFor(exec.name)
     let contribution: Parameters<ActionRouter['route']>[2] = ctx.actionReview.classificationFor(exec.name)
     if (descriptor !== undefined) {
@@ -110,7 +120,13 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
         }
       }
     }
-    const action = router.route(exec, sandbox, contribution, ctx.actionReview.config.mode)
+    const action = router.route(
+      exec,
+      sandbox,
+      contribution,
+      ctx.actionReview.config.mode,
+      ctx.actionReview.config.sandboxDefaultAllow,
+    )
     ctx.actionReview.observeRoutedAction(action)
     const pending: PendingReview = {
       action,
@@ -140,11 +156,14 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
   }
 
   ctx.tools.guard((exec) => {
+    if (!autoReviewActive(exec)) return undefined
     const action = route(exec).action
     return ctx.actionReview.hardDenyReason(action) ?? ctx.actionReview.consumeTicket(exec.token, action)
   })
 
   ctx.on('approval/request', async (request: ApprovalRequest, next: () => Promise<ApprovalOutcome>) => {
+    if (ctx.actionReview.config.mode === 'disabled') return next()
+    if (ctx.sandboxPolicy.resolve({ session: request.agent.session }).mode === 'danger-full-access') return next()
     if (request.callId === undefined) return next()
     const key = callKey(request.agent.session.id, request.callId)
     const pending = escalationByCall.get(key)
@@ -155,6 +174,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
 
   ctx.on('tools/pre-execute', async (exec: ToolExecution, next: () => Promise<PreToolDecision>) => {
     exec.signal.throwIfAborted()
+    if (!autoReviewActive(exec)) return next()
     const pending = route(exec)
     const action = pending.action
     switch (action.disposition) {

@@ -35,13 +35,16 @@ function fakeAgent(id = 'session-auto-review', request = 'Run the exact diagnost
   return { agent, appended }
 }
 
-async function harness(reviewOutcome: ReviewOutcome = 'approved') {
+async function harness(
+  reviewOutcome: ReviewOutcome = 'approved',
+  options: { mode?: 'disabled' | 'shadow' | 'enforcing'; sandboxMode?: 'read-only' | 'workspace-write' | 'danger-full-access'; sandboxDefaultAllow?: boolean } = {},
+) {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
-  await ctx.plugin(SandboxPolicyService, { mode: 'workspace-write', workspaceRoot: '/workspace' })
+  await ctx.plugin(SandboxPolicyService, { mode: options.sandboxMode ?? 'workspace-write', workspaceRoot: '/workspace' })
   await ctx.plugin(ApprovalService)
-  await ctx.plugin(ActionReviewRuntime)
+  await ctx.plugin(ActionReviewRuntime, { mode: options.mode ?? 'enforcing', sandboxDefaultAllow: options.sandboxDefaultAllow ?? true })
   await ctx.plugin({ inject: policyInject, apply: applyPolicy }, { hardDenyToolNames: ['root_destroy'] })
   const reviewed: Array<{
     authority: {
@@ -102,8 +105,8 @@ async function harness(reviewOutcome: ReviewOutcome = 'approved') {
 }
 
 describe('native tools pipeline composition', () => {
-  it('preserves the workspace fast path and reviews process execution', async () => {
-    const { ctx, executions } = await harness()
+  it('preserves native workspace and sandboxed process fast paths', async () => {
+    const { ctx, executions, reviewed } = await harness()
     await expect(ctx.tools.execute({
       callId: CallId('read'), name: 'read_file', arguments: { path: 'src/a.ts' }, signal,
     })).resolves.toMatchObject({ isError: false, value: 'ran' })
@@ -111,6 +114,29 @@ describe('native tools pipeline composition', () => {
       callId: CallId('bash'), name: 'bash', arguments: { command: 'echo ok' }, signal,
     })).resolves.toMatchObject({ isError: false, value: 'ran' })
     expect(executions()).toBe(2)
+    expect(reviewed).toHaveLength(0)
+  })
+
+  it('reviews sandbox-contained actions when sandbox default-allow is disabled', async () => {
+    const { ctx, reviewed } = await harness('approved', { sandboxDefaultAllow: false })
+    await expect(ctx.tools.execute({
+      callId: CallId('bash-strict'), name: 'bash', arguments: { command: 'echo ok' }, signal,
+    })).resolves.toMatchObject({ isError: false })
+    expect(reviewed).toHaveLength(1)
+  })
+
+  it('is a true no-op when disabled and under danger-full-access', async () => {
+    for (const options of [
+      { mode: 'disabled' as const, sandboxMode: 'workspace-write' as const },
+      { mode: 'enforcing' as const, sandboxMode: 'danger-full-access' as const },
+    ]) {
+      const { ctx, executions, reviewed } = await harness('denied', options)
+      await expect(ctx.tools.execute({
+        callId: CallId(`bypass-${options.mode}-${options.sandboxMode}`), name: 'root_destroy', arguments: {}, signal,
+      })).resolves.toMatchObject({ isError: false })
+      expect(executions()).toBe(1)
+      expect(reviewed).toHaveLength(0)
+    }
   })
 
   it('keeps hard denial monotonic and unknown extensions fail closed to manual', async () => {
@@ -225,7 +251,7 @@ describe('native tools pipeline composition', () => {
   })
 
   it('re-reviews one exact human-approved retry instead of bypassing the reviewer', async () => {
-    const { ctx, executions, reviewed } = await harness('denied')
+    const { ctx, executions, reviewed } = await harness('denied', { sandboxDefaultAllow: false })
     const { agent } = fakeAgent('session-rereview')
     const arguments_ = { command: 'echo blocked' }
     await ctx.tools.execute({

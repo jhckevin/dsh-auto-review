@@ -54,6 +54,22 @@ describe('ActionRouter', () => {
     })
   })
 
+  it('lets ordinary native-sandboxed processes bypass the model by default', () => {
+    const router = new ActionRouter()
+    expect(router.route(exec('bash', { command: 'printf ok' }), sandbox)).toMatchObject({
+      actionKind: 'process', disposition: 'inside-boundary',
+    })
+    expect(router.route(exec('bash', { command: 'printf ok' }), sandbox, undefined, 'enforcing', false)).toMatchObject({
+      actionKind: 'process', disposition: 'review',
+    })
+  })
+
+  it('does not invent an Auto Review boundary under native danger-full-access', () => {
+    expect(new ActionRouter().route(exec('bash', { command: 'printf ok' }), {
+      mode: 'danger-full-access', workspaceRoot: '/workspace',
+    })).toMatchObject({ disposition: 'inside-boundary' })
+  })
+
   it('does not confuse sensitive .ssh paths with the ssh network command', () => {
     const router = new ActionRouter()
     expect(router.route(exec('bash', { command: 'cat /root/.ssh/id_rsa' }), sandbox)).toMatchObject({
@@ -66,7 +82,7 @@ describe('ActionRouter', () => {
       actionKind: 'network', disposition: 'review',
     })
     expect(router.route(exec('bash', { command: 'printf ".ssh is a directory name\\n"' }), sandbox)).toMatchObject({
-      actionKind: 'process', disposition: 'review',
+      actionKind: 'process', disposition: 'inside-boundary',
     })
   })
 

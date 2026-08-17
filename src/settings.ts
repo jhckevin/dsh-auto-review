@@ -7,6 +7,7 @@ export const AUTO_REVIEW_SETTINGS_NAMESPACE = 'auto-review'
 /** Flash remains the default reviewer because review sits on the critical action path. */
 export const DEFAULT_AUTO_REVIEW_UI_SETTINGS: AutoReviewUiSettings = Object.freeze({
   enabled: true,
+  sandboxDefaultAllow: true,
   reviewerModel: 'flash',
   maxInputBytes: 16384,
   maxOutputTokens: 768,
@@ -21,6 +22,7 @@ export const DEFAULT_AUTO_REVIEW_UI_SETTINGS: AutoReviewUiSettings = Object.free
 /** Wire-visible schema for the Auto Review configuration page. */
 export const AutoReviewUiSettingsSchema: z<AutoReviewUiSettings> = z.object({
   enabled: z.boolean().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.enabled),
+  sandboxDefaultAllow: z.boolean().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.sandboxDefaultAllow),
   reviewerModel: z.union(['flash', 'pro'] as const).default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.reviewerModel),
   maxInputBytes: z.number().step(1).min(1024).max(262144).default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.maxInputBytes),
   maxOutputTokens: z.number().step(1).min(128).max(4096).default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.maxOutputTokens),
@@ -40,6 +42,7 @@ export function autoReviewSettingsBase(
   const model = reviewer?.model.toLocaleLowerCase().includes('pro') ? 'pro' : 'flash'
   return {
     enabled: runtime.mode !== 'disabled',
+    sandboxDefaultAllow: runtime.sandboxDefaultAllow ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.sandboxDefaultAllow,
     reviewerModel: model,
     maxInputBytes: reviewer?.maxInputBytes ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.maxInputBytes,
     maxOutputTokens: reviewer?.maxOutputTokens ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.maxOutputTokens,

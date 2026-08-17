@@ -43,7 +43,7 @@ describe('Linux x86 native sandbox composition', () => {
     ;(ctx.sandbox as LocalSandboxProvider).internals = { probeBwrap: () => false }
     await ctx.plugin(SandboxPolicyService, { mode: 'workspace-write', workspaceRoot: workspace })
     await ctx.plugin(ApprovalService)
-    await ctx.plugin(ActionReviewRuntime)
+    await ctx.plugin(ActionReviewRuntime, { sandboxDefaultAllow: false })
     await ctx.plugin({ inject: policyInject, apply: applyPolicy })
     ctx.actionReview.registerReviewer({
       id: 'sandbox-e2e-reviewer',

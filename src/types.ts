@@ -40,6 +40,7 @@ export interface ActionBoundarySnapshot {
 
 export interface ActionPolicySnapshot {
   readonly mode: AutoReviewMode
+  readonly sandboxDefaultAllow: boolean
   readonly resolverId: string
   readonly disposition: ActionDisposition
   readonly ruleIds: readonly string[]
@@ -325,6 +326,7 @@ export interface JsonlAuditConfig {
 
 export interface AutoReviewConfig {
   readonly mode?: AutoReviewMode
+  readonly sandboxDefaultAllow?: boolean
   readonly failureThreshold?: number
   readonly breakerCooldownMs?: number
   readonly auditMemoryLimit?: number
@@ -337,6 +339,7 @@ export interface AutoReviewConfig {
 
 export interface ResolvedAutoReviewConfig {
   readonly mode: AutoReviewMode
+  readonly sandboxDefaultAllow: boolean
   readonly failureThreshold: number
   readonly breakerCooldownMs: number
   readonly auditMemoryLimit: number
@@ -385,6 +388,8 @@ export type AutoReviewReviewerModel = 'flash' | 'pro'
 export interface AutoReviewUiSettings {
   /** Whether actions routed to review may be decided by the reviewer. */
   readonly enabled: boolean
+  /** Let actions already confined by the native sandbox bypass model review. */
+  readonly sandboxDefaultAllow: boolean
   /** Reviewer model tier. Flash is the low-latency default. */
   readonly reviewerModel: AutoReviewReviewerModel
   /** Maximum redacted evidence payload accepted by the reviewer. */
