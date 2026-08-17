@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.5.2 - 2026-08-18
+
+- Auto Review 设置选项卡使用与审查状态一致的 canonical shield-terminal SVG；Harness 设置插槽原生支持插件自有导航图标并保留未知插件的默认回退。
+- 为模型分级、Provider、reasoning effort、升级、高风险类型和高级证据/重试/熔断参数增加中英文就地辅助说明。
+
 ## 0.5.1 - 2026-08-18
 
 - 统一 Auto Review 产品标识：设置页、审查中状态与拒绝状态共用既定 shield-terminal SVG；拒绝态仅额外叠加红色斜杠。
