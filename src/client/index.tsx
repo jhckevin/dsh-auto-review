@@ -12,7 +12,7 @@ const LOCALE_NAMESPACE = 'settings.autoReview'
 const STYLE_ID = '@jhckevin/dsh-auto-review/webui'
 
 const zh = {
-  nav: '自动审批审查', title: 'Auto Review', subtitle: '仅对越出原生沙盒边界的动作调用独立审查模型。',
+  nav: '自动审批审查', title: 'Auto Review', subtitle: '依据权限模式、原生沙盒边界与当前策略，将需要审查的动作交给独立模型。',
   enabled: '启用 Auto Review', enabledHint: '关闭后完全回到 Harness 原生审批链，扩展不再路由、批准或拒绝动作。',
   sandboxDefaultAllow: '原生沙盒内默认通过', sandboxDefaultAllowHint: '默认开启。read-only / workspace-write 中已由原生文件沙盒约束的动作不调用模型；关闭后沙盒内动作也进入 reviewer。Full Access 没有沙盒边界，始终不进入 Auto Review。',
   model: '审查模型', flash: 'Flash（默认）', flashHint: '低延迟，适合动作关键路径。', pro: 'Pro', proHint: '更高审查能力，延迟与成本更高。',
@@ -29,7 +29,7 @@ const zh = {
   behavior: '当前权限组合行为', behaviorDisabled: 'Auto Review 已关闭：所有权限档位均完全使用 Harness 原生审批链。', behaviorDefault: '只读/工作区写入：沙盒内普通动作直接通过；越界、敏感和网络动作进入 Reviewer。', behaviorStrict: '只读/工作区写入：沙盒内动作也进入 Reviewer，但实际执行仍受原生沙盒约束。', fullAccessNative: 'Full Access：没有原生沙盒边界，因此不进入 Auto Review。',
 }
 const en = {
-  nav: 'Auto Review', title: 'Auto Review', subtitle: 'Use an isolated reviewer only for actions that cross the native sandbox boundary.',
+  nav: 'Auto Review', title: 'Auto Review', subtitle: 'Route actions to an isolated reviewer according to the permission mode, native sandbox boundary, and active policy.',
   enabled: 'Enable Auto Review', enabledHint: 'When disabled, the extension leaves routing, approval, and denial entirely to the native Harness chain.',
   sandboxDefaultAllow: 'Allow native-sandbox actions by default', sandboxDefaultAllowHint: 'On by default. Actions confined by read-only/workspace-write bypass the model; when off, sandboxed actions are reviewed too. Full Access has no sandbox boundary and never enters Auto Review.',
   model: 'Reviewer model', flash: 'Flash (default)', flashHint: 'Low latency for the action critical path.', pro: 'Pro', proHint: 'Higher review capability with greater latency and cost.',
