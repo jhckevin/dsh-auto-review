@@ -89,3 +89,9 @@ Auto Review 关闭时完全退出工具路由、guard 和 approval answerer；`d
 并发门禁已覆盖两个 session 同时申请沙盒升级：每个 `(session, call)` 只消费自己的 `allowed-once`，原生 approval 事件和哈希审计链互不串线。
 
 最终验收：Linux x86_64 断网测试 38 项通过；真实 Landlock `partial` enforcement 下 workspace 写入成功、symlink 逃逸被拒绝；uncooperative reviewer 的总超时和调用者取消均能终止等待并销毁 Agent；3/10/50 滚动拒绝窗口覆盖交错拒绝；tarball 洁净安装、断网导入和原生 `dsh --dump-config` 组合通过。real-provider 是部署凭据门禁，不是发布包完整性前置条件。
+
+## ISSUE-019：设置导航品牌图标与辅助说明（完成）
+
+让 `settings.section` 原生接收插件自有图标，Auto Review 设置选项卡使用与工具审查状态一致的盾牌终端 SVG，不再依赖设置壳按插件 ID 写死图标。
+
+为模型分级、Provider 路由、reasoning effort、升级策略和高级资源/熔断参数增加中英文就地说明；说明明确总超时、全新 session 重试、证据窗口和失效保护语义，不改变既有执行策略。
