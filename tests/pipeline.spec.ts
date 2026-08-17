@@ -274,6 +274,29 @@ describe('native tools pipeline composition', () => {
     expect(executions()).toBe(0)
   })
 
+  it('routes a syntactically different equivalent denied effect to native human approval without a second model review', async () => {
+    const { ctx, executions, reviewed } = await harness('denied')
+    const { agent } = fakeAgent('session-equivalent')
+    await ctx.tools.execute({
+      callId: CallId('equivalent-first'), name: 'bash',
+      arguments: { command: "cat '/root/.ssh/id_rsa'" }, agent, signal,
+    })
+    let manualAnswers = 0
+    ctx.on('approval/request', () => {
+      manualAnswers += 1
+      return Promise.resolve('allowed-once' as const)
+    })
+    const alternative = await ctx.tools.execute({
+      callId: CallId('equivalent-second'), name: 'bash',
+      arguments: { command: 'cat   /root/.ssh/id_rsa' }, agent, signal,
+    })
+    expect(alternative).toMatchObject({ isError: false, value: 'ran' })
+    expect(reviewed).toHaveLength(1)
+    expect(manualAnswers).toBe(1)
+    expect(executions()).toBe(1)
+    expect(ctx.actionReview.metrics('session-equivalent')).toMatchObject({ retriedEquivalentEffect: 1 })
+  })
+
   it('isolates concurrent one-shot grants and audit chains by session and call', async () => {
     const { ctx, executions } = await harness('approved')
     const left = fakeAgent('session-left', 'Run only the left diagnostic.')

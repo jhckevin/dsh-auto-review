@@ -25,6 +25,7 @@ interface MutableEvaluation {
   failedActions: number
   ticketRejected: number
   retriedDeniedAction: number
+  retriedEquivalentEffect: number
   continuedWithDifferentAction: number
   stoppedAfterDenial: number
   latencyCount: number
@@ -47,7 +48,7 @@ export function evaluateAutoReviewAudit(records: readonly AutoReviewAuditEnvelop
   const state: MutableEvaluation = {
     totalActions: 0, insideBoundary: 0, autoReviewed: 0, approved: 0, denied: 0,
     manual: 0, unavailable: 0, hardDenied: 0, successfulActions: 0, failedActions: 0,
-    ticketRejected: 0, retriedDeniedAction: 0, continuedWithDifferentAction: 0,
+    ticketRejected: 0, retriedDeniedAction: 0, retriedEquivalentEffect: 0, continuedWithDifferentAction: 0,
     stoppedAfterDenial: 0, latencyCount: 0, latencySum: 0, latencyMax: 0,
     byActionKind: new Map(),
   }
@@ -97,6 +98,7 @@ export function evaluateAutoReviewAudit(records: readonly AutoReviewAuditEnvelop
       case 'postDenial': {
         const data = record.data as AutoReviewAuditPayloadMap['postDenial']
         if (data.outcome === 'retried-denied-action') state.retriedDeniedAction += 1
+        else if (data.outcome === 'retried-equivalent-effect') state.retriedEquivalentEffect += 1
         else if (data.outcome === 'continued-with-different-action') state.continuedWithDifferentAction += 1
         else state.stoppedAfterDenial += 1
         break
@@ -122,6 +124,7 @@ export function evaluateAutoReviewAudit(records: readonly AutoReviewAuditEnvelop
     failedActions: state.failedActions,
     ticketRejected: state.ticketRejected,
     retriedDeniedAction: state.retriedDeniedAction,
+    retriedEquivalentEffect: state.retriedEquivalentEffect,
     continuedWithDifferentAction: state.continuedWithDifferentAction,
     stoppedAfterDenial: state.stoppedAfterDenial,
     reviewerLatencyMs: Object.freeze({ count: state.latencyCount, mean: state.latencyCount === 0 ? 0 : state.latencySum / state.latencyCount, max: state.latencyMax }),

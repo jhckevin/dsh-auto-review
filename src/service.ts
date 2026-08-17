@@ -58,6 +58,7 @@ interface MutableMetrics {
   failedActions: number
   ticketRejected: number
   retriedDeniedAction: number
+  retriedEquivalentEffect: number
   continuedWithDifferentAction: number
   stoppedAfterDenial: number
   reviewerLatencyCount: number
@@ -70,7 +71,7 @@ function newMetrics(): MutableMetrics {
   return {
     totalActions: 0, insideBoundary: 0, autoReviewed: 0, approved: 0, denied: 0,
     manual: 0, unavailable: 0, hardDenied: 0, successfulActions: 0, failedActions: 0,
-    ticketRejected: 0, retriedDeniedAction: 0, continuedWithDifferentAction: 0,
+    ticketRejected: 0, retriedDeniedAction: 0, retriedEquivalentEffect: 0, continuedWithDifferentAction: 0,
     stoppedAfterDenial: 0, reviewerLatencyCount: 0, reviewerLatencySum: 0,
     reviewerLatencyMax: 0, byActionKind: new Map(),
   }
@@ -112,6 +113,7 @@ export class ActionReviewRuntime extends Service {
   private readonly lastDenied = new Map<string, { actionDigest: string; turn: number; deniedAt: number }>()
   private readonly pendingDenials = new Map<string, {
     actionDigest: string
+    effectDigest: string
     turn: number
     saferAlternativeSuggested: boolean
   }>()
@@ -365,6 +367,7 @@ export class ActionReviewRuntime extends Service {
             this.lastDenied.set(sessionId, { actionDigest: data.actionDigest, turn, deniedAt: data.finishedAt })
             this.pendingDenials.set(sessionId, {
               actionDigest: data.actionDigest,
+              effectDigest: data.effectDigest ?? data.actionDigest,
               turn,
               saferAlternativeSuggested: data.decision.saferAlternative !== undefined,
             })
@@ -385,7 +388,7 @@ export class ActionReviewRuntime extends Service {
           break
         }
         case 'postDenial':
-          if ((record.data as AutoReviewAuditPayloadMap['postDenial']).outcome !== 'retried-denied-action') {
+          if (!['retried-denied-action', 'retried-equivalent-effect'].includes((record.data as AutoReviewAuditPayloadMap['postDenial']).outcome)) {
             this.pendingDenials.delete(sessionId)
           }
           break
@@ -414,6 +417,7 @@ export class ActionReviewRuntime extends Service {
       failedActions: state.failedActions,
       ticketRejected: state.ticketRejected,
       retriedDeniedAction: state.retriedDeniedAction,
+      retriedEquivalentEffect: state.retriedEquivalentEffect,
       continuedWithDifferentAction: state.continuedWithDifferentAction,
       stoppedAfterDenial: state.stoppedAfterDenial,
       reviewerLatencyMs: {
@@ -605,21 +609,26 @@ export class ActionReviewRuntime extends Service {
     return this.denialStates.get(this.denialKey(action))?.paused ?? false
   }
 
-  observeRoutedAction(action: ActionEnvelope): void {
+  observeRoutedAction(action: ActionEnvelope): 'none' | 'exact-retry' | 'equivalent-retry' | 'different' {
     const sessionId = action.authority.sessionId
-    if (sessionId === undefined) return
+    if (sessionId === undefined) return 'none'
     const pending = this.pendingDenials.get(sessionId)
-    if (pending === undefined) return
+    if (pending === undefined) return 'none'
+    const actionEffectDigest = action.effectDigest ?? action.actionDigest
     const same = pending.actionDigest === action.actionDigest
+    const equivalent = !same && pending.effectDigest === actionEffectDigest
     this.recordAudit('postDenial', {
-      outcome: same ? 'retried-denied-action' : 'continued-with-different-action',
+      outcome: same ? 'retried-denied-action' : equivalent ? 'retried-equivalent-effect' : 'continued-with-different-action',
       deniedActionDigest: pending.actionDigest,
+      deniedEffectDigest: pending.effectDigest,
       nextActionDigest: action.actionDigest,
+      nextEffectDigest: actionEffectDigest,
       turn: pending.turn,
       saferAlternativeSuggested: pending.saferAlternativeSuggested,
       at: Date.now(),
     }, sessionId)
-    if (!same) this.pendingDenials.delete(sessionId)
+    if (!same && !equivalent) this.pendingDenials.delete(sessionId)
+    return same ? 'exact-retry' : equivalent ? 'equivalent-retry' : 'different'
   }
 
   observeTurnEnd(sessionId: string, turn: number): void {
@@ -629,6 +638,7 @@ export class ActionReviewRuntime extends Service {
     this.recordAudit('postDenial', {
       outcome: 'stopped-after-denial',
       deniedActionDigest: pending.actionDigest,
+      deniedEffectDigest: pending.effectDigest,
       turn,
       saferAlternativeSuggested: pending.saferAlternativeSuggested,
       at: Date.now(),
@@ -708,6 +718,7 @@ export class ActionReviewRuntime extends Service {
       schemaVersion: 1,
       actionId: action.actionId,
       actionDigest: action.actionDigest,
+      effectDigest: action.effectDigest ?? action.actionDigest,
       callId: action.callId,
       rootCallId: action.rootCallId,
       toolName: action.toolName,
@@ -757,6 +768,7 @@ export class ActionReviewRuntime extends Service {
       })
       this.pendingDenials.set(action.authority.sessionId, {
         actionDigest: action.actionDigest,
+        effectDigest: action.effectDigest ?? action.actionDigest,
         turn: action.authority.turn ?? 0,
         saferAlternativeSuggested: decision.saferAlternative !== undefined,
       })
@@ -818,6 +830,7 @@ export class ActionReviewRuntime extends Service {
       case 'postDenial': {
         const data = record.data as AutoReviewAuditPayloadMap['postDenial']
         if (data.outcome === 'retried-denied-action') state.retriedDeniedAction += 1
+        else if (data.outcome === 'retried-equivalent-effect') state.retriedEquivalentEffect += 1
         else if (data.outcome === 'continued-with-different-action') state.continuedWithDifferentAction += 1
         else state.stoppedAfterDenial += 1
         break

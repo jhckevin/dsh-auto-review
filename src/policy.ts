@@ -49,6 +49,7 @@ interface PendingReview {
   readonly routedAt: number
   approvalPath: AutoReviewApprovalPath
   reviewOutcome?: ReviewOutcome
+  postDenialRelation: 'none' | 'exact-retry' | 'equivalent-retry' | 'different'
 }
 
 function callKey(sessionId: string, callId: string): string {
@@ -128,7 +129,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
       ctx.actionReview.config.mode,
       ctx.actionReview.config.sandboxDefaultAllow,
     )
-    ctx.actionReview.observeRoutedAction(action)
+    const postDenialRelation = ctx.actionReview.observeRoutedAction(action)
     const pending: PendingReview = {
       action,
       routedAt: Date.now(),
@@ -137,6 +138,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
         : action.disposition === 'hard-deny'
           ? 'hard-deny'
           : 'native-manual',
+      postDenialRelation,
     }
     pendingByToken.set(exec.token, pending)
     ctx.actionReview.recordAudit('routed', {
@@ -178,6 +180,14 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
     if (!autoReviewActive(exec)) return next()
     const pending = route(exec)
     const action = pending.action
+    if (pending.postDenialRelation === 'equivalent-retry') {
+      pending.approvalPath = 'native-manual'
+      ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'native-manual' })
+      return {
+        kind: 'ask',
+        reason: 'Auto Review previously denied a different action with the same normalized effect. A human must approve this exact alternative before execution.',
+      }
+    }
     switch (action.disposition) {
       case 'inside-boundary': {
         ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'inside-boundary' })

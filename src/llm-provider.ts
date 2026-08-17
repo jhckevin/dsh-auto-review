@@ -153,6 +153,7 @@ function reviewerPayload(config: ReturnType<typeof validateConfig>, action: Para
     action: {
       actionId: action.actionId,
       actionDigest: action.actionDigest,
+      effectDigest: action.effectDigest ?? action.actionDigest,
       policyDigest: action.policyDigest,
       boundaryDigest: action.boundaryDigest,
       toolName: action.toolName,

@@ -246,6 +246,85 @@ function effectsFor(
   }
 }
 
+function normalizedCommandShape(command: string): string {
+  const tokens: string[] = []
+  let token = ''
+  let quote: 'single' | 'double' | undefined
+  let escaped = false
+  const push = (): void => {
+    if (token.length > 0) tokens.push(token)
+    token = ''
+  }
+  for (const character of command) {
+    if (escaped) {
+      token += character
+      escaped = false
+      continue
+    }
+    if (character === '\\' && quote !== 'single') {
+      escaped = true
+      continue
+    }
+    if (character === "'" && quote !== 'double') {
+      quote = quote === 'single' ? undefined : 'single'
+      continue
+    }
+    if (character === '"' && quote !== 'single') {
+      quote = quote === 'double' ? undefined : 'double'
+      continue
+    }
+    if (quote === undefined && /\s/u.test(character)) {
+      push()
+      continue
+    }
+    if (quote === undefined && /[;&|<>]/u.test(character)) {
+      push()
+      tokens.push(character)
+      continue
+    }
+    token += character
+  }
+  if (escaped || quote !== undefined) return command.trim().replace(/\s+/g, ' ')
+  push()
+  return JSON.stringify(tokens)
+}
+
+function normalizedEffectBasis(effect: ActionEffect, command: string): unknown {
+  const normalizePaths = (paths: readonly string[]): readonly string[] => Object.freeze(
+    [...new Set(paths.map(path => path.replaceAll('\\\\', '/').replace(/\/{2,}/g, '/')))].sort(),
+  )
+  switch (effect.type) {
+    case 'process.exec': return {
+      type: effect.type,
+      commandShape: normalizedCommandShape(command),
+      ...(effect.cwd === undefined ? {} : { cwd: effect.cwd.replaceAll('\\\\', '/') }),
+    }
+    case 'fs.read': return {
+      type: effect.type, paths: normalizePaths(effect.paths),
+      ...(effect.paths.length === 0 ? { commandShape: normalizedCommandShape(command) } : {}),
+    }
+    case 'fs.write': return {
+      type: effect.type, paths: normalizePaths(effect.paths), destructive: effect.destructive,
+      ...(effect.paths.length === 0 ? { commandShape: normalizedCommandShape(command) } : {}),
+    }
+    case 'credential.read': return {
+      type: effect.type, paths: normalizePaths(effect.paths),
+      ...(effect.paths.length === 0 ? { commandShape: normalizedCommandShape(command) } : {}),
+    }
+    case 'permission.change': return {
+      type: effect.type, paths: normalizePaths(effect.paths),
+      ...(effect.paths.length === 0 ? { commandShape: normalizedCommandShape(command) } : {}),
+    }
+    case 'network.connect': return {
+      type: effect.type, targets: [...new Set(effect.targets.map(target => target.toLocaleLowerCase()))].sort(),
+      ...(effect.targets.length === 0 ? { commandShape: normalizedCommandShape(command) } : {}),
+    }
+    case 'production.change': return { type: effect.type, targets: [...new Set(effect.targets)].sort() }
+    case 'external.tool': return { type: effect.type, name: effect.name }
+    case 'opaque': return { type: effect.type, reason: effect.reason }
+  }
+}
+
 export class ActionRouter {
   readonly config: ResolvedRouterConfig
 
@@ -308,12 +387,18 @@ export class ActionRouter {
       effects,
       ...(escalation === undefined ? {} : { requestedEscalation: escalation }),
     }))
+    const effectDigest = sha256Json(toJsonValue({
+      actionKind: classification.kind,
+      effects: effects.map(effect => normalizedEffectBasis(effect, shellCommand(exec.arguments))),
+      ...(escalation === undefined ? {} : { requestedEscalation: escalation }),
+    }))
     const policyDigest = sha256Json(toJsonValue(policy))
     const boundaryDigest = sha256Json(toJsonValue({ ...boundary, paths }))
     return Object.freeze({
       schemaVersion: 1,
       actionId: `${exec.callId}:${actionDigest.slice(0, 16)}`,
       actionDigest,
+      effectDigest,
       policyDigest,
       boundaryDigest,
       callId: exec.callId,

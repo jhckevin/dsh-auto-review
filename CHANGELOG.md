@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- 新增归一化 `effectDigest` 与拒绝后语义关系审计，区分 exact retry、equivalent-effect retry 和真正不同动作。
+- 不同语法重试同一被拒绝效果时不再重复抽样 Reviewer，改走 Harness 原生一次性人工审批与完整 ticket 校验。
+- 运行时和离线评估新增 `retriedEquivalentEffect`，旧审计缺少 effect digest 时兼容回退。
 - 完整迁入固定版本的 Codex Guardian canonical policy/template，并记录 Apache-2.0 来源与逐字节摘要。
 - Reviewer 改用核心规则常驻、详细风险规则按 outline/search/get 渐进检索，私有策略工具不暴露给主 agent。
 - Reviewer Session 使用对象身份注册并在销毁时撤销，防止私有策略工具递归触发 Auto Review 或被伪造 id 绕过。

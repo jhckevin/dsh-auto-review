@@ -2,6 +2,12 @@
 
 每个 ISSUE 单独分支、单独提交组；关闭前必须重新查看固定 Harness 源码和本 ISSUE 改动。
 
+## ISSUE-016：拒绝后的等价效果绕过与人工恢复（完成）
+
+新增与 action digest 分离的 `effectDigest`：对结构化 effects、目标路径、网络目标和 shell 命令进行确定性归一化，忽略无实质意义的引号与空白差异，同时保留真实目标差异。拒绝后再提交同 digest 记为 exact retry；语法不同但 effect digest 相同记为 equivalent-effect retry；真正不同的效果才记为 different action。旧审计没有 effect digest 时按 action digest 兼容恢复。
+
+等价效果重试不会再次碰运气调用 Reviewer，也不会静默执行，而是直接进入 Harness 原生一次性人工审批；批准后仍需要绑定 action/policy/boundary/call 的一次性 ticket。统计与离线 eval 新增 `retriedEquivalentEffect`。构建、75/75 测试、等价敏感读取真实工具管线 E2E 通过。
+
 ## ISSUE-015：Canonical Guardian 策略与渐进检索（完成）
 
 从固定 OpenAI Codex 源码 commit 完整、逐字节迁入 Guardian `policy_template.md` 与 `policy.md`，保留上游许可证、来源 commit 和 SHA-256 一致性证据。Reviewer 启动提示只装载可信证据、授权评分、基础风险与 outcome 阈值等不可省略核心章节；凭据、数据外传、破坏性操作、安全弱化等详细规则由三个私有只读工具按 outline → search → exact section 渐进展开，避免每次审查注入整份语料。

@@ -59,6 +59,8 @@ export interface ActionEnvelope {
   readonly schemaVersion: 1
   readonly actionId: string
   readonly actionDigest: string
+  /** Stable digest of normalized intended effects; excludes call identity and inconsequential shell quoting/spacing. */
+  readonly effectDigest: string
   readonly policyDigest: string
   readonly boundaryDigest: string
   readonly callId: CallId
@@ -149,6 +151,8 @@ export interface AutoReviewAuditRecord {
   readonly schemaVersion: 1
   readonly actionId: string
   readonly actionDigest: string
+  /** Missing only on pre-ISSUE-016 persisted records; replay falls back to actionDigest. */
+  readonly effectDigest?: string
   readonly callId?: CallId
   readonly rootCallId?: CallId
   readonly toolName: string
@@ -272,9 +276,11 @@ export interface AutoReviewOverrideRecord {
 }
 
 export interface AutoReviewPostDenialRecord {
-  readonly outcome: 'retried-denied-action' | 'continued-with-different-action' | 'stopped-after-denial'
+  readonly outcome: 'retried-denied-action' | 'retried-equivalent-effect' | 'continued-with-different-action' | 'stopped-after-denial'
   readonly deniedActionDigest: string
+  readonly deniedEffectDigest: string
   readonly nextActionDigest?: string
+  readonly nextEffectDigest?: string
   readonly turn: number
   readonly saferAlternativeSuggested: boolean
   readonly at: number
@@ -293,6 +299,7 @@ export interface AutoReviewMetricsSnapshot {
   readonly failedActions: number
   readonly ticketRejected: number
   readonly retriedDeniedAction: number
+  readonly retriedEquivalentEffect: number
   readonly continuedWithDifferentAction: number
   readonly stoppedAfterDenial: number
   readonly reviewerLatencyMs: { readonly count: number; readonly mean: number; readonly max: number }

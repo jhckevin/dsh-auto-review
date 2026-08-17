@@ -8,6 +8,7 @@ const action: ActionEnvelope = Object.freeze({
   schemaVersion: 1,
   actionId: 'call:deadbeef',
   actionDigest: 'd'.repeat(64),
+  effectDigest: 'c'.repeat(64),
   policyDigest: 'e'.repeat(64),
   boundaryDigest: 'f'.repeat(64),
   callId: CallId('call'),
@@ -297,7 +298,7 @@ describe('ActionReviewRuntime', () => {
     expect(ctx.actionReview.consumeExactOverride({ ...scoped, actionDigest: '0'.repeat(64) })).toBeUndefined()
   })
 
-  it('records retry, different-action continuation, and turn-end stop after denials', async () => {
+  it('records exact retry, equivalent-effect bypass, different continuation, and turn-end stop', async () => {
     const ctx = new Context()
     await ctx.plugin(ActionReviewRuntime)
     ctx.actionReview.registerReviewer({
@@ -317,12 +318,14 @@ describe('ActionReviewRuntime', () => {
     await ctx.actionReview.review(scoped, undefined, signal)
     ctx.actionReview.observeRoutedAction(scoped)
     ctx.actionReview.observeRoutedAction({ ...scoped, actionDigest: '0'.repeat(64) })
+    ctx.actionReview.observeRoutedAction({ ...scoped, actionDigest: '1'.repeat(64), effectDigest: '2'.repeat(64) })
     await ctx.actionReview.review(scoped, undefined, signal)
     ctx.actionReview.observeTurnEnd('behavior', 4)
     expect(ctx.actionReview.auditRecords('behavior').filter(record => record.kind === 'postDenial').map(record => record.data))
       .toEqual([
         expect.objectContaining({ outcome: 'retried-denied-action', saferAlternativeSuggested: true }),
-        expect.objectContaining({ outcome: 'continued-with-different-action', nextActionDigest: '0'.repeat(64) }),
+        expect.objectContaining({ outcome: 'retried-equivalent-effect', nextActionDigest: '0'.repeat(64) }),
+        expect.objectContaining({ outcome: 'continued-with-different-action', nextActionDigest: '1'.repeat(64) }),
         expect.objectContaining({ outcome: 'stopped-after-denial', saferAlternativeSuggested: true }),
       ])
   })
@@ -334,6 +337,7 @@ describe('ActionReviewRuntime', () => {
       schemaVersion: 1 as const,
       actionId: action.actionId,
       actionDigest: action.actionDigest,
+      effectDigest: action.effectDigest,
       callId: action.callId,
       rootCallId: action.rootCallId,
       toolName: action.toolName,
@@ -362,6 +366,7 @@ describe('ActionReviewRuntime', () => {
     }, 'metrics')
     ctx.actionReview.recordAudit('postDenial', {
       outcome: 'stopped-after-denial', deniedActionDigest: action.actionDigest, turn: 1,
+      deniedEffectDigest: action.effectDigest,
       saferAlternativeSuggested: false, at: 30,
     }, 'metrics')
     expect(ctx.actionReview.metrics('metrics')).toMatchObject({
