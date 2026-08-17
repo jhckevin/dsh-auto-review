@@ -117,6 +117,7 @@ export class ActionReviewRuntime extends Service {
   }>()
   private readonly globalMetrics = newMetrics()
   private readonly sessionMetrics = new Map<string, MutableMetrics>()
+  private readonly reviewerSessions = new WeakSet<Session>()
 
   constructor(ctx: Context, config: AutoReviewConfig = {}) {
     super(ctx, 'actionReview')
@@ -202,6 +203,22 @@ export class ActionReviewRuntime extends Service {
         if (this.reviewer === reviewer) this.reviewer = undefined
       }
     }.bind(this), 'actionReview.registerReviewer()')
+  }
+
+  /** Mark only the exact runtime-created reviewer session so its private read-only policy tools cannot recurse into Auto Review. */
+  registerReviewerSession(session: Session): () => void {
+    this.reviewerSessions.add(session)
+    let active = true
+    return () => {
+      if (!active) return
+      active = false
+      this.reviewerSessions.delete(session)
+    }
+  }
+
+  /** Identity check, deliberately not based on a forgeable session id or metadata string. */
+  isReviewerSession(session: Session | undefined): boolean {
+    return session !== undefined && this.reviewerSessions.has(session)
   }
 
   registerAuditSink(sink: ActionReviewAuditSink): () => void {

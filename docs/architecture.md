@@ -35,7 +35,7 @@ frozen ToolExecution
 
 ### Provider
 
-`LlmActionReviewer` 为每次尝试通过 `ctx.agents.create()` 建立独立 Agent/Session。其 scoped tool restriction 为空，system prompt assembly 被替换为 reviewer 专用内容，runtime contexts 与主 agent persona 不进入请求；模型选择固定为 provider 配置。输入包含经过预算和脱敏的 action、分层标记信任来源的紧凑 transcript、sandbox 事实与显式升级目标。参数、命令、路径、模型消息、工具输出和 justification 均不构成用户授权。严格解析一个版本化 JSON object；单次审查总超时 90 秒、最多三次新 Session 尝试，完成或失败后销毁 Agent/Session。超时、取消、adapter failure 和非法输出均 fail closed。
+`LlmActionReviewer` 为每次尝试通过 `ctx.agents.create()` 建立独立 Agent/Session。其 scoped restriction 遮蔽全部主 Agent 工具，再注册三个只存在于 Reviewer 子作用域的 canonical policy 只读工具；system prompt assembly 被替换为核心 Guardian 规则，runtime contexts 与主 agent persona 不进入请求。完整策略正文逐字节随包发布，详细风险章节通过 outline → search → exact get 渐进展开。Reviewer Session 的内部递归豁免绑定对象身份而非 session id，并在销毁时撤销。模型可选择任意 Harness 已注册 provider/model，或按 action kind 使用共享总 timeout 的 primary/strong 两级策略。输入包含经过预算和脱敏的 action、分层标记信任来源的紧凑 transcript、sandbox 事实与显式升级目标。参数、命令、路径、模型消息、工具输出和 justification 均不构成用户授权。严格解析一个带 `userAuthorization` 的版本化 JSON object；最多三次新 Session 尝试，完成或失败后销毁 Agent/Session。超时、取消、adapter failure 和非法输出均 fail closed。
 
 ### Consumer
 

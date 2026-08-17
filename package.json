@@ -46,6 +46,7 @@
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "lib/client.js.map",
+    "policies/**/*.md",
     "cordis.patch.yml",
     "README.md",
     "CHANGELOG.md",

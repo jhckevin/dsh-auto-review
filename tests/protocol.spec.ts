@@ -7,6 +7,7 @@ describe('Auto Review protocol', () => {
       schemaVersion: 1,
       outcome: 'approved',
       riskLevel: 'low',
+      userAuthorization: 'high',
       rationale: 'Bounded workspace read.',
       policyRuleIds: ['AR-WORKSPACE-READ'],
       uncertainty: '',
@@ -14,6 +15,7 @@ describe('Auto Review protocol', () => {
       schemaVersion: 1,
       outcome: 'approved',
       riskLevel: 'low',
+      userAuthorization: 'high',
       rationale: 'Bounded workspace read.',
       policyRuleIds: ['AR-WORKSPACE-READ'],
       uncertainty: '',
@@ -23,13 +25,20 @@ describe('Auto Review protocol', () => {
   it('rejects Markdown, extra keys and open-vocabulary outcomes', () => {
     expect(() => parseReviewDecision('```json\n{}\n```')).toThrow(/exactly one JSON object/)
     expect(() => parseReviewDecision(JSON.stringify({
-      schemaVersion: 1, outcome: 'approved', riskLevel: 'low', rationale: 'x',
+      schemaVersion: 1, outcome: 'approved', riskLevel: 'low', userAuthorization: 'high', rationale: 'x',
       policyRuleIds: [], uncertainty: '', extra: true,
     }))).toThrow(/unknown key/)
     expect(() => parseReviewDecision(JSON.stringify({
-      schemaVersion: 1, outcome: 'probably', riskLevel: 'low', rationale: 'x',
+      schemaVersion: 1, outcome: 'probably', riskLevel: 'low', userAuthorization: 'high', rationale: 'x',
       policyRuleIds: [], uncertainty: '',
     }))).toThrow(/closed vocabulary/)
+  })
+
+  it('requires the canonical user-authorization score', () => {
+    expect(() => parseReviewDecision(JSON.stringify({
+      schemaVersion: 1, outcome: 'approved', riskLevel: 'low', rationale: 'x',
+      policyRuleIds: [], uncertainty: '',
+    }))).toThrow(/userAuthorization/)
   })
 
   it.each([null, '', '   '])('normalizes an empty optional saferAlternative (%j) to omission', value => {
@@ -37,6 +46,7 @@ describe('Auto Review protocol', () => {
       schemaVersion: 1,
       outcome: 'approved',
       riskLevel: 'low',
+      userAuthorization: 'high',
       rationale: 'Exact workspace-local action.',
       policyRuleIds: ['AR-ROUTE-PROCESS'],
       saferAlternative: value,
@@ -49,6 +59,7 @@ describe('Auto Review protocol', () => {
       schemaVersion: 1,
       outcome: 'approved',
       riskLevel: 'low',
+      userAuthorization: 'high',
       rationale: 'x',
       policyRuleIds: [],
       uncertainty: '',

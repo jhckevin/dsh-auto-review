@@ -1,5 +1,16 @@
 # Third-Party Notices
 
+## OpenAI Codex Guardian policy corpus
+
+`policies/codex/guardian-policy-template.md` and
+`policies/codex/guardian-policy.md` are verbatim snapshots from the OpenAI
+Codex repository, commit `04caa22c8220c24b1428dbeaebcb744bf3875771`, paths
+`codex-rs/core/src/guardian/policy_template.md` and
+`codex-rs/core/src/guardian/policy.md`. They remain subject to the upstream
+Apache License 2.0 and are not relicensed by this package's MIT License.
+
+Upstream source: https://github.com/openai/codex
+
 ## Codex Desktop Auto Review shield-terminal glyph
 
 The shield-terminal SVG path used by the Auto Review Tool-call badge was

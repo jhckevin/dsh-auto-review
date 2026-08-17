@@ -4,6 +4,7 @@ const KEYS = new Set([
   'schemaVersion',
   'outcome',
   'riskLevel',
+  'userAuthorization',
   'rationale',
   'policyRuleIds',
   'saferAlternative',
@@ -37,6 +38,9 @@ export function parseReviewDecision(text: string): ReviewDecision {
   if (!RISK_LEVELS.includes(record.riskLevel as never)) {
     throw new TypeError('auto-review response riskLevel is outside the closed vocabulary')
   }
+  if (!['unknown', 'low', 'medium', 'high'].includes(record.userAuthorization as string)) {
+    throw new TypeError('auto-review response userAuthorization is outside the closed vocabulary')
+  }
   if (!Array.isArray(record.policyRuleIds) || record.policyRuleIds.length > 16) {
     throw new TypeError('auto-review response policyRuleIds must be an array of at most 16 ids')
   }
@@ -50,6 +54,7 @@ export function parseReviewDecision(text: string): ReviewDecision {
     schemaVersion: 1,
     outcome: record.outcome as ReviewDecision['outcome'],
     riskLevel: record.riskLevel as ReviewDecision['riskLevel'],
+    userAuthorization: record.userAuthorization as NonNullable<ReviewDecision['userAuthorization']>,
     rationale: boundedString(record.rationale, 'rationale', 4096),
     policyRuleIds: Object.freeze(policyRuleIds),
     ...(saferAlternative === undefined ? {} : { saferAlternative }),

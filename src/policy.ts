@@ -88,6 +88,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
 
   const autoReviewActive = (exec: Readonly<ToolExecution>): boolean => (
     ctx.actionReview.config.mode !== 'disabled'
+    && !ctx.actionReview.isReviewerSession(exec.agent?.session)
     && sandboxFor(exec).mode !== 'danger-full-access'
   )
 

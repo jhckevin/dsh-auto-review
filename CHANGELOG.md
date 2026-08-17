@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- 完整迁入固定版本的 Codex Guardian canonical policy/template，并记录 Apache-2.0 来源与逐字节摘要。
+- Reviewer 改用核心规则常驻、详细风险规则按 outline/search/get 渐进检索，私有策略工具不暴露给主 agent。
+- Reviewer Session 使用对象身份注册并在销毁时撤销，防止私有策略工具递归触发 Auto Review 或被伪造 id 绕过。
+- 严格决策协议新增 `userAuthorization` 评分，风险与授权之后才派生 allow/deny。
 - 模型配置改为通用 Harness provider/model/reasoning-effort，不再局限于内置 Flash/Pro 名称。
 - 新增单模型与风险分级策略；可配置常规/高风险 profile、强模型 action kinds 和不确定结论升级。
 - 最终审查决策记录实际 reviewer tier、provider、model 及二次升级来源；WebUI 不接触 provider 凭据。

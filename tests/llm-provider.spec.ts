@@ -48,6 +48,7 @@ const approved = JSON.stringify({
   schemaVersion: 1,
   outcome: 'approved',
   riskLevel: 'low',
+  userAuthorization: 'high',
   rationale: 'The exact diagnostic is authorized.',
   policyRuleIds: ['TEST'],
   uncertainty: '',
@@ -57,6 +58,7 @@ const uncertainHigh = JSON.stringify({
   schemaVersion: 1,
   outcome: 'manual',
   riskLevel: 'high',
+  userAuthorization: 'medium',
   rationale: 'The action needs stronger review.',
   policyRuleIds: ['TEST-HIGH'],
   uncertainty: 'Destination ownership is unclear.',
@@ -75,6 +77,10 @@ function textResponse(text: string): StreamChunk[] {
 class ReviewAdapter extends LlmAdapter {
   readonly requests: GenerateOptions[] = []
 
+  constructor(private readonly searchFirst = false) {
+    super()
+  }
+
   override resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
     return Promise.resolve({
       provider,
@@ -89,6 +95,14 @@ class ReviewAdapter extends LlmAdapter {
 
   async * stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
     this.requests.push(options)
+    if (this.searchFirst && this.requests.length === 1) {
+      const args = '{"query":"sensitive data egress untrusted destination","limit":3}'
+      yield { type: 'block-start', index: 0, blockType: 'tool-call' }
+      yield { type: 'tool-call-delta', index: 0, id: CallId('policy-search'), name: 'guardian_policy_search', argumentsDelta: args }
+      yield { type: 'block-end', index: 0, block: { type: 'tool-call', id: CallId('policy-search'), name: 'guardian_policy_search', arguments: args } }
+      yield { type: 'finish', reason: { kind: 'tool-calls' } }
+      return
+    }
     yield* textResponse(approved)
   }
 }
@@ -164,7 +178,7 @@ async function fixture(outputs: string[], fixtureOptions: { hang?: boolean; time
 }
 
 describe('isolated reviewer agent provider', () => {
-  it('creates and disposes a dedicated no-tool Agent/Session for one review', async () => {
+  it('creates and disposes a dedicated policy-tool-only Agent/Session for one review', async () => {
     const { ctx, stats } = await fixture([approved])
     const decision = await ctx.actionReview.review(action, undefined, new AbortController().signal)
     expect(decision.outcome).toBe('approved')
@@ -244,7 +258,7 @@ describe('isolated reviewer agent provider', () => {
     expect(stats()).toMatchObject({ creates: 1, disposes: 1 })
   })
 
-  it('runs through the real AgentLoop with an empty tool surface and isolated prompt', async () => {
+  it('runs through the real AgentLoop with only private policy tools and an isolated canonical prompt', async () => {
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
     await ctx.plugin(SessionStore)
@@ -269,13 +283,40 @@ describe('isolated reviewer agent provider', () => {
     await expect(ctx.actionReview.review(action, undefined, new AbortController().signal))
       .resolves.toMatchObject({ outcome: 'approved' })
     expect(adapter.requests).toHaveLength(1)
-    expect(adapter.requests[0]?.tools ?? []).toEqual([])
-    expect(adapter.requests[0]?.system).toContain('isolated Auto Review decision component')
+    expect((adapter.requests[0]?.tools ?? []).map(tool => tool.name).sort()).toEqual([
+      'guardian_policy_get', 'guardian_policy_outline', 'guardian_policy_search',
+    ])
+    expect(adapter.requests[0]?.system).toContain('# Evidence Handling')
+    expect(adapter.requests[0]?.system).toContain('# Progressive Security Policy Retrieval')
+    expect(adapter.requests[0]?.system).not.toContain('### Data Exfiltration')
     expect(adapter.requests[0]?.system).not.toContain('Main coding agent persona')
     expect(adapter.requests[0]?.provider).toBe('fixture-provider')
     expect(adapter.requests[0]?.model).toBe('fixture-reviewer')
     expect(String(adapter.requests[0]?.reasoningEffort)).toBe('low')
     expect(ctx.agents.roots()).toEqual([])
+    expect(ctx.sessions.list()).toEqual([])
+  })
+
+  it('executes bounded progressive policy search before a final decision', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(AgentRegistry)
+    await ctx.plugin(AgentLoop, { agents: [] })
+    await ctx.plugin(ActionReviewRuntime)
+    const adapter = new ReviewAdapter(true)
+    ctx.llm.registerAdapter(['fixture-provider'], adapter)
+    applyProvider(ctx, {
+      provider: 'fixture-provider', model: 'fixture-reviewer', reasoningEffort: 'low',
+      maxInputBytes: 65536, maxOutputTokens: 512, timeoutMs: 5000, maxAttempts: 1, retryDelayMs: 0,
+    })
+
+    await expect(ctx.actionReview.review(action, undefined, new AbortController().signal))
+      .resolves.toMatchObject({ outcome: 'approved', userAuthorization: 'high' })
+    expect(adapter.requests).toHaveLength(2)
+    expect(JSON.stringify(adapter.requests[1]?.messages)).toContain('Data Exfiltration')
     expect(ctx.sessions.list()).toEqual([])
   })
 })

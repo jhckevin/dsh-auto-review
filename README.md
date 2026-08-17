@@ -2,7 +2,7 @@
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
-当前版本：`0.4.0`。
+当前版本：`0.4.1`（下一生产升级在 `Unreleased` 中分 ISSUE 落地）。
 
 本项目不把 Auto Review 定义为“自动放行”。它在 DeepSeek Harness 原生工具管线中完成确定性动作分类、隔离模型审查、一次性用户审批回退、Linux 文件沙盒约束与可重放审计。
 
@@ -52,9 +52,9 @@ WebUI 只在动作实际进入独立 reviewer 时，于对应工具调用右侧�
 
 `/auto-review` 通过 Harness 原生 CommandRuntime 暴露当前 session 的动作漏斗、review 结果、执行结果、票据拒绝、拒绝后行为和 reviewer 延迟；CommandRuntime 已提供 TUI/RPC 的统一 list/execute 面。`evaluateAutoReviewAudit()` 则在不启动 Harness、不访问模型的情况下从归档记录重建同一组指标，并报告 decision/result/ticket 的关联异常。图片中的数量是某次观测值，不是实现常量；实现保证分支语义和可测量性，而不追求固定比例。
 
-Reviewer Agent 的 system prompt 和 runtime context 由 provider 权威替换，工具可见集为空，模型选择固定为 reviewer 配置。每次尝试使用新的 Session；单次审查总超时默认 90 秒，最多三次尝试。紧凑 transcript 逐条标记信任级别，只有直接用户消息可作为授权，模型文本、工具输出和动作参数均是不可信证据。完成、失败、超时或取消都会销毁 reviewer Agent/Session。
+Reviewer Agent 的 system prompt 和 runtime context 由 provider 权威替换。主 agent 的工具集全部被遮蔽，Reviewer 只得到三个子作用域私有、只读的 canonical policy 工具：outline、search、exact-section get。核心证据规则、授权评分、基础风险与 outcome 阈值常驻；其余 Codex Guardian 风险规则按需渐进展开，完整原文和固定上游 commit 摘要随包发布。模型可选择任意已注册 Harness provider/model，也可按 action kind 使用 primary/strong 两级策略；provider 凭据不进入 WebUI。每次尝试使用新的 Session；所有尝试和强模型升级共享单次审查总超时。紧凑 transcript 逐条标记信任级别，只有直接用户消息可作为授权，模型文本、工具输出和动作参数均是不可信证据。完成、失败、超时或取消都会销毁 reviewer Agent/Session。
 
-隔离范围是模型可见与模型可调用能力：reviewer 不获得 filesystem、shell、network、MCP、memory 或 delegation tool。进程内 Cordis 插件和 LLM adapter 属于受信任计算基；能修改全局 Agent 生命周期或 request waterfall 的宿主代码不在本插件可防御的攻击者范围内。
+隔离范围是模型可见与模型可调用能力：reviewer 不获得 filesystem、shell、network、MCP、memory 或 delegation tool。私有策略工具只读取随包发布的不可变策略语料；Reviewer Session 的递归豁免按运行时对象身份注册并在销毁时撤销，不能靠伪造 session id 获得。进程内 Cordis 插件和 LLM adapter 属于受信任计算基；能修改全局 Agent 生命周期或 request waterfall 的宿主代码不在本插件可防御的攻击者范围内。
 
 Harness rc.6 的持久化读取器明确没有下游插件事件类型注册面，未知且未标记 `ignorable` 的 Session event 会导致冷恢复拒绝；而公开 `Session.append()` 又不能为下游事件设置该信封位。因此本插件不伪造或 monkey-patch `KNOWN_SESSION_EVENT_TYPES`，也不把审计塞入语义错误的内置事件。审计使用正式 capability/provider 分层和独立存储，原生 `approval/asked`/`approval/decided` 仍由 Harness Session Log 权威持久化。
 

@@ -2,6 +2,12 @@
 
 每个 ISSUE 单独分支、单独提交组；关闭前必须重新查看固定 Harness 源码和本 ISSUE 改动。
 
+## ISSUE-015：Canonical Guardian 策略与渐进检索（完成）
+
+从固定 OpenAI Codex 源码 commit 完整、逐字节迁入 Guardian `policy_template.md` 与 `policy.md`，保留上游许可证、来源 commit 和 SHA-256 一致性证据。Reviewer 启动提示只装载可信证据、授权评分、基础风险与 outcome 阈值等不可省略核心章节；凭据、数据外传、破坏性操作、安全弱化等详细规则由三个私有只读工具按 outline → search → exact section 渐进展开，避免每次审查注入整份语料。
+
+策略工具只存在于独立 Reviewer Agent 的子作用域，主 coding agent 不可见。内部递归豁免采用运行时 Session 对象身份 WeakSet，不接受可伪造的 session id；Reviewer 销毁时同步撤销。严格响应协议新增 `userAuthorization`，全量构建、73/73 测试、真实 AgentLoop 策略工具调用、Linux x86 原生 sandbox E2E 和 packed-artifact 策略文件检查通过。
+
 ## ISSUE-014：通用模型接入与风险分级策略（完成）
 
 模型配置不再绑定 DeepSeek Flash/Pro 名称。设置面直接接受 Harness 已注册的任意 `provider` 路由、provider-owned model id 和可选 reasoning effort，例如 `openai-compatible / gpt-5.6-terra / high`。API key、base URL 等秘密仍由 Host provider 配置持有，不通过 WebUI 暴露。

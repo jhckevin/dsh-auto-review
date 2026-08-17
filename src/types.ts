@@ -121,6 +121,8 @@ export interface ReviewDecision {
   readonly schemaVersion: 1
   readonly outcome: ReviewOutcome
   readonly riskLevel: RiskLevel
+  /** Canonical Guardian authorization score. Required for model decisions; optional on synthetic runtime decisions. */
+  readonly userAuthorization?: UserAuthorization
   readonly rationale: string
   readonly policyRuleIds: readonly string[]
   readonly saferAlternative?: string
