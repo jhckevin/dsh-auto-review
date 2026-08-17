@@ -4,7 +4,7 @@ import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-import type { AutoReviewUiSettings } from '../types.ts'
+import type { ActionKind, AutoReviewUiSettings } from '../types.ts'
 import type { AutoReviewSettingsSnapshot } from '../settings-provider.ts'
 import { ReviewStatusClient } from './review-status.ts'
 
@@ -16,6 +16,9 @@ const zh = {
   enabled: '启用 Auto Review', enabledHint: '关闭后完全回到 Harness 原生审批链，扩展不再路由、批准或拒绝动作。',
   sandboxDefaultAllow: '原生沙盒内默认通过', sandboxDefaultAllowHint: '默认开启。read-only / workspace-write 中已由原生文件沙盒约束的动作不调用模型；关闭后沙盒内动作也进入 reviewer。Full Access 没有沙盒边界，始终不进入 Auto Review。',
   model: '审查模型', flash: 'Flash（默认）', flashHint: '低延迟，适合动作关键路径。', pro: 'Pro', proHint: '更高审查能力，延迟与成本更高。',
+  modelStrategy: '模型策略', single: '单模型', riskTiered: '风险分级', primaryProfile: '常规模型', strongProfile: '高风险模型',
+  provider: 'Provider 路由', modelId: '模型 ID', reasoningEffort: 'Reasoning effort（留空使用模型默认）',
+  escalateUncertain: '不确定或高风险结论升级到高风险模型', strongKinds: '直接使用高风险模型的动作类型',
   advanced: '高级参数', maxInputBytes: '最大证据字节', maxOutputTokens: '最大输出 token', timeoutMs: '超时（毫秒）',
   maxAttempts: '最多尝试次数', transcriptMaxEntries: '历史条目上限', transcriptMaxBytes: '历史字节上限',
   failureThreshold: '熔断失败阈值', breakerCooldownMs: '熔断冷却（毫秒）', save: '保存', reset: '恢复部署默认值',
@@ -27,6 +30,9 @@ const en = {
   enabled: 'Enable Auto Review', enabledHint: 'When disabled, the extension leaves routing, approval, and denial entirely to the native Harness chain.',
   sandboxDefaultAllow: 'Allow native-sandbox actions by default', sandboxDefaultAllowHint: 'On by default. Actions confined by read-only/workspace-write bypass the model; when off, sandboxed actions are reviewed too. Full Access has no sandbox boundary and never enters Auto Review.',
   model: 'Reviewer model', flash: 'Flash (default)', flashHint: 'Low latency for the action critical path.', pro: 'Pro', proHint: 'Higher review capability with greater latency and cost.',
+  modelStrategy: 'Model strategy', single: 'Single model', riskTiered: 'Risk tiered', primaryProfile: 'Primary reviewer', strongProfile: 'High-risk reviewer',
+  provider: 'Provider route', modelId: 'Model ID', reasoningEffort: 'Reasoning effort (empty uses model default)',
+  escalateUncertain: 'Escalate uncertain or high-risk conclusions to the strong reviewer', strongKinds: 'Action kinds routed directly to the strong reviewer',
   advanced: 'Advanced parameters', maxInputBytes: 'Maximum evidence bytes', maxOutputTokens: 'Maximum output tokens', timeoutMs: 'Timeout (ms)',
   maxAttempts: 'Maximum attempts', transcriptMaxEntries: 'Transcript entry limit', transcriptMaxBytes: 'Transcript byte limit',
   failureThreshold: 'Failure breaker threshold', breakerCooldownMs: 'Breaker cooldown (ms)', save: 'Save', reset: 'Restore deployment defaults',
@@ -81,11 +87,15 @@ interface PageSnapshot {
 
 type Props = PropsRuntime<'settings.section'> & PropsLocale<'settings.autoReview'> & InjectFace<AutoReviewSettingsInjected>
 type BadgeProps = AutoReviewBadgeOwner & PropsLocale<'settings.autoReview'> & InjectFace<AutoReviewBadgeInjected>
-type NumericField = Exclude<keyof AutoReviewUiSettings, 'enabled' | 'sandboxDefaultAllow' | 'reviewerModel'>
+type NumericField = 'maxInputBytes' | 'maxOutputTokens' | 'timeoutMs' | 'maxAttempts' | 'transcriptMaxEntries' | 'transcriptMaxBytes' | 'failureThreshold' | 'breakerCooldownMs'
 
 const NUMERIC_FIELDS: readonly NumericField[] = [
   'maxInputBytes', 'maxOutputTokens', 'timeoutMs', 'maxAttempts', 'transcriptMaxEntries',
   'transcriptMaxBytes', 'failureThreshold', 'breakerCooldownMs',
+]
+
+const STRONG_KIND_OPTIONS: readonly ActionKind[] = [
+  'network', 'sensitive-read', 'destructive', 'permission-change', 'production-change', 'sandbox-escalation',
 ]
 
 /** Exact 20px Codex Desktop Auto Review glyph, scaled into Harness's 24px icon grid. */
@@ -145,7 +155,9 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, t }: Pr
   const invalid = useMemo(() => draft === undefined || NUMERIC_FIELDS.some(field => {
     const value = draft[field]
     return !Number.isSafeInteger(value) || value < 1
-  }) || draft.maxAttempts > 3 || draft.transcriptMaxEntries > 64, [draft])
+  }) || draft.maxAttempts > 3 || draft.transcriptMaxEntries > 64
+    || draft.primaryProvider.trim().length === 0 || draft.primaryModel.trim().length === 0
+    || (draft.modelStrategy === 'risk-tiered' && (draft.strongProvider.trim().length === 0 || draft.strongModel.trim().length === 0)), [draft])
 
   if (snapshot.status !== 'ready' || draft === undefined) {
     return <section className="ar-page" aria-busy="true"><p className="ar-muted">{snapshot.status === 'unavailable' ? t('failed') : 'Loading…'}</p></section>
@@ -155,6 +167,19 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, t }: Pr
     const value = Number(text)
     setNotice(undefined)
     setDraft(current => current === undefined ? current : { ...current, [field]: value })
+  }
+  const setText = (field: 'primaryProvider' | 'primaryModel' | 'primaryReasoningEffort' | 'strongProvider' | 'strongModel' | 'strongReasoningEffort', value: string): void => {
+    setNotice(undefined)
+    setDraft(current => current === undefined ? current : { ...current, [field]: value })
+  }
+  const toggleStrongKind = (kind: ActionKind): void => {
+    setNotice(undefined)
+    setDraft(current => current === undefined ? current : {
+      ...current,
+      strongReviewKinds: current.strongReviewKinds.includes(kind)
+        ? current.strongReviewKinds.filter(value => value !== kind)
+        : [...current.strongReviewKinds, kind],
+    })
   }
   const save = (): void => {
     if (invalid || saving || !snapshot.writable) return
@@ -197,13 +222,12 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, t }: Pr
       </div>
       <div className="ar-card">
         <h3>{t('model')}</h3>
-        <div className="ar-model-grid">
-          {(['flash', 'pro'] as const).map(model => (
-            <button key={model} type="button" className="ar-model" aria-pressed={draft.reviewerModel === model} onClick={() => { setNotice(undefined); setDraft({ ...draft, reviewerModel: model }) }}>
-              <strong>{t(model)}</strong><span>{t(model === 'flash' ? 'flashHint' : 'proHint')}</span>
-            </button>
-          ))}
+        <label className="ar-select-row"><span>{t('modelStrategy')}</span><select value={draft.modelStrategy} onChange={event => { setDraft({ ...draft, modelStrategy: event.currentTarget.value as AutoReviewUiSettings['modelStrategy'] }) }}><option value="single">{t('single')}</option><option value="risk-tiered">{t('riskTiered')}</option></select></label>
+        <div className="ar-profile-grid">
+          <fieldset><legend>{t('primaryProfile')}</legend><label>{t('provider')}<input value={draft.primaryProvider} onChange={event => { setText('primaryProvider', event.currentTarget.value) }} /></label><label>{t('modelId')}<input value={draft.primaryModel} onChange={event => { setText('primaryModel', event.currentTarget.value) }} /></label><label>{t('reasoningEffort')}<input value={draft.primaryReasoningEffort} onChange={event => { setText('primaryReasoningEffort', event.currentTarget.value) }} /></label></fieldset>
+          {draft.modelStrategy === 'risk-tiered' ? <fieldset><legend>{t('strongProfile')}</legend><label>{t('provider')}<input value={draft.strongProvider} onChange={event => { setText('strongProvider', event.currentTarget.value) }} /></label><label>{t('modelId')}<input value={draft.strongModel} onChange={event => { setText('strongModel', event.currentTarget.value) }} /></label><label>{t('reasoningEffort')}<input value={draft.strongReasoningEffort} onChange={event => { setText('strongReasoningEffort', event.currentTarget.value) }} /></label></fieldset> : null}
         </div>
+        {draft.modelStrategy === 'risk-tiered' ? <><label className="ar-check"><input type="checkbox" checked={draft.escalateUncertainToStrong} onChange={() => { setDraft({ ...draft, escalateUncertainToStrong: !draft.escalateUncertainToStrong }) }} />{t('escalateUncertain')}</label><div className="ar-kind-grid" aria-label={t('strongKinds')}>{STRONG_KIND_OPTIONS.map(kind => <label key={kind}><input type="checkbox" checked={draft.strongReviewKinds.includes(kind)} onChange={() => { toggleStrongKind(kind) }} />{kind}</label>)}</div></> : null}
       </div>
       <details className="ar-card ar-advanced">
         <summary>{t('advanced')}</summary>
@@ -223,7 +247,7 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, t }: Pr
 }
 
 const CSS = `
-.ar-page{max-width:760px;padding:8px 4px 36px;color:var(--dsw-alias-label-primary)}.ar-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:18px}.ar-header h2{font-size:22px;margin:0 0 6px}.ar-header p,.ar-card p{margin:0;color:var(--dsw-alias-label-secondary);line-height:1.5}.ar-live{font:600 10px/1.8 ui-monospace,monospace;color:var(--dsw-alias-state-success-primary);border:1px solid color-mix(in srgb,var(--dsw-alias-state-success-primary) 35%,transparent);border-radius:999px;padding:0 8px}.ar-card{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:18px;margin:12px 0}.ar-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:22px}.ar-toggle-row strong,.ar-card h3{display:block;margin:0 0 5px;font-size:14px}.ar-switch{width:44px;height:24px;border:0;border-radius:999px;padding:3px;background:var(--dsw-alias-border-l2);cursor:pointer}.ar-switch span{display:block;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}.ar-switch[aria-checked=true]{background:var(--dsw-alias-brand-primary)}.ar-switch[aria-checked=true] span{transform:translateX(20px)}.ar-model-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.ar-model{display:flex;flex-direction:column;gap:5px;text-align:left;padding:14px;border-radius:10px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-2);color:inherit;cursor:pointer}.ar-model[aria-pressed=true]{border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 1px var(--dsw-alias-brand-primary)}.ar-model span{font-size:12px;color:var(--dsw-alias-label-secondary)}.ar-advanced summary{cursor:pointer;font-weight:600}.ar-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.ar-field-grid label{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px;font-size:12px}.ar-field-grid input{grid-column:1/3;width:100%;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;padding:8px;background:var(--dsw-alias-bg-base);color:inherit}.ar-field-grid small{grid-column:1/3;color:var(--dsw-alias-label-secondary)}.ar-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.ar-actions button{border-radius:8px;padding:8px 15px;cursor:pointer}.ar-secondary{background:transparent;color:inherit;border:1px solid var(--dsw-alias-border-l2)}.ar-primary{background:var(--dsw-alias-brand-primary);color:white;border:1px solid var(--dsw-alias-brand-primary)}.ar-actions button:disabled{opacity:.45;cursor:not-allowed}.ar-notice{font-size:12px;text-align:right}.ar-saved{color:var(--dsw-alias-state-success-primary)}.ar-failed{color:var(--dsw-alias-state-error-primary)}.ar-muted{color:var(--dsw-alias-label-secondary)}@media(max-width:680px){.ar-model-grid,.ar-field-grid{grid-template-columns:1fr}}
+.ar-page{max-width:760px;padding:8px 4px 36px;color:var(--dsw-alias-label-primary)}.ar-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:18px}.ar-header h2{font-size:22px;margin:0 0 6px}.ar-header p,.ar-card p{margin:0;color:var(--dsw-alias-label-secondary);line-height:1.5}.ar-live{font:600 10px/1.8 ui-monospace,monospace;color:var(--dsw-alias-state-success-primary);border:1px solid color-mix(in srgb,var(--dsw-alias-state-success-primary) 35%,transparent);border-radius:999px;padding:0 8px}.ar-card{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:18px;margin:12px 0}.ar-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:22px}.ar-toggle-row strong,.ar-card h3{display:block;margin:0 0 5px;font-size:14px}.ar-switch{width:44px;height:24px;border:0;border-radius:999px;padding:3px;background:var(--dsw-alias-border-l2);cursor:pointer}.ar-switch span{display:block;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}.ar-switch[aria-checked=true]{background:var(--dsw-alias-brand-primary)}.ar-switch[aria-checked=true] span{transform:translateX(20px)}.ar-select-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:10px 0}.ar-select-row select,.ar-profile-grid input{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;padding:8px;background:var(--dsw-alias-bg-base);color:inherit}.ar-profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ar-profile-grid fieldset{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:12px}.ar-profile-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;margin:8px 0}.ar-check{display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12px}.ar-kind-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px;font-size:12px}.ar-kind-grid label{display:flex;align-items:center;gap:5px}.ar-advanced summary{cursor:pointer;font-weight:600}.ar-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.ar-field-grid label{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px;font-size:12px}.ar-field-grid input{grid-column:1/3;width:100%;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;padding:8px;background:var(--dsw-alias-bg-base);color:inherit}.ar-field-grid small{grid-column:1/3;color:var(--dsw-alias-label-secondary)}.ar-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.ar-actions button{border-radius:8px;padding:8px 15px;cursor:pointer}.ar-secondary{background:transparent;color:inherit;border:1px solid var(--dsw-alias-border-l2)}.ar-primary{background:var(--dsw-alias-brand-primary);color:white;border:1px solid var(--dsw-alias-brand-primary)}.ar-actions button:disabled{opacity:.45;cursor:not-allowed}.ar-notice{font-size:12px;text-align:right}.ar-saved{color:var(--dsw-alias-state-success-primary)}.ar-failed{color:var(--dsw-alias-state-error-primary)}.ar-muted{color:var(--dsw-alias-label-secondary)}@media(max-width:680px){.ar-profile-grid,.ar-field-grid{grid-template-columns:1fr}.ar-kind-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ar-call-badge{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;color:var(--dsw-alias-label-secondary);background:color-mix(in srgb,var(--dsw-alias-bg-layer-1) 88%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,currentColor 16%,transparent)}
 .ar-call-badge[data-auto-review-state=reviewing]{animation:ar-review-pulse 1.15s ease-in-out infinite}
 .ar-call-badge[data-auto-review-state=denied]{color:var(--dsw-alias-state-error-primary);background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 8%,var(--dsw-alias-bg-layer-1))}

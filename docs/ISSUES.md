@@ -2,6 +2,12 @@
 
 每个 ISSUE 单独分支、单独提交组；关闭前必须重新查看固定 Harness 源码和本 ISSUE 改动。
 
+## ISSUE-014：通用模型接入与风险分级策略（完成）
+
+模型配置不再绑定 DeepSeek Flash/Pro 名称。设置面直接接受 Harness 已注册的任意 `provider` 路由、provider-owned model id 和可选 reasoning effort，例如 `openai-compatible / gpt-5.6-terra / high`。API key、base URL 等秘密仍由 Host provider 配置持有，不通过 WebUI 暴露。
+
+支持 `single` 与 `risk-tiered`：分级模式可分别配置常规模型和高风险模型、直接进入高风险模型的 action-kind 闭集，以及 primary 返回 high/critical/manual/unavailable/uncertainty 时是否在同一总 timeout 内升级。每个最终 decision 记录实际 provider/model/tier 与升级来源。构建、67/67 测试及 Linux x86 原生 sandbox E2E 通过。
+
 ## ISSUE-013：原生 Sandbox Boundary 与权限矩阵（完成）
 
 Auto Review 关闭时完全退出工具路由、guard 和 approval answerer；`danger-full-access` 同样不虚构不存在的沙盒审批边界。新增默认开启的 `sandboxDefaultAllow`：开启时，`read-only` / `workspace-write` 中由原生文件沙盒约束的普通动作不调用 reviewer，敏感读取、网络和明确沙盒升级仍审查；关闭时，沙盒内动作也进入 reviewer，但最终执行仍受原生 sandbox 约束。

@@ -22,6 +22,7 @@ import type {
   AutoReviewIndicatorSnapshot,
   AutoReviewConfig,
   AutoReviewUiSettings,
+  LlmReviewerConfig,
   ResolvedAutoReviewConfig,
   ReviewDecision,
 } from './types.ts'
@@ -90,7 +91,7 @@ export class ActionReviewRuntime extends Service {
   })
 
   private readonly deployedConfig: ResolvedAutoReviewConfig
-  private readonly settingsBase: AutoReviewUiSettings
+  private settingsBase: AutoReviewUiSettings
   private settingsScope: SettingsScope<AutoReviewUiSettings> | undefined
   private reviewer: ActionReviewer | undefined
   private auditSink: ActionReviewAuditSink | undefined
@@ -154,6 +155,14 @@ export class ActionReviewRuntime extends Service {
   /** Composition defaults used by the explicit settings bridge row. */
   settingsDefaults(): AutoReviewUiSettings {
     return Object.freeze({ ...this.settingsBase })
+  }
+
+  /** Bind provider-owned model defaults before the settings namespace is registered. */
+  configureReviewerSettingsDefaults(config: LlmReviewerConfig): void {
+    if (this.settingsScope !== undefined) {
+      throw new Error('auto-review: reviewer defaults must be configured before the settings bridge is mounted')
+    }
+    this.settingsBase = Object.freeze(autoReviewSettingsBase(this.deployedConfig, config))
   }
 
   /** Attach the one live settings owner; the bridge row owns its lifetime. */

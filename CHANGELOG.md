@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- 模型配置改为通用 Harness provider/model/reasoning-effort，不再局限于内置 Flash/Pro 名称。
+- 新增单模型与风险分级策略；可配置常规/高风险 profile、强模型 action kinds 和不确定结论升级。
+- 最终审查决策记录实际 reviewer tier、provider、model 及二次升级来源；WebUI 不接触 provider 凭据。
 - Auto Review 关闭后完全回到 Harness 原生工具与审批链，不再隐式批准、路由或硬拒绝动作。
 - `danger-full-access` 不再进入 Auto Review；设置页明确该权限档位没有原生沙盒审批边界。
 - 新增默认开启的“原生沙盒内默认通过”设置；关闭时可让 confined actions 也进入 reviewer，执行仍由原生 sandbox 约束。

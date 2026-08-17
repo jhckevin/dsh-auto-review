@@ -15,7 +15,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { apply as applyProvider } from '../src/llm-provider.ts'
 import ActionReviewRuntime from '../src/service.ts'
-import type { ActionEnvelope } from '../src/types.ts'
+import type { ActionEnvelope, LlmReviewerConfig } from '../src/types.ts'
 
 const action: ActionEnvelope = Object.freeze({
   schemaVersion: 1,
@@ -32,7 +32,7 @@ const action: ActionEnvelope = Object.freeze({
   reason: 'process',
   resolverId: 'builtin',
   effects: [{ type: 'process.exec', commandDigest: 'a'.repeat(64) }],
-  policy: { mode: 'enforcing', resolverId: 'builtin', disposition: 'review', ruleIds: ['TEST'] },
+  policy: { mode: 'enforcing', sandboxDefaultAllow: false, resolverId: 'builtin', disposition: 'review', ruleIds: ['TEST'] },
   boundary: { sandboxMode: 'workspace-write', workspaceRoot: '/workspace', realpathVerified: false },
   sandbox: { mode: 'workspace-write', workspaceRoot: '/workspace' },
   paths: [],
@@ -51,6 +51,15 @@ const approved = JSON.stringify({
   rationale: 'The exact diagnostic is authorized.',
   policyRuleIds: ['TEST'],
   uncertainty: '',
+})
+
+const uncertainHigh = JSON.stringify({
+  schemaVersion: 1,
+  outcome: 'manual',
+  riskLevel: 'high',
+  rationale: 'The action needs stronger review.',
+  policyRuleIds: ['TEST-HIGH'],
+  uncertainty: 'Destination ownership is unclear.',
 })
 
 function textResponse(text: string): StreamChunk[] {
@@ -101,7 +110,7 @@ function assistantEvent(text: string): SessionEvent {
   } as SessionEvent
 }
 
-async function fixture(outputs: string[], fixtureOptions: { hang?: boolean; timeoutMs?: number } = {}) {
+async function fixture(outputs: string[], fixtureOptions: { hang?: boolean; timeoutMs?: number; reviewerConfig?: Partial<LlmReviewerConfig> } = {}) {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt, {})
   await ctx.plugin(ToolRuntime)
@@ -111,10 +120,12 @@ async function fixture(outputs: string[], fixtureOptions: { hang?: boolean; time
   let disposes = 0
   let setupCalls = 0
   const prompts: string[] = []
+  const models: Array<{ provider?: string; model?: string }> = []
   const factory: AgentFactory = {
     async createAgent(ownerCtx, options): Promise<AgentHandle> {
       const output = outputs[Math.min(creates, outputs.length - 1)] ?? approved
       creates += 1
+      models.push({ provider: options.agentOptions?.provider, model: options.agentOptions?.model })
       if (options.setup !== undefined) {
         setupCalls += 1
       }
@@ -147,8 +158,9 @@ async function fixture(outputs: string[], fixtureOptions: { hang?: boolean; time
     timeoutMs: fixtureOptions.timeoutMs ?? 5000,
     maxAttempts: 3,
     retryDelayMs: 0,
+    ...fixtureOptions.reviewerConfig,
   })
-  return { ctx, stats: () => ({ creates, disposes, setupCalls, prompts }) }
+  return { ctx, stats: () => ({ creates, disposes, setupCalls, prompts, models }) }
 }
 
 describe('isolated reviewer agent provider', () => {
@@ -162,7 +174,48 @@ describe('isolated reviewer agent provider', () => {
     expect(state.prompts[0]).not.toContain('sk-secret')
     expect(ctx.agents.roots()).toEqual([])
     const decisionAudit = ctx.actionReview.auditRecords().find(record => record.kind === 'decision')
-    expect(decisionAudit?.data).toMatchObject({ reviewer: 'agent:fixture-provider/fixture-reviewer' })
+    expect(decisionAudit?.data).toMatchObject({ reviewer: 'agent:single:fixture-provider/fixture-reviewer' })
+  })
+
+  it('accepts any registered provider route and provider-owned model id', async () => {
+    const { ctx, stats } = await fixture([approved], { reviewerConfig: {
+      provider: 'openai-compatible', model: 'gpt-5.6-terra', reasoningEffort: 'high',
+    } })
+    await expect(ctx.actionReview.review(action, undefined, new AbortController().signal)).resolves.toMatchObject({
+      outcome: 'approved',
+      reviewerExecution: { tier: 'primary', provider: 'openai-compatible', model: 'gpt-5.6-terra' },
+    })
+    expect(stats().models).toEqual([{ provider: 'openai-compatible', model: 'gpt-5.6-terra' }])
+  })
+
+  it('routes configured high-risk kinds directly to the strong profile', async () => {
+    const { ctx, stats } = await fixture([approved], { reviewerConfig: {
+      modelStrategy: 'risk-tiered', strongProvider: 'openai-compatible', strongModel: 'gpt-5.6-terra',
+      strongReviewKinds: ['network'],
+    } })
+    const networkAction = { ...action, actionKind: 'network' as const }
+    await expect(ctx.actionReview.review(networkAction, undefined, new AbortController().signal)).resolves.toMatchObject({
+      reviewerExecution: { tier: 'strong', provider: 'openai-compatible', model: 'gpt-5.6-terra' },
+    })
+    expect(stats().models).toEqual([{ provider: 'openai-compatible', model: 'gpt-5.6-terra' }])
+  })
+
+  it('escalates an uncertain primary conclusion to the strong profile', async () => {
+    const { ctx, stats } = await fixture([uncertainHigh, approved], { reviewerConfig: {
+      modelStrategy: 'risk-tiered', strongProvider: 'openai-compatible', strongModel: 'gpt-5.6-terra',
+      strongReviewKinds: [], escalateUncertainToStrong: true,
+    } })
+    await expect(ctx.actionReview.review(action, undefined, new AbortController().signal)).resolves.toMatchObject({
+      outcome: 'approved',
+      reviewerExecution: {
+        tier: 'strong', provider: 'openai-compatible', model: 'gpt-5.6-terra',
+        escalatedFrom: { provider: 'fixture-provider', model: 'fixture-reviewer' },
+      },
+    })
+    expect(stats().models).toEqual([
+      { provider: 'fixture-provider', model: 'fixture-reviewer' },
+      { provider: 'openai-compatible', model: 'gpt-5.6-terra' },
+    ])
   })
 
   it('uses a fresh session for each retry and stops after a valid closed decision', async () => {

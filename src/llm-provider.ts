@@ -10,8 +10,8 @@ import {
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { parseReviewDecision } from './protocol.ts'
 import { redactJson } from './redaction.ts'
-import { reviewerModelId } from './settings.ts'
-import type { ActionReviewer, LlmReviewerConfig, ReviewDecision } from './types.ts'
+import { STRONG_REVIEW_KINDS } from './settings.ts'
+import type { ActionKind, ActionReviewer, AutoReviewUiSettings, LlmReviewerConfig, ReviewDecision } from './types.ts'
 
 export const name = 'auto-review-llm-provider'
 export const inject = ['actionReview', 'agents', 'systemPrompt', 'tools']
@@ -20,6 +20,15 @@ export const Config: z<LlmReviewerConfig> = z.object({
   provider: z.string().required(),
   model: z.string().required(),
   reasoningEffort: z.string(),
+  modelStrategy: z.union(['single', 'risk-tiered'] as const).default('single'),
+  strongProvider: z.string(),
+  strongModel: z.string(),
+  strongReasoningEffort: z.string(),
+  strongReviewKinds: z.array(z.union([
+    'workspace-read', 'workspace-write', 'process', 'network', 'sensitive-read', 'destructive',
+    'permission-change', 'production-change', 'sandbox-escalation', 'extension-unknown', 'hard-deny',
+  ] as ActionKind[])),
+  escalateUncertainToStrong: z.boolean().default(true),
   maxInputBytes: z.number().step(1).min(1).required(),
   maxOutputTokens: z.number().step(1).min(1).required(),
   timeoutMs: z.number().step(1).min(1).required(),
@@ -44,12 +53,46 @@ const SYSTEM = [
   '{"schemaVersion":1,"outcome":"approved|denied|manual|unavailable","riskLevel":"low|medium|high|critical","rationale":"...","policyRuleIds":["..."],"uncertainty":"..."}',
 ].join('\n')
 
-function validateConfig(config: LlmReviewerConfig): Required<Omit<LlmReviewerConfig, 'reasoningEffort'>> & Pick<LlmReviewerConfig, 'reasoningEffort'> {
+interface ValidatedReviewerConfig {
+  provider: string
+  model: string
+  reasoningEffort?: string
+  modelStrategy: 'single' | 'risk-tiered'
+  strongProvider: string
+  strongModel: string
+  strongReasoningEffort?: string
+  strongReviewKinds: ActionKind[]
+  escalateUncertainToStrong: boolean
+  maxInputBytes: number
+  maxOutputTokens: number
+  timeoutMs: number
+  maxAttempts: number
+  retryDelayMs: number
+  transcriptMaxEntries: number
+  transcriptMaxBytes: number
+}
+
+function normalizedEffort(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  return trimmed === undefined || trimmed.length === 0 ? undefined : trimmed
+}
+
+function validateConfig(config: LlmReviewerConfig): ValidatedReviewerConfig {
   if (config.provider.trim().length === 0 || config.model.trim().length === 0) {
     throw new TypeError('auto-review: provider and model must be non-empty')
   }
+  const { reasoningEffort: _reasoningEffort, strongReasoningEffort: _strongReasoningEffort, ...base } = config
+  const reasoningEffort = normalizedEffort(config.reasoningEffort)
+  const strongReasoningEffort = normalizedEffort(config.strongReasoningEffort ?? config.reasoningEffort)
   const resolved = {
-    ...config,
+    ...base,
+    ...(reasoningEffort === undefined ? {} : { reasoningEffort }),
+    modelStrategy: config.modelStrategy ?? 'single',
+    strongProvider: config.strongProvider?.trim() || config.provider,
+    strongModel: config.strongModel?.trim() || config.model,
+    ...(strongReasoningEffort === undefined ? {} : { strongReasoningEffort }),
+    strongReviewKinds: [...(config.strongReviewKinds ?? STRONG_REVIEW_KINDS)],
+    escalateUncertainToStrong: config.escalateUncertainToStrong ?? true,
     maxAttempts: config.maxAttempts ?? 3,
     retryDelayMs: config.retryDelayMs ?? 250,
     transcriptMaxEntries: config.transcriptMaxEntries ?? 12,
@@ -64,7 +107,35 @@ function validateConfig(config: LlmReviewerConfig): Required<Omit<LlmReviewerCon
     throw new TypeError('auto-review: retryDelayMs must be a non-negative safe integer')
   }
   if (resolved.maxAttempts > 3) throw new TypeError('auto-review: maxAttempts cannot exceed 3')
+  if (resolved.strongProvider.length === 0 || resolved.strongModel.length === 0) {
+    throw new TypeError('auto-review: strong provider and model must be non-empty')
+  }
   return resolved
+}
+
+function configFromSettings(deployed: ValidatedReviewerConfig, ui: AutoReviewUiSettings | undefined): ValidatedReviewerConfig {
+  if (ui === undefined) return deployed
+  const primaryEffort = normalizedEffort(ui.primaryReasoningEffort)
+  const strongEffort = normalizedEffort(ui.strongReasoningEffort)
+  const { reasoningEffort: _deployedEffort, strongReasoningEffort: _deployedStrongEffort, ...base } = deployed
+  return validateConfig({
+    ...base,
+    provider: ui.primaryProvider,
+    model: ui.primaryModel,
+    ...(primaryEffort === undefined ? {} : { reasoningEffort: primaryEffort }),
+    modelStrategy: ui.modelStrategy,
+    strongProvider: ui.strongProvider,
+    strongModel: ui.strongModel,
+    ...(strongEffort === undefined ? {} : { strongReasoningEffort: strongEffort }),
+    strongReviewKinds: [...ui.strongReviewKinds],
+    escalateUncertainToStrong: ui.escalateUncertainToStrong,
+    maxInputBytes: ui.maxInputBytes,
+    maxOutputTokens: ui.maxOutputTokens,
+    timeoutMs: ui.timeoutMs,
+    maxAttempts: ui.maxAttempts,
+    transcriptMaxEntries: ui.transcriptMaxEntries,
+    transcriptMaxBytes: ui.transcriptMaxBytes,
+  })
 }
 
 function transcriptWithinBudget(
@@ -233,41 +304,100 @@ async function runAttempt(
   }
 }
 
+function selectedProfile(config: ValidatedReviewerConfig, tier: 'primary' | 'strong'): ValidatedReviewerConfig {
+  if (tier === 'primary') return config
+  const { reasoningEffort: _reasoningEffort, ...base } = config
+  return {
+    ...base,
+    provider: config.strongProvider,
+    model: config.strongModel,
+    ...(config.strongReasoningEffort === undefined ? {} : { reasoningEffort: config.strongReasoningEffort }),
+  }
+}
+
+function withReviewerExecution(
+  decision: ReviewDecision,
+  config: ValidatedReviewerConfig,
+  tier: 'primary' | 'strong',
+  escalatedFrom?: ValidatedReviewerConfig,
+): ReviewDecision {
+  return Object.freeze({
+    ...decision,
+    reviewerExecution: Object.freeze({
+      tier,
+      provider: config.provider,
+      model: config.model,
+      ...(escalatedFrom === undefined ? {} : {
+        escalatedFrom: Object.freeze({ provider: escalatedFrom.provider, model: escalatedFrom.model }),
+      }),
+    }),
+  })
+}
+
+function needsStrongReview(decision: ReviewDecision): boolean {
+  return decision.riskLevel === 'high'
+    || decision.riskLevel === 'critical'
+    || decision.outcome === 'manual'
+    || decision.outcome === 'unavailable'
+    || decision.uncertainty.trim().length > 0
+}
+
+async function reviewWithProfile(
+  ctx: Context,
+  config: ValidatedReviewerConfig,
+  payload: string,
+  workspaceRoot: string,
+  requestSignal: AbortSignal,
+  timeoutSignal: AbortSignal,
+): Promise<ReviewDecision> {
+  const signal = AbortSignal.any([requestSignal, timeoutSignal])
+  let lastError: unknown
+  for (let attempt = 1; attempt <= config.maxAttempts; attempt += 1) {
+    try {
+      return await runAttempt(ctx, config, payload, workspaceRoot, signal)
+    } catch (error) {
+      if (requestSignal.aborted) requestSignal.throwIfAborted()
+      if (timeoutSignal.aborted) throw new Error(`auto-review: reviewer timed out after ${config.timeoutMs}ms`)
+      lastError = error
+      if (attempt < config.maxAttempts) await delay(config.retryDelayMs, signal)
+    }
+  }
+  throw lastError
+}
+
 export function apply(ctx: Context, input: LlmReviewerConfig): void {
   const deployed = validateConfig(input)
+  ctx.actionReview.configureReviewerSettingsDefaults(deployed)
   const reviewer: ActionReviewer = {
     get id() {
-      const ui = ctx.actionReview.uiSettings()
-      return `agent:${deployed.provider}/${ui === undefined ? deployed.model : reviewerModelId(ui.reviewerModel)}`
+      const config = configFromSettings(deployed, ctx.actionReview.uiSettings())
+      return `agent:${config.modelStrategy}:${config.provider}/${config.model}`
     },
     async review(request) {
       request.signal.throwIfAborted()
-      const ui = ctx.actionReview.uiSettings()
-      const config = ui === undefined ? deployed : validateConfig({
-        ...deployed,
-        model: reviewerModelId(ui.reviewerModel),
-        maxInputBytes: ui.maxInputBytes,
-        maxOutputTokens: ui.maxOutputTokens,
-        timeoutMs: ui.timeoutMs,
-        maxAttempts: ui.maxAttempts,
-        transcriptMaxEntries: ui.transcriptMaxEntries,
-        transcriptMaxBytes: ui.transcriptMaxBytes,
-      })
+      const config = configFromSettings(deployed, ctx.actionReview.uiSettings())
       const payload = reviewerPayload(config, request.action)
       const timeoutSignal = AbortSignal.timeout(config.timeoutMs)
-      const signal = AbortSignal.any([request.signal, timeoutSignal])
-      let lastError: unknown
-      for (let attempt = 1; attempt <= config.maxAttempts; attempt += 1) {
-        try {
-          return await runAttempt(ctx, config, payload, request.action.sandbox.workspaceRoot, signal)
-        } catch (error) {
-          if (request.signal.aborted) request.signal.throwIfAborted()
-          if (timeoutSignal.aborted) throw new Error(`auto-review: reviewer timed out after ${config.timeoutMs}ms`)
-          lastError = error
-          if (attempt < config.maxAttempts) await delay(config.retryDelayMs, signal)
-        }
+      const directStrong = config.modelStrategy === 'risk-tiered'
+        && config.strongReviewKinds.includes(request.action.actionKind)
+      const firstTier = directStrong ? 'strong' as const : 'primary' as const
+      const firstConfig = selectedProfile(config, firstTier)
+      const first = await reviewWithProfile(
+        ctx, firstConfig, payload, request.action.sandbox.workspaceRoot, request.signal, timeoutSignal,
+      )
+      if (
+        config.modelStrategy === 'risk-tiered'
+        && firstTier === 'primary'
+        && config.escalateUncertainToStrong
+        && needsStrongReview(first)
+      ) {
+        const strong = selectedProfile(config, 'strong')
+        const decision = await reviewWithProfile(
+          ctx, strong, payload, request.action.sandbox.workspaceRoot, request.signal, timeoutSignal,
+        )
+        return withReviewerExecution(decision, strong, 'strong', firstConfig)
       }
-      throw lastError
+      return withReviewerExecution(first, firstConfig, firstTier)
     },
   }
   ctx.actionReview.registerReviewer(reviewer)

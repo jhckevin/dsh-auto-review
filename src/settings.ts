@@ -1,14 +1,32 @@
 import z from '@deepseek-ai/schemastery'
-import type { AutoReviewConfig, AutoReviewUiSettings, LlmReviewerConfig } from './types.ts'
+import type { ActionKind, AutoReviewConfig, AutoReviewUiSettings, LlmReviewerConfig } from './types.ts'
 
 /** Durable settings namespace consumed by both the Host runtime and WebUI. */
 export const AUTO_REVIEW_SETTINGS_NAMESPACE = 'auto-review'
+
+export const STRONG_REVIEW_KINDS: readonly ActionKind[] = Object.freeze([
+  'network', 'sensitive-read', 'destructive', 'permission-change', 'production-change',
+])
+
+const ACTION_KINDS: readonly ActionKind[] = Object.freeze([
+  'workspace-read', 'workspace-write', 'process', 'network', 'sensitive-read', 'destructive',
+  'permission-change', 'production-change', 'sandbox-escalation', 'extension-unknown', 'hard-deny',
+])
 
 /** Flash remains the default reviewer because review sits on the critical action path. */
 export const DEFAULT_AUTO_REVIEW_UI_SETTINGS: AutoReviewUiSettings = Object.freeze({
   enabled: true,
   sandboxDefaultAllow: true,
   reviewerModel: 'flash',
+  modelStrategy: 'single',
+  primaryProvider: 'deepseek-official',
+  primaryModel: 'deepseek-v4-flash',
+  primaryReasoningEffort: '',
+  strongProvider: 'deepseek-official',
+  strongModel: 'deepseek-v4-pro',
+  strongReasoningEffort: '',
+  strongReviewKinds: [...STRONG_REVIEW_KINDS],
+  escalateUncertainToStrong: true,
   maxInputBytes: 16384,
   maxOutputTokens: 768,
   timeoutMs: 90000,
@@ -24,6 +42,15 @@ export const AutoReviewUiSettingsSchema: z<AutoReviewUiSettings> = z.object({
   enabled: z.boolean().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.enabled),
   sandboxDefaultAllow: z.boolean().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.sandboxDefaultAllow),
   reviewerModel: z.union(['flash', 'pro'] as const).default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.reviewerModel),
+  modelStrategy: z.union(['single', 'risk-tiered'] as const).default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.modelStrategy),
+  primaryProvider: z.string().required().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.primaryProvider),
+  primaryModel: z.string().required().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.primaryModel),
+  primaryReasoningEffort: z.string().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.primaryReasoningEffort),
+  strongProvider: z.string().required().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.strongProvider),
+  strongModel: z.string().required().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.strongModel),
+  strongReasoningEffort: z.string().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.strongReasoningEffort),
+  strongReviewKinds: z.array(z.union(ACTION_KINDS as ActionKind[])).default([...STRONG_REVIEW_KINDS]),
+  escalateUncertainToStrong: z.boolean().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.escalateUncertainToStrong),
   maxInputBytes: z.number().step(1).min(1024).max(262144).default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.maxInputBytes),
   maxOutputTokens: z.number().step(1).min(128).max(4096).default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.maxOutputTokens),
   timeoutMs: z.number().step(1).min(1000).max(300000).default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.timeoutMs),
@@ -40,10 +67,24 @@ export function autoReviewSettingsBase(
   reviewer?: LlmReviewerConfig,
 ): AutoReviewUiSettings {
   const model = reviewer?.model.toLocaleLowerCase().includes('pro') ? 'pro' : 'flash'
+  const primaryProvider = reviewer?.provider ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.primaryProvider
+  const primaryModel = reviewer?.model ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.primaryModel
+  const inferredStrongModel = primaryModel.toLocaleLowerCase().includes('flash')
+    ? primaryModel.replace(/flash/ig, 'pro')
+    : primaryModel
   return {
     enabled: runtime.mode !== 'disabled',
     sandboxDefaultAllow: runtime.sandboxDefaultAllow ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.sandboxDefaultAllow,
     reviewerModel: model,
+    modelStrategy: reviewer?.modelStrategy ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.modelStrategy,
+    primaryProvider,
+    primaryModel,
+    primaryReasoningEffort: reviewer?.reasoningEffort ?? '',
+    strongProvider: reviewer?.strongProvider ?? primaryProvider,
+    strongModel: reviewer?.strongModel ?? inferredStrongModel,
+    strongReasoningEffort: reviewer?.strongReasoningEffort ?? reviewer?.reasoningEffort ?? '',
+    strongReviewKinds: [...(reviewer?.strongReviewKinds ?? STRONG_REVIEW_KINDS)],
+    escalateUncertainToStrong: reviewer?.escalateUncertainToStrong ?? true,
     maxInputBytes: reviewer?.maxInputBytes ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.maxInputBytes,
     maxOutputTokens: reviewer?.maxOutputTokens ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.maxOutputTokens,
     timeoutMs: reviewer?.timeoutMs ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.timeoutMs,

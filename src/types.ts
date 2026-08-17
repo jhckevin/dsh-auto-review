@@ -20,6 +20,9 @@ export type ActionKind =
 
 export type ReviewOutcome = 'approved' | 'denied' | 'manual' | 'unavailable'
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
+export type UserAuthorization = 'unknown' | 'low' | 'medium' | 'high'
+export type AutoReviewModelStrategy = 'single' | 'risk-tiered'
+export type AutoReviewModelTier = 'primary' | 'strong'
 
 export type ActionEffect =
   | { readonly type: 'fs.read'; readonly paths: readonly string[] }
@@ -122,6 +125,12 @@ export interface ReviewDecision {
   readonly policyRuleIds: readonly string[]
   readonly saferAlternative?: string
   readonly uncertainty: string
+  readonly reviewerExecution?: {
+    readonly tier: AutoReviewModelTier
+    readonly provider: string
+    readonly model: string
+    readonly escalatedFrom?: { readonly provider: string; readonly model: string }
+  }
 }
 
 export interface ActionReviewerRequest {
@@ -372,6 +381,12 @@ export interface LlmReviewerConfig {
   readonly provider: string
   readonly model: string
   readonly reasoningEffort?: string
+  readonly modelStrategy?: AutoReviewModelStrategy
+  readonly strongProvider?: string
+  readonly strongModel?: string
+  readonly strongReasoningEffort?: string
+  readonly strongReviewKinds?: ActionKind[]
+  readonly escalateUncertainToStrong?: boolean
   readonly maxInputBytes: number
   readonly maxOutputTokens: number
   readonly timeoutMs: number
@@ -392,6 +407,22 @@ export interface AutoReviewUiSettings {
   readonly sandboxDefaultAllow: boolean
   /** Reviewer model tier. Flash is the low-latency default. */
   readonly reviewerModel: AutoReviewReviewerModel
+  /** Select one model for all reviews or a configurable primary/strong split. */
+  readonly modelStrategy: AutoReviewModelStrategy
+  /** Registered Harness provider and provider-owned model id for ordinary reviews. */
+  readonly primaryProvider: string
+  readonly primaryModel: string
+  /** Empty means use the selected model/provider default. */
+  readonly primaryReasoningEffort: string
+  /** Registered Harness provider and provider-owned model id for high-risk reviews. */
+  readonly strongProvider: string
+  readonly strongModel: string
+  /** Empty means use the selected model/provider default. */
+  readonly strongReasoningEffort: string
+  /** Deterministic action kinds sent directly to the strong profile. */
+  readonly strongReviewKinds: ActionKind[]
+  /** Re-run an uncertain/high-risk primary decision with the strong profile. */
+  readonly escalateUncertainToStrong: boolean
   /** Maximum redacted evidence payload accepted by the reviewer. */
   readonly maxInputBytes: number
   /** Maximum reviewer response tokens. */

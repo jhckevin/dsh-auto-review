@@ -11,6 +11,22 @@ class MemorySettings extends SettingsProvider {
 }
 
 describe('explicit settings provider', () => {
+  it('publishes generic provider defaults when the reviewer config is bound first', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings)
+    await ctx.plugin(ActionReviewRuntime, { mode: 'enforcing' })
+    ctx.actionReview.configureReviewerSettingsDefaults({
+      provider: 'openai-compatible', model: 'gpt-5.6-terra', reasoningEffort: 'high',
+      modelStrategy: 'risk-tiered', strongProvider: 'deepseek-official', strongModel: 'deepseek-v4-pro',
+      maxInputBytes: 16_384, maxOutputTokens: 768, timeoutMs: 90_000,
+    })
+    await ctx.plugin(AutoReviewSettingsBridge)
+    expect(ctx.actionReviewSettings.read().value).toMatchObject({
+      primaryProvider: 'openai-compatible', primaryModel: 'gpt-5.6-terra', primaryReasoningEffort: 'high',
+      modelStrategy: 'risk-tiered', strongProvider: 'deepseek-official', strongModel: 'deepseek-v4-pro',
+    })
+  })
+
   it('publishes Flash defaults and updates the live runtime', async () => {
     const ctx = new Context()
     await ctx.plugin(MemorySettings)
@@ -18,15 +34,15 @@ describe('explicit settings provider', () => {
     await ctx.plugin(AutoReviewSettingsBridge)
 
     const section = ctx.settings.describe().find(item => item.ns === 'auto-review')
-    expect(section?.value).toMatchObject({ enabled: true, sandboxDefaultAllow: true, reviewerModel: 'flash' })
+    expect(section?.value).toMatchObject({ enabled: true, sandboxDefaultAllow: true, modelStrategy: 'single', primaryModel: 'deepseek-v4-flash' })
     const initial = ctx.actionReviewSettings.read()
     expect(initial).toMatchObject({ value: { reviewerModel: 'flash' }, revision: 0, writable: true })
     const updated = await ctx.actionReviewSettings.update({
-      patch: { reviewerModel: 'pro', sandboxDefaultAllow: false, failureThreshold: 5 },
+      patch: { modelStrategy: 'risk-tiered', primaryProvider: 'openai-compatible', primaryModel: 'gpt-5.6-terra', sandboxDefaultAllow: false, failureThreshold: 5 },
       expectedRevision: initial.revision,
     })
-    expect(updated).toMatchObject({ value: { reviewerModel: 'pro', failureThreshold: 5 }, revision: 1 })
-    expect(ctx.actionReview.uiSettings()).toMatchObject({ reviewerModel: 'pro', failureThreshold: 5 })
+    expect(updated).toMatchObject({ value: { modelStrategy: 'risk-tiered', primaryProvider: 'openai-compatible', primaryModel: 'gpt-5.6-terra', failureThreshold: 5 }, revision: 1 })
+    expect(ctx.actionReview.uiSettings()).toMatchObject({ modelStrategy: 'risk-tiered', primaryModel: 'gpt-5.6-terra', failureThreshold: 5 })
     expect(ctx.actionReview.config).toMatchObject({ failureThreshold: 5, sandboxDefaultAllow: false })
     const reset = await ctx.actionReviewSettings.reset({ expectedRevision: updated.revision })
     expect(reset).toMatchObject({ value: { reviewerModel: 'flash', failureThreshold: 3 }, user: {} })
