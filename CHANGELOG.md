@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- 增加统一生产门禁：构建、77 项测试、Guardian 来源摘要与 npm packed artifact 离线洁净导入。
+- 增加 256 动作并发压力测试，验证 session 隔离、唯一 action digest 与 hash-linked audit 顺序。
+- 增加 Ubuntu 24.04 / Node 24 CI；发布前必须通过无网络、只读、无 capability 的 Linux x86 Docker 测试。
 - WebUI 设置页新增内容隔离的动作漏斗与动态权限组合说明，对齐 inside-sandbox / auto-reviewed / approved / denied / manual 分支。
 - 最终决策记录 policy outline/search/get 调用次数与返回字节；两级模型升级按整个审查生命周期合并统计。
 - 运行时、离线 eval 和 WebUI 聚合策略检索成本，不暴露查询、动作参数或用户内容。

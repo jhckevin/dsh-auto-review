@@ -57,7 +57,10 @@
     "build": "tsc -p tsconfig.json && tsdown --config tsdown.client.config.ts",
     "test": "vitest run",
     "check": "npm run build && npm run test",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "npm pack --dry-run",
+    "policy:check": "node scripts/check-policy-provenance.mjs",
+    "pack:verify": "node scripts/check-pack.mjs",
+    "gate:production": "npm run check && npm run policy:check && npm run pack:verify"
   },
   "dsh": {
     "bundle": {

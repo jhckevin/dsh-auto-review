@@ -2,6 +2,12 @@
 
 每个 ISSUE 单独分支、单独提交组；关闭前必须重新查看固定 Harness 源码和本 ISSUE 改动。
 
+## ISSUE-018：生产发布门禁与离线复现（完成）
+
+建立 Linux x86_64 唯一发布门禁：固定 Guardian 原文摘要、TypeScript 构建、完整测试、256 动作并发审计链、npm tarball 临时空目录离线安装与运行时导入。GitHub CI 在 Node 24 / Ubuntu 24.04 上执行同一 `gate:production`，避免本地与 CI 使用两套验收定义。
+
+验收：77 项测试通过；256 个并发动作的 digest、sequence 与 previousDigest/recordDigest 链均保持隔离且连续；两份 canonical policy 的 SHA-256 与固定 Codex 源码逐字节一致；tarball 连同直接运行依赖在临时空目录断网安装并加载策略 corpus；Docker 使用镜像源的 Node 24、`--network none`、只读根文件系统、只读源码挂载、移除全部 capability 与 `no-new-privileges` 运行完整测试，原生 Linux sandbox 用例通过。
+
 ## ISSUE-012：敏感 Shell 路径分类精度（完成）
 
 修复 shell 命令分类器把 `/root/.ssh/id_rsa` 路径片段中的 `.ssh` 误识别成 `ssh` 网络命令的问题。敏感路径检测现在先于网络命令检测，网络命令必须出现在命令段起点；普通文本中的 `.ssh` 不会被误判。

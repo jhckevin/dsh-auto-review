@@ -6,6 +6,10 @@
 
 本项目不把 Auto Review 定义为“自动放行”。它在 DeepSeek Harness 原生工具管线中完成确定性动作分类、隔离模型审查、一次性用户审批回退、Linux 文件沙盒约束与可重放审计。
 
+## 生产发布门禁
+
+唯一入口为 `npm run gate:production`：它构建服务器与 WebUI 产物，运行功能、安全、并发和原生 Linux sandbox 测试，核验固定 Codex Guardian 文本摘要，并把 npm tarball 连同直接运行依赖安装到临时空目录后断网导入。CI 与发布机器执行同一入口。额外 Docker 验收必须使用 `--network none`、只读根文件系统、只读源码挂载、移除全部 Linux capability 和 `no-new-privileges`；不允许用源码树可导入来替代 packed artifact 验证。
+
 ## 原生接入点
 
 - `tools/pre-execute`：对已经校验、快照和冻结的最终工具参数做路由；
