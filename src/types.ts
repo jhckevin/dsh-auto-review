@@ -134,6 +134,12 @@ export interface ReviewDecision {
     readonly provider: string
     readonly model: string
     readonly escalatedFrom?: { readonly provider: string; readonly model: string }
+    readonly policyRetrieval: {
+      readonly outlineCalls: number
+      readonly searchCalls: number
+      readonly getCalls: number
+      readonly resultBytes: number
+    }
   }
 }
 
@@ -303,6 +309,12 @@ export interface AutoReviewMetricsSnapshot {
   readonly continuedWithDifferentAction: number
   readonly stoppedAfterDenial: number
   readonly reviewerLatencyMs: { readonly count: number; readonly mean: number; readonly max: number }
+  readonly policyRetrieval: {
+    readonly outlineCalls: number
+    readonly searchCalls: number
+    readonly getCalls: number
+    readonly resultBytes: number
+  }
   readonly approvalRate: number
   readonly effectiveAutomationRate: number
   readonly byActionKind: Readonly<Partial<Record<ActionKind, number>>>

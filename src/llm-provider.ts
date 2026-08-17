@@ -205,6 +205,47 @@ function decisionFromSession(events: readonly SessionEvent[]): ReviewDecision {
   return parseReviewDecision(blocks.map(block => block.type === 'text' ? block.text : '').join(''))
 }
 
+interface PolicyRetrievalStats {
+  readonly outlineCalls: number
+  readonly searchCalls: number
+  readonly getCalls: number
+  readonly resultBytes: number
+}
+
+interface ReviewerAttempt {
+  readonly decision: ReviewDecision
+  readonly policyRetrieval: PolicyRetrievalStats
+}
+
+function combinePolicyRetrieval(left: PolicyRetrievalStats, right: PolicyRetrievalStats): PolicyRetrievalStats {
+  return Object.freeze({
+    outlineCalls: left.outlineCalls + right.outlineCalls,
+    searchCalls: left.searchCalls + right.searchCalls,
+    getCalls: left.getCalls + right.getCalls,
+    resultBytes: left.resultBytes + right.resultBytes,
+  })
+}
+
+function policyRetrievalStats(events: readonly SessionEvent[]): PolicyRetrievalStats {
+  let outlineCalls = 0
+  let searchCalls = 0
+  let getCalls = 0
+  let resultBytes = 0
+  for (const event of events) {
+    if (event.type === 'assistant/message') {
+      for (const block of event.data.message.content) {
+        if (block.type !== 'tool-call') continue
+        if (block.name === 'guardian_policy_outline') outlineCalls += 1
+        else if (block.name === 'guardian_policy_search') searchCalls += 1
+        else if (block.name === 'guardian_policy_get') getCalls += 1
+      }
+    } else if (event.type === 'tool/result') {
+      resultBytes += Buffer.byteLength(JSON.stringify(event.data), 'utf8')
+    }
+  }
+  return Object.freeze({ outlineCalls, searchCalls, getCalls, resultBytes })
+}
+
 function delay(ms: number, signal: AbortSignal): Promise<void> {
   if (ms === 0) return Promise.resolve()
   return new Promise((resolve, reject) => {
@@ -249,7 +290,7 @@ async function runAttempt(
   payload: string,
   workspaceRoot: string,
   signal: AbortSignal,
-): Promise<ReviewDecision> {
+): Promise<ReviewerAttempt> {
   const selection = {
     current: {
       provider: config.provider,
@@ -290,7 +331,10 @@ async function runAttempt(
     }))
     await waitForIdle(handle.agent.whenIdle(), signal)
     signal.throwIfAborted()
-    return decisionFromSession(handle.agent.session.events)
+    return Object.freeze({
+      decision: decisionFromSession(handle.agent.session.events),
+      policyRetrieval: policyRetrievalStats(handle.agent.session.events),
+    })
   } finally {
     try {
       await handle.dispose()
@@ -316,6 +360,7 @@ function withReviewerExecution(
   config: ValidatedReviewerConfig,
   tier: 'primary' | 'strong',
   escalatedFrom?: ValidatedReviewerConfig,
+  policyRetrieval: PolicyRetrievalStats = { outlineCalls: 0, searchCalls: 0, getCalls: 0, resultBytes: 0 },
 ): ReviewDecision {
   return Object.freeze({
     ...decision,
@@ -323,6 +368,7 @@ function withReviewerExecution(
       tier,
       provider: config.provider,
       model: config.model,
+      policyRetrieval: Object.freeze({ ...policyRetrieval }),
       ...(escalatedFrom === undefined ? {} : {
         escalatedFrom: Object.freeze({ provider: escalatedFrom.provider, model: escalatedFrom.model }),
       }),
@@ -345,7 +391,7 @@ async function reviewWithProfile(
   workspaceRoot: string,
   requestSignal: AbortSignal,
   timeoutSignal: AbortSignal,
-): Promise<ReviewDecision> {
+): Promise<ReviewerAttempt> {
   const signal = AbortSignal.any([requestSignal, timeoutSignal])
   let lastError: unknown
   for (let attempt = 1; attempt <= config.maxAttempts; attempt += 1) {
@@ -385,15 +431,18 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
         config.modelStrategy === 'risk-tiered'
         && firstTier === 'primary'
         && config.escalateUncertainToStrong
-        && needsStrongReview(first)
+        && needsStrongReview(first.decision)
       ) {
         const strong = selectedProfile(config, 'strong')
         const decision = await reviewWithProfile(
           ctx, strong, payload, request.action.sandbox.workspaceRoot, request.signal, timeoutSignal,
         )
-        return withReviewerExecution(decision, strong, 'strong', firstConfig)
+        return withReviewerExecution(
+          decision.decision, strong, 'strong', firstConfig,
+          combinePolicyRetrieval(first.policyRetrieval, decision.policyRetrieval),
+        )
       }
-      return withReviewerExecution(first, firstConfig, firstTier)
+      return withReviewerExecution(first.decision, firstConfig, firstTier, undefined, first.policyRetrieval)
     },
   }
   ctx.actionReview.registerReviewer(reviewer)

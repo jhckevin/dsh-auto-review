@@ -64,6 +64,10 @@ interface MutableMetrics {
   reviewerLatencyCount: number
   reviewerLatencySum: number
   reviewerLatencyMax: number
+  policyOutlineCalls: number
+  policySearchCalls: number
+  policyGetCalls: number
+  policyResultBytes: number
   byActionKind: Map<string, number>
 }
 
@@ -74,6 +78,7 @@ function newMetrics(): MutableMetrics {
     ticketRejected: 0, retriedDeniedAction: 0, retriedEquivalentEffect: 0, continuedWithDifferentAction: 0,
     stoppedAfterDenial: 0, reviewerLatencyCount: 0, reviewerLatencySum: 0,
     reviewerLatencyMax: 0, byActionKind: new Map(),
+    policyOutlineCalls: 0, policySearchCalls: 0, policyGetCalls: 0, policyResultBytes: 0,
   }
 }
 
@@ -424,6 +429,12 @@ export class ActionReviewRuntime extends Service {
         count: state.reviewerLatencyCount,
         mean: state.reviewerLatencyCount === 0 ? 0 : state.reviewerLatencySum / state.reviewerLatencyCount,
         max: state.reviewerLatencyMax,
+      },
+      policyRetrieval: {
+        outlineCalls: state.policyOutlineCalls,
+        searchCalls: state.policySearchCalls,
+        getCalls: state.policyGetCalls,
+        resultBytes: state.policyResultBytes,
       },
       approvalRate,
       effectiveAutomationRate,
@@ -814,6 +825,13 @@ export class ActionReviewRuntime extends Service {
         state.reviewerLatencyCount += 1
         state.reviewerLatencySum += data.latencyMs
         state.reviewerLatencyMax = Math.max(state.reviewerLatencyMax, data.latencyMs)
+        const policy = data.decision.reviewerExecution?.policyRetrieval
+        if (policy !== undefined) {
+          state.policyOutlineCalls += policy.outlineCalls
+          state.policySearchCalls += policy.searchCalls
+          state.policyGetCalls += policy.getCalls
+          state.policyResultBytes += policy.resultBytes
+        }
         break
       }
       case 'result': {

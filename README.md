@@ -48,6 +48,8 @@
 
 WebUI 只在动作实际进入独立 reviewer 时，于对应工具调用右侧显示小号 shield-terminal 标记；审查进行中为中性色并轻微呼吸，拒绝后保留红色标记和红色斜杠。inside-boundary、hard-deny、manual、reviewer 缺失、断路器已打开及已暂停的动作都不会伪装成“正在审查”。客户端按可见 session 共享一个有界轮询器，不把审查证据、提示词或凭据暴露给页面。
 
+设置页提供内容隔离的进程级动作漏斗，显示全部动作、原生沙盒内、进入审查、自动批准、拒绝与人工处理；并显示 canonical policy 检索调用数和返回字节。页面不返回动作参数、策略 query、用户内容或 reviewer prompt。权限说明会随 Auto Review 与 sandbox-default-allow 开关动态变化，并明确 Full Access 不存在原生沙盒边界、不会进入 Auto Review。
+
 拒绝后，下一次相同 action digest 记为 `retried-denied-action`；语法不同但归一化目标与效果相同则记为 `retried-equivalent-effect`，并直接转入 Harness 原生一次性人工审批，避免靠改引号或空白反复抽样 Reviewer；真正不同的效果才记为 `continued-with-different-action`；没有后续动作而结束回合记为 `stopped-after-denial`。不同动作只是 safer-alternative 候选，最终是否属于安全替代由离线评估器判定，运行时不把字符串差异伪装为安全证明。
 
 `/auto-review` 通过 Harness 原生 CommandRuntime 暴露当前 session 的动作漏斗、review 结果、执行结果、票据拒绝、拒绝后行为和 reviewer 延迟；CommandRuntime 已提供 TUI/RPC 的统一 list/execute 面。`evaluateAutoReviewAudit()` 则在不启动 Harness、不访问模型的情况下从归档记录重建同一组指标，并报告 decision/result/ticket 的关联异常。图片中的数量是某次观测值，不是实现常量；实现保证分支语义和可测量性，而不追求固定比例。

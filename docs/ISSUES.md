@@ -2,6 +2,12 @@
 
 每个 ISSUE 单独分支、单独提交组；关闭前必须重新查看固定 Harness 源码和本 ISSUE 改动。
 
+## ISSUE-017：WebUI 动作漏斗与策略检索遥测（完成）
+
+设置页增加与公开 Auto Review 示意一致的只读动作漏斗：全部动作、原生沙盒内、进入审查、自动批准、拒绝与人工处理。摘要来自 runtime 聚合计数，不暴露 action 参数、用户内容、提示词或策略查询。设置页同时用动态短文明确 Auto Review 开关、sandbox-default-allow 和 read-only/workspace-write/full-access 的组合行为。
+
+每个最终 decision 记录实际 reviewer tier/provider/model，以及 canonical policy outline/search/get 调用次数和返回字节；primary→strong 升级时合并整个审查生命周期而非只统计末次模型。运行时、离线 eval 与 WebUI 都聚合这些成本。构建、76/76 测试、真实策略检索遥测和 SSR 漏斗渲染通过。
+
 ## ISSUE-016：拒绝后的等价效果绕过与人工恢复（完成）
 
 新增与 action digest 分离的 `effectDigest`：对结构化 effects、目标路径、网络目标和 shell 命令进行确定性归一化，忽略无实质意义的引号与空白差异，同时保留真实目标差异。拒绝后再提交同 digest 记为 exact retry；语法不同但 effect digest 相同记为 equivalent-effect retry；真正不同的效果才记为 different action。旧审计没有 effect digest 时按 action digest 兼容恢复。

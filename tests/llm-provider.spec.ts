@@ -313,8 +313,12 @@ describe('isolated reviewer agent provider', () => {
       maxInputBytes: 65536, maxOutputTokens: 512, timeoutMs: 5000, maxAttempts: 1, retryDelayMs: 0,
     })
 
-    await expect(ctx.actionReview.review(action, undefined, new AbortController().signal))
-      .resolves.toMatchObject({ outcome: 'approved', userAuthorization: 'high' })
+    const decision = await ctx.actionReview.review(action, undefined, new AbortController().signal)
+    expect(decision).toMatchObject({
+      outcome: 'approved', userAuthorization: 'high',
+      reviewerExecution: { policyRetrieval: { outlineCalls: 0, searchCalls: 1, getCalls: 0, resultBytes: expect.any(Number) } },
+    })
+    expect(decision.reviewerExecution?.policyRetrieval.resultBytes).toBeGreaterThan(0)
     expect(adapter.requests).toHaveLength(2)
     expect(JSON.stringify(adapter.requests[1]?.messages)).toContain('Data Exfiltration')
     expect(ctx.sessions.list()).toEqual([])

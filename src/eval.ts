@@ -31,6 +31,10 @@ interface MutableEvaluation {
   latencyCount: number
   latencySum: number
   latencyMax: number
+  policyOutlineCalls: number
+  policySearchCalls: number
+  policyGetCalls: number
+  policyResultBytes: number
   readonly byActionKind: Map<string, number>
 }
 
@@ -50,6 +54,7 @@ export function evaluateAutoReviewAudit(records: readonly AutoReviewAuditEnvelop
     manual: 0, unavailable: 0, hardDenied: 0, successfulActions: 0, failedActions: 0,
     ticketRejected: 0, retriedDeniedAction: 0, retriedEquivalentEffect: 0, continuedWithDifferentAction: 0,
     stoppedAfterDenial: 0, latencyCount: 0, latencySum: 0, latencyMax: 0,
+    policyOutlineCalls: 0, policySearchCalls: 0, policyGetCalls: 0, policyResultBytes: 0,
     byActionKind: new Map(),
   }
   const routed = new Set<string>()
@@ -75,6 +80,13 @@ export function evaluateAutoReviewAudit(records: readonly AutoReviewAuditEnvelop
         state.latencyCount += 1
         state.latencySum += data.latencyMs
         state.latencyMax = Math.max(state.latencyMax, data.latencyMs)
+        const policy = data.decision.reviewerExecution?.policyRetrieval
+        if (policy !== undefined) {
+          state.policyOutlineCalls += policy.outlineCalls
+          state.policySearchCalls += policy.searchCalls
+          state.policyGetCalls += policy.getCalls
+          state.policyResultBytes += policy.resultBytes
+        }
         if (!routed.has(data.actionDigest)) anomalies.push(`decision-without-route:${data.actionDigest}`)
         break
       }
@@ -128,6 +140,10 @@ export function evaluateAutoReviewAudit(records: readonly AutoReviewAuditEnvelop
     continuedWithDifferentAction: state.continuedWithDifferentAction,
     stoppedAfterDenial: state.stoppedAfterDenial,
     reviewerLatencyMs: Object.freeze({ count: state.latencyCount, mean: state.latencyCount === 0 ? 0 : state.latencySum / state.latencyCount, max: state.latencyMax }),
+    policyRetrieval: Object.freeze({
+      outlineCalls: state.policyOutlineCalls, searchCalls: state.policySearchCalls,
+      getCalls: state.policyGetCalls, resultBytes: state.policyResultBytes,
+    }),
     approvalRate,
     effectiveAutomationRate,
     byActionKind: Object.freeze(Object.fromEntries([...state.byActionKind.entries()].sort(([left], [right]) => left < right ? -1 : 1))),

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- WebUI 设置页新增内容隔离的动作漏斗与动态权限组合说明，对齐 inside-sandbox / auto-reviewed / approved / denied / manual 分支。
+- 最终决策记录 policy outline/search/get 调用次数与返回字节；两级模型升级按整个审查生命周期合并统计。
+- 运行时、离线 eval 和 WebUI 聚合策略检索成本，不暴露查询、动作参数或用户内容。
 - 新增归一化 `effectDigest` 与拒绝后语义关系审计，区分 exact retry、equivalent-effect retry 和真正不同动作。
 - 不同语法重试同一被拒绝效果时不再重复抽样 Reviewer，改走 Harness 原生一次性人工审批与完整 ticket 校验。
 - 运行时和离线评估新增 `retriedEquivalentEffect`，旧审计缺少 effect digest 时兼容回退。

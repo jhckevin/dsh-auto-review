@@ -36,7 +36,10 @@ describe('explicit settings provider', () => {
     const section = ctx.settings.describe().find(item => item.ns === 'auto-review')
     expect(section?.value).toMatchObject({ enabled: true, sandboxDefaultAllow: true, modelStrategy: 'single', primaryModel: 'deepseek-v4-flash' })
     const initial = ctx.actionReviewSettings.read()
-    expect(initial).toMatchObject({ value: { reviewerModel: 'flash' }, revision: 0, writable: true })
+    expect(initial).toMatchObject({
+      value: { reviewerModel: 'flash' }, revision: 0, writable: true,
+      metrics: { totalActions: 0, insideBoundary: 0, autoReviewed: 0, approved: 0, denied: 0 },
+    })
     const updated = await ctx.actionReviewSettings.update({
       patch: { modelStrategy: 'risk-tiered', primaryProvider: 'openai-compatible', primaryModel: 'gpt-5.6-terra', sandboxDefaultAllow: false, failureThreshold: 5 },
       expectedRevision: initial.revision,
@@ -48,6 +51,7 @@ describe('explicit settings provider', () => {
     expect(reset).toMatchObject({ value: { reviewerModel: 'flash', failureThreshold: 3 }, user: {} })
     expect(ctx.actionReviewSettings.reviewStatus({ sessionId: 's1' })).toEqual({ revision: 0, indicators: [] })
     expect(() => ctx.actionReviewSettings.reviewStatus({ sessionId: '' })).toThrow(/sessionId must be a non-empty string/)
+    expect(ctx.actionReviewSettings.metrics()).toMatchObject({ totalActions: 0, policyRetrieval: { searchCalls: 0 } })
   })
 
   it('rejects fields outside the closed extension settings vocabulary', async () => {

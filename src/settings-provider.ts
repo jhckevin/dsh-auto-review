@@ -3,7 +3,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { settingsNamespace, type SettingsScope } from '@deepseek-ai/dsh-settings'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from './service.ts'
-import type { AutoReviewIndicatorSnapshot, AutoReviewUiSettings } from './types.ts'
+import type { AutoReviewIndicatorSnapshot, AutoReviewMetricsSnapshot, AutoReviewUiSettings } from './types.ts'
 import {
   AUTO_REVIEW_SETTINGS_NAMESPACE,
   AutoReviewUiSettingsSchema,
@@ -23,6 +23,8 @@ export interface AutoReviewSettingsSnapshot {
   readonly user: Partial<AutoReviewUiSettings>
   readonly revision: number
   readonly writable: boolean
+  /** Aggregate, content-free process-lifetime funnel counters for the settings dashboard. */
+  readonly metrics: AutoReviewMetricsSnapshot
 }
 
 export interface AutoReviewSettingsUpdate {
@@ -79,6 +81,7 @@ export class AutoReviewSettingsBridge extends TypertRemoteService {
       user: Object.freeze({ ...((descriptor.user as Partial<AutoReviewUiSettings> | undefined) ?? {}) }),
       revision: descriptor.revision,
       writable: this.ctx.settings.writable,
+      metrics: this.ctx.actionReview.metrics(),
     })
   }
 
@@ -89,6 +92,12 @@ export class AutoReviewSettingsBridge extends TypertRemoteService {
       throw new TypeError('auto-review: sessionId must be a non-empty string')
     }
     return this.ctx.actionReview.reviewIndicatorSnapshot(request.sessionId)
+  }
+
+  /** Read content-free aggregate counters independently so WebUI polling never overwrites an unsaved settings draft. */
+  @Remote('metrics')
+  metrics(): AutoReviewMetricsSnapshot {
+    return this.ctx.actionReview.metrics()
   }
 
   /** Atomically validate and persist one bounded patch. */
