@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.5.4 - 2026-09-01
+
+- 扩展拒绝后生命周期测试，区分采用实质更安全的动作、无替代时停止询问、原动作重试与等效效果绕过。
+- 修复 read-only 工作区变更路由、凭据外传复合效果、`kubectl apply/replace` 等效摘要及生产命令识别。
+- 将 `todo_write`、`ask_user_question` 识别为无外部副作用的原生控制动作，并让 `read_image` 复用有界读取规则，避免误入未知扩展人工审批。
+- Reviewer 拒绝时主动评估具体、低风险且仍需重新审查的 safer alternative；真实 Flash 三轮 36 动作稳定性矩阵与主 Agent 拒绝反馈矩阵纳入验收。
+- 生产式 packed WebUI 验证消除 Typert 双实例造成的 `reviewStatus` 404；Linux x86 断网生产门禁共 93 项测试通过。
+
 ## 0.5.3 - 2026-08-31
 
 - 对齐 OpenAI Codex Guardian 的结构化输出协议：模型仅返回 approved/denied，仅 outcome 必填；manual/unavailable 只用于运行时状态。
