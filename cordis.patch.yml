@@ -16,7 +16,7 @@
         model: deepseek-v4-flash
         reasoningEffort: off
         maxInputBytes: 16384
-        maxOutputTokens: 768
+        maxOutputTokens: 2048
         timeoutMs: 90000
         maxAttempts: 3
         retryDelayMs: 250
