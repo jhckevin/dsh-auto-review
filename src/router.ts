@@ -14,7 +14,7 @@ import type {
 
 const READ_TOOLS = new Set([
   'read', 'read_file', 'read_text_file', 'list_directory', 'directory_tree',
-  'search_files', 'grep', 'glob', 'stat',
+  'search_files', 'grep', 'glob', 'stat', 'read_image',
 ])
 const WRITE_TOOLS = new Set([
   'write', 'edit', 'write_file', 'edit_file', 'str_replace_editor', 'apply_patch', 'create_directory',
@@ -27,6 +27,9 @@ const NETWORK_TOOLS = new Set([
 ])
 const DESTRUCTIVE_TOOLS = new Set([
   'delete_file', 'remove_file', 'remove_directory', 'move_file', 'overwrite_file',
+])
+const CONTROL_TOOLS = new Set([
+  'ask_user_question', 'todo_write',
 ])
 const ESCALATION_TOOLS = new Set([
   'bash', 'pwsh', 'write', 'edit', 'write_file', 'edit_file',
@@ -97,6 +100,13 @@ function shellCommand(arguments_: unknown): string {
   if (arguments_ === null || typeof arguments_ !== 'object') return ''
   const candidate = arguments_ as Record<string, unknown>
   return typeof candidate.command === 'string' ? candidate.command : ''
+}
+
+function sensitiveCommandPaths(command: string, markers: readonly string[]): readonly string[] {
+  const candidates = [...command.matchAll(/(?:^|[\s'"=@])((?:~|\/)[^\s'"<>|;&]+)/gu)]
+    .map(match => match[1]?.replace(/[),]+$/u, ''))
+    .filter((path): path is string => path !== undefined && path.length > 0)
+  return Object.freeze([...new Set(candidates.filter(path => containsMarker([path], markers)))])
 }
 
 function contentText(value: unknown, depth = 0): string {
@@ -180,7 +190,19 @@ function commandContainsSensitiveMarker(command: string, markers: readonly strin
   })
 }
 
-function classifyCommand(command: string, sensitiveMarkers: readonly string[]): Classification | undefined {
+function productionCommandTargets(command: string): readonly string[] {
+  const values: string[] = []
+  for (const match of command.matchAll(/(?:^|\s)(?:--context|--namespace|-n|--filename|-f)(?:=|\s+)([^\s'"]+)/gu)) {
+    if (match[1] !== undefined) values.push(match[1])
+  }
+  return Object.freeze([...new Set(values)])
+}
+
+function classifyCommand(
+  command: string,
+  sensitiveMarkers: readonly string[],
+  productionMarkers: readonly string[],
+): Classification | undefined {
   if (/(^|[;&|]\s*)(?:sudo\s+)?(?:chmod|chown|chgrp|setfacl)\b/i.test(command)) {
     return { kind: 'permission-change', disposition: 'review', reason: 'Shell command changes permissions or ownership.' }
   }
@@ -189,6 +211,12 @@ function classifyCommand(command: string, sensitiveMarkers: readonly string[]): 
   }
   if (commandContainsSensitiveMarker(command, sensitiveMarkers)) {
     return { kind: 'sensitive-read', disposition: 'review', reason: 'Shell command references a configured sensitive path.' }
+  }
+  if (/(^|[;&|]\s*)(?:sudo\s+)?(?:\S*\/)?kubectl\b/i.test(command)) {
+    const targets = productionCommandTargets(command)
+    if (targets.some(target => productionMarkers.some(marker => target.toLocaleLowerCase().includes(marker)))) {
+      return { kind: 'production-change', disposition: 'review', reason: 'Shell command targets a configured production Kubernetes context or namespace.' }
+    }
   }
   if (/(^|[;&|]\s*)(?:sudo\s+)?(?:curl|wget|ssh|scp|rsync|git\s+(?:clone|fetch|pull|push)|npm\s+(?:install|publish)|pnpm\s+(?:install|publish)|pip\s+install)\b/i.test(command)) {
     return { kind: 'network', disposition: 'review', reason: 'Shell command can access the network or publish data.' }
@@ -224,14 +252,21 @@ function effectsFor(
 ): readonly ActionEffect[] {
   if (contributed !== undefined) return Object.freeze([...contributed])
   const command = shellCommand(arguments_)
+  const targets = networkTargets(arguments_)
   switch (classification.kind) {
     case 'workspace-read': return Object.freeze([{ type: 'fs.read', paths }])
     case 'workspace-write': return Object.freeze([{ type: 'fs.write', paths, destructive: false }])
-    case 'sensitive-read': return Object.freeze([{ type: 'credential.read', paths }])
+    case 'sensitive-read': return Object.freeze([
+      { type: 'credential.read', paths },
+      ...(targets.length === 0 ? [] : [{ type: 'network.connect' as const, targets }]),
+    ])
     case 'destructive': return Object.freeze([{ type: 'fs.write', paths, destructive: true }])
     case 'permission-change': return Object.freeze([{ type: 'permission.change', paths }])
-    case 'production-change': return Object.freeze([{ type: 'production.change', targets: paths }])
-    case 'network': return Object.freeze([{ type: 'network.connect', targets: networkTargets(arguments_) }])
+    case 'production-change': {
+      const commandTargets = productionCommandTargets(command)
+      return Object.freeze([{ type: 'production.change', targets: commandTargets.length === 0 ? paths : commandTargets }])
+    }
+    case 'network': return Object.freeze([{ type: 'network.connect', targets }])
     case 'process':
     case 'sandbox-escalation': return Object.freeze([{
       type: 'process.exec',
@@ -345,7 +380,13 @@ export class ActionRouter {
     sandboxDefaultAllow = true,
   ): ActionEnvelope {
     const arguments_ = toJsonValue(exec.arguments)
-    const paths = Object.freeze(extractPaths(exec.arguments))
+    const command = shellCommand(exec.arguments)
+    const paths = Object.freeze([
+      ...new Set([
+        ...extractPaths(exec.arguments),
+        ...sensitiveCommandPaths(command, this.config.sensitiveMarkers),
+      ]),
+    ])
     const authority = transcriptOf(exec)
     const escalation = requestedEscalation(exec.name, exec.arguments)
     const selectedContribution = contributed !== undefined
@@ -436,6 +477,9 @@ export class ActionRouter {
     if (sandbox.mode === 'danger-full-access') {
       return { kind: 'process', disposition: 'inside-boundary', reason: 'Danger full access has no native sandbox approval boundary; Auto Review does not intercept this mode.' }
     }
+    if (CONTROL_TOOLS.has(toolName)) {
+      return { kind: 'process', disposition: 'inside-boundary', reason: 'Built-in conversation control action has no external side effect.' }
+    }
     if (containsMarker(paths, this.config.sensitiveMarkers)) {
       return { kind: 'sensitive-read', disposition: 'review', reason: 'Action targets a configured sensitive path.' }
     }
@@ -443,8 +487,8 @@ export class ActionRouter {
       return { kind: 'production-change', disposition: 'review', reason: 'Action targets a configured production marker.' }
     }
     if (PROCESS_TOOLS.has(toolName)) {
-      const elevated = classifyCommand(shellCommand(arguments_), this.config.sensitiveMarkers)
-      if (elevated?.kind === 'network' || elevated?.kind === 'sensitive-read') return elevated
+      const elevated = classifyCommand(shellCommand(arguments_), this.config.sensitiveMarkers, this.config.productionMarkers)
+      if (elevated?.kind === 'network' || elevated?.kind === 'sensitive-read' || elevated?.kind === 'production-change') return elevated
       if (sandboxDefaultAllow) {
         return { kind: elevated?.kind ?? 'process', disposition: 'inside-boundary', reason: 'Process remains confined by the native sandbox for this call.' }
       }
@@ -455,8 +499,11 @@ export class ActionRouter {
     }
     const allInside = paths.length > 0 && paths.every(path => insideWorkspace(path, sandbox.workspaceRoot))
     if (DESTRUCTIVE_TOOLS.has(toolName)) {
-      if (sandboxDefaultAllow && allInside) {
+      if (sandboxDefaultAllow && sandbox.mode !== 'read-only' && allInside) {
         return { kind: 'destructive', disposition: 'inside-boundary', reason: 'Destructive filesystem action remains confined to the native workspace boundary.' }
+      }
+      if (sandbox.mode === 'read-only' && allInside) {
+        return { kind: 'destructive', disposition: 'review', reason: 'Native read-only mode does not permit destructive workspace changes.' }
       }
       return { kind: 'destructive', disposition: 'review', reason: 'Destructive filesystem action is outside the default native sandbox fast path.' }
     }
@@ -467,8 +514,11 @@ export class ActionRouter {
       return { kind: 'sensitive-read', disposition: 'review', reason: 'Read is outside the session workspace or has no bounded path.' }
     }
     if (WRITE_TOOLS.has(toolName)) {
-      if (sandboxDefaultAllow && this.config.allowWorkspaceWrites && allInside) {
+      if (sandboxDefaultAllow && sandbox.mode !== 'read-only' && this.config.allowWorkspaceWrites && allInside) {
         return { kind: 'workspace-write', disposition: 'inside-boundary', reason: 'Non-destructive write stays inside the session workspace.' }
+      }
+      if (sandbox.mode === 'read-only' && allInside) {
+        return { kind: 'workspace-write', disposition: 'review', reason: 'Native read-only mode does not permit workspace writes.' }
       }
       return { kind: 'workspace-write', disposition: 'review', reason: 'Write is outside the session workspace or has no bounded path.' }
     }
