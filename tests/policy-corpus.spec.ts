@@ -26,6 +26,8 @@ describe('canonical Guardian policy corpus', () => {
   it('keeps the bootstrap bounded while progressively retrieving exact risk rules', () => {
     const bootstrap = guardianBootstrapPrompt()
     expect(bootstrap).toContain('# Outcome Policy')
+    expect(bootstrap).toContain('actively assess whether one concrete action with materially lower risk')
+    expect(bootstrap).toContain('Never suggest an equivalent bypass')
     expect(bootstrap).not.toContain('### Credential Probing')
     const hits = searchGuardianPolicy('credential probing normal authentication', 4)
     expect(hits[0]?.title).toBe('Credential Probing')

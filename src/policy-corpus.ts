@@ -149,6 +149,8 @@ export function guardianBootstrapPrompt(): string {
     'For an unambiguous low-risk approval, {"schemaVersion":1,"outcome":"approved"} is sufficient.',
     'For all other decisions, use:',
     '{"schemaVersion":1,"outcome":"approved|denied","riskLevel":"low|medium|high|critical","userAuthorization":"unknown|low|medium|high","rationale":"...","policyRuleIds":["..."],"uncertainty":"..."}',
-    'Omit saferAlternative unless outcome is denied and a materially safer alternative exists. Never emit it as null or an empty string.',
+    'Whenever outcome is denied, actively assess whether one concrete action with materially lower risk can still advance the user\'s underlying goal.',
+    'If such an action exists, include saferAlternative as a specific, narrowly scoped proposal that the main agent can evaluate and re-submit through normal policy checks. Never suggest an equivalent bypass or imply that the alternative is pre-approved.',
+    'If no materially safer useful action exists, omit saferAlternative. Never invent an alternative, and never emit saferAlternative as null or an empty string.',
   ].join('\n\n')
 }
