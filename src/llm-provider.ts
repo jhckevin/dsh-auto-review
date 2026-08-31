@@ -9,11 +9,19 @@ import {
 } from '@deepseek-ai/dsh-llm'
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { guardianBootstrapPrompt } from './policy-corpus.ts'
-import { parseReviewDecision } from './protocol.ts'
+import { parseReviewDecision, ReviewProtocolError } from './protocol.ts'
 import { redactJson } from './redaction.ts'
 import { installReviewerPolicyTools } from './reviewer-policy-tools.ts'
 import { STRONG_REVIEW_KINDS } from './settings.ts'
-import type { ActionKind, ActionReviewer, AutoReviewUiSettings, LlmReviewerConfig, ReviewDecision } from './types.ts'
+import {
+  unavailableDecision,
+  type ActionKind,
+  type ActionReviewer,
+  type AutoReviewUiSettings,
+  type LlmReviewerConfig,
+  type ReviewDecision,
+  type ReviewerFailureCategory,
+} from './types.ts'
 
 export const name = 'auto-review-llm-provider'
 export const inject = ['actionReview', 'agents', 'systemPrompt', 'tools']
@@ -215,6 +223,19 @@ interface PolicyRetrievalStats {
 interface ReviewerAttempt {
   readonly decision: ReviewDecision
   readonly policyRetrieval: PolicyRetrievalStats
+  readonly attempts: number
+  readonly failureCategories: readonly ReviewerFailureCategory[]
+}
+
+class ReviewerAttemptError extends Error {
+  override readonly name = 'ReviewerAttemptError'
+
+  constructor(
+    readonly original: unknown,
+    readonly policyRetrieval: PolicyRetrievalStats,
+  ) {
+    super(original instanceof Error ? original.message : 'auto-review reviewer attempt failed')
+  }
 }
 
 function combinePolicyRetrieval(left: PolicyRetrievalStats, right: PolicyRetrievalStats): PolicyRetrievalStats {
@@ -331,10 +352,17 @@ async function runAttempt(
     }))
     await waitForIdle(handle.agent.whenIdle(), signal)
     signal.throwIfAborted()
-    return Object.freeze({
-      decision: decisionFromSession(handle.agent.session.events),
-      policyRetrieval: policyRetrievalStats(handle.agent.session.events),
-    })
+    const policyRetrieval = policyRetrievalStats(handle.agent.session.events)
+    try {
+      return Object.freeze({
+        decision: decisionFromSession(handle.agent.session.events),
+        policyRetrieval,
+        attempts: 1,
+        failureCategories: Object.freeze([]),
+      })
+    } catch (error) {
+      throw new ReviewerAttemptError(error, policyRetrieval)
+    }
   } finally {
     try {
       await handle.dispose()
@@ -361,6 +389,8 @@ function withReviewerExecution(
   tier: 'primary' | 'strong',
   escalatedFrom?: ValidatedReviewerConfig,
   policyRetrieval: PolicyRetrievalStats = { outlineCalls: 0, searchCalls: 0, getCalls: 0, resultBytes: 0 },
+  attempts = 1,
+  failureCategories: readonly ReviewerFailureCategory[] = [],
 ): ReviewDecision {
   return Object.freeze({
     ...decision,
@@ -368,12 +398,41 @@ function withReviewerExecution(
       tier,
       provider: config.provider,
       model: config.model,
+      attempts,
+      failureCategories: Object.freeze([...failureCategories]),
       policyRetrieval: Object.freeze({ ...policyRetrieval }),
       ...(escalatedFrom === undefined ? {} : {
         escalatedFrom: Object.freeze({ provider: escalatedFrom.provider, model: escalatedFrom.model }),
       }),
     }),
   })
+}
+
+function failureCategory(error: unknown): ReviewerFailureCategory {
+  const original = error instanceof ReviewerAttemptError ? error.original : error
+  if (original instanceof ReviewProtocolError
+    || (error instanceof ReviewerAttemptError && original instanceof TypeError)) return 'protocol'
+  const record = original !== null && typeof original === 'object'
+    ? original as { status?: unknown; statusCode?: unknown; code?: unknown; name?: unknown; message?: unknown }
+    : {}
+  const status = Number(record.status ?? record.statusCode)
+  const text = [
+    typeof record.name === 'string' ? record.name : '',
+    typeof record.code === 'string' ? record.code : '',
+    typeof record.message === 'string' ? record.message : String(original),
+  ].join(' ').toLowerCase()
+  if (text.includes('abort')) return 'cancelled'
+  if (text.includes('timeout') || text.includes('timed out')) return 'timeout'
+  if ([408, 409, 425, 429, 500, 502, 503, 504].includes(status)
+    || /rate.?limit|temporar|overload|unavailable|connection|econn|reset|socket|gateway/.test(text)) {
+    return 'provider-transient'
+  }
+  if (Number.isFinite(status) && status >= 400 && status < 500) return 'provider-terminal'
+  return 'unknown'
+}
+
+function retryable(category: ReviewerFailureCategory): boolean {
+  return category === 'protocol' || category === 'provider-transient'
 }
 
 function needsStrongReview(decision: ReviewDecision): boolean {
@@ -393,18 +452,59 @@ async function reviewWithProfile(
   timeoutSignal: AbortSignal,
 ): Promise<ReviewerAttempt> {
   const signal = AbortSignal.any([requestSignal, timeoutSignal])
-  let lastError: unknown
+  let policyRetrieval: PolicyRetrievalStats = { outlineCalls: 0, searchCalls: 0, getCalls: 0, resultBytes: 0 }
+  const failureCategories: ReviewerFailureCategory[] = []
   for (let attempt = 1; attempt <= config.maxAttempts; attempt += 1) {
     try {
-      return await runAttempt(ctx, config, payload, workspaceRoot, signal)
+      const result = await runAttempt(ctx, config, payload, workspaceRoot, signal)
+      return Object.freeze({
+        ...result,
+        policyRetrieval: combinePolicyRetrieval(policyRetrieval, result.policyRetrieval),
+        attempts: attempt,
+        failureCategories: Object.freeze([...failureCategories]),
+      })
     } catch (error) {
-      if (requestSignal.aborted) requestSignal.throwIfAborted()
-      if (timeoutSignal.aborted) throw new Error(`auto-review: reviewer timed out after ${config.timeoutMs}ms`)
-      lastError = error
-      if (attempt < config.maxAttempts) await delay(config.retryDelayMs, signal)
+      if (error instanceof ReviewerAttemptError) {
+        policyRetrieval = combinePolicyRetrieval(policyRetrieval, error.policyRetrieval)
+      }
+      const category = requestSignal.aborted
+        ? 'cancelled'
+        : timeoutSignal.aborted
+          ? 'timeout'
+          : failureCategory(error)
+      failureCategories.push(category)
+      if (requestSignal.aborted || timeoutSignal.aborted || !retryable(category) || attempt === config.maxAttempts) {
+        return Object.freeze({
+          decision: unavailableDecision(
+            category === 'timeout'
+              ? `Reviewer timed out after ${config.timeoutMs}ms.`
+              : 'Reviewer did not produce a valid authoritative decision.',
+          ),
+          policyRetrieval,
+          attempts: attempt,
+          failureCategories: Object.freeze([...failureCategories]),
+        })
+      }
+      const backoff = config.retryDelayMs * (2 ** (attempt - 1))
+      try {
+        await delay(backoff, signal)
+      } catch {
+        const interruptedCategory = requestSignal.aborted ? 'cancelled' : 'timeout'
+        failureCategories.push(interruptedCategory)
+        return Object.freeze({
+          decision: unavailableDecision(
+            interruptedCategory === 'timeout'
+              ? `Reviewer timed out after ${config.timeoutMs}ms.`
+              : 'Reviewer request was cancelled.',
+          ),
+          policyRetrieval,
+          attempts: attempt,
+          failureCategories: Object.freeze([...failureCategories]),
+        })
+      }
     }
   }
-  throw lastError
+  throw new Error('auto-review: unreachable reviewer retry state')
 }
 
 export function apply(ctx: Context, input: LlmReviewerConfig): void {
@@ -440,9 +540,14 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
         return withReviewerExecution(
           decision.decision, strong, 'strong', firstConfig,
           combinePolicyRetrieval(first.policyRetrieval, decision.policyRetrieval),
+          first.attempts + decision.attempts,
+          [...first.failureCategories, ...decision.failureCategories],
         )
       }
-      return withReviewerExecution(first.decision, firstConfig, firstTier, undefined, first.policyRetrieval)
+      return withReviewerExecution(
+        first.decision, firstConfig, firstTier, undefined, first.policyRetrieval,
+        first.attempts, first.failureCategories,
+      )
     },
   }
   ctx.actionReview.registerReviewer(reviewer)

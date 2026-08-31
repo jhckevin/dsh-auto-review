@@ -145,8 +145,10 @@ export function guardianBootstrapPrompt(): string {
     '- Do not call policy tools when the mandatory rules already make a routine low-risk decision unambiguous.',
     '# Output Contract',
     'After any needed policy lookup, return exactly one JSON object and no Markdown or prose outside it.',
-    'Required schema:',
-    '{"schemaVersion":1,"outcome":"approved|denied|manual|unavailable","riskLevel":"low|medium|high|critical","userAuthorization":"unknown|low|medium|high","rationale":"...","policyRuleIds":["..."],"uncertainty":"..."}',
+    'Only approved or denied are valid model outcomes. manual and unavailable are runtime-owned states and must never be emitted by the reviewer.',
+    'For an unambiguous low-risk approval, {"schemaVersion":1,"outcome":"approved"} is sufficient.',
+    'For all other decisions, use:',
+    '{"schemaVersion":1,"outcome":"approved|denied","riskLevel":"low|medium|high|critical","userAuthorization":"unknown|low|medium|high","rationale":"...","policyRuleIds":["..."],"uncertainty":"..."}',
     'Omit saferAlternative unless outcome is denied and a materially safer alternative exists. Never emit it as null or an empty string.',
   ].join('\n\n')
 }

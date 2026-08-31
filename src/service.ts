@@ -693,8 +693,15 @@ export class ActionReviewRuntime extends Service {
           this.setReviewIndicator(action, indicatorSessionId, 'reviewing', startedAt)
           reviewerInvoked = true
         }
-        decision = await reviewer.review({ action, signal })
-        signal.throwIfAborted()
+        const reviewed = await reviewer.review({ action, signal })
+        decision = signal.aborted
+          ? Object.freeze({
+            ...unavailableDecision('Reviewer request was cancelled before an authoritative decision could be used.'),
+            ...(reviewed.reviewerExecution === undefined
+              ? {}
+              : { reviewerExecution: reviewed.reviewerExecution }),
+          })
+          : reviewed
         if (decision.outcome === 'unavailable') this.recordFailure(session)
         else this.recordSuccess(session)
       } catch (error) {

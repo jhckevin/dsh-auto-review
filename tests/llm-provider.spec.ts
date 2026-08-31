@@ -56,7 +56,7 @@ const approved = JSON.stringify({
 
 const uncertainHigh = JSON.stringify({
   schemaVersion: 1,
-  outcome: 'manual',
+  outcome: 'denied',
   riskLevel: 'high',
   userAuthorization: 'medium',
   rationale: 'The action needs stronger review.',
@@ -77,7 +77,10 @@ function textResponse(text: string): StreamChunk[] {
 class ReviewAdapter extends LlmAdapter {
   readonly requests: GenerateOptions[] = []
 
-  constructor(private readonly searchFirst = false) {
+  constructor(
+    private readonly searchFirst = false,
+    private readonly finalText = approved,
+  ) {
     super()
   }
 
@@ -103,7 +106,7 @@ class ReviewAdapter extends LlmAdapter {
       yield { type: 'finish', reason: { kind: 'tool-calls' } }
       return
     }
-    yield* textResponse(approved)
+    yield* textResponse(this.finalText)
   }
 }
 
@@ -124,7 +127,12 @@ function assistantEvent(text: string): SessionEvent {
   } as SessionEvent
 }
 
-async function fixture(outputs: string[], fixtureOptions: { hang?: boolean; timeoutMs?: number; reviewerConfig?: Partial<LlmReviewerConfig> } = {}) {
+async function fixture(outputs: string[], fixtureOptions: {
+  hang?: boolean
+  timeoutMs?: number
+  reviewerConfig?: Partial<LlmReviewerConfig>
+  createError?: unknown
+} = {}) {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt, {})
   await ctx.plugin(ToolRuntime)
@@ -139,6 +147,7 @@ async function fixture(outputs: string[], fixtureOptions: { hang?: boolean; time
     async createAgent(ownerCtx, options): Promise<AgentHandle> {
       const output = outputs[Math.min(creates, outputs.length - 1)] ?? approved
       creates += 1
+      if (fixtureOptions.createError !== undefined) throw fixtureOptions.createError
       models.push({ provider: options.agentOptions?.provider, model: options.agentOptions?.model })
       if (options.setup !== undefined) {
         setupCalls += 1
@@ -236,7 +245,48 @@ describe('isolated reviewer agent provider', () => {
     const { ctx, stats } = await fixture(['not-json', approved])
     const decision = await ctx.actionReview.review(action, undefined, new AbortController().signal)
     expect(decision.outcome).toBe('approved')
+    expect(decision.reviewerExecution).toMatchObject({
+      attempts: 2,
+      failureCategories: ['protocol'],
+    })
     expect(stats()).toMatchObject({ creates: 2, disposes: 2, setupCalls: 2 })
+  })
+
+  it('preserves failed-attempt telemetry when all responses violate the protocol', async () => {
+    const { ctx, stats } = await fixture(['not-json'])
+    const decision = await ctx.actionReview.review(action, undefined, new AbortController().signal)
+    expect(decision).toMatchObject({
+      outcome: 'unavailable',
+      reviewerExecution: {
+        attempts: 3,
+        failureCategories: ['protocol', 'protocol', 'protocol'],
+        policyRetrieval: { outlineCalls: 0, searchCalls: 0, getCalls: 0, resultBytes: 0 },
+      },
+    })
+    expect(stats()).toMatchObject({ creates: 3, disposes: 3 })
+  })
+
+  it('does not retry a terminal provider error', async () => {
+    const error = Object.assign(new Error('invalid reviewer model'), { status: 400 })
+    const { ctx, stats } = await fixture([approved], { createError: error })
+    await expect(ctx.actionReview.review(action, undefined, new AbortController().signal)).resolves.toMatchObject({
+      outcome: 'unavailable',
+      reviewerExecution: { attempts: 1, failureCategories: ['provider-terminal'] },
+    })
+    expect(stats().creates).toBe(1)
+  })
+
+  it('retries a transient provider error within the shared deadline', async () => {
+    const error = Object.assign(new Error('rate limit'), { status: 429 })
+    const { ctx, stats } = await fixture([approved], { createError: error })
+    await expect(ctx.actionReview.review(action, undefined, new AbortController().signal)).resolves.toMatchObject({
+      outcome: 'unavailable',
+      reviewerExecution: {
+        attempts: 3,
+        failureCategories: ['provider-transient', 'provider-transient', 'provider-transient'],
+      },
+    })
+    expect(stats().creates).toBe(3)
   })
 
   it('bounds an uncooperative reviewer by the total timeout and disposes its Agent', async () => {
@@ -255,6 +305,10 @@ describe('isolated reviewer agent provider', () => {
     controller.abort(new Error('cancelled by fixture'))
     const decision = await review
     expect(decision.outcome).toBe('unavailable')
+    expect(decision.reviewerExecution).toMatchObject({
+      attempts: 1,
+      failureCategories: ['cancelled'],
+    })
     expect(stats()).toMatchObject({ creates: 1, disposes: 1 })
   })
 
@@ -321,6 +375,33 @@ describe('isolated reviewer agent provider', () => {
     expect(decision.reviewerExecution?.policyRetrieval.resultBytes).toBeGreaterThan(0)
     expect(adapter.requests).toHaveLength(2)
     expect(JSON.stringify(adapter.requests[1]?.messages)).toContain('Data Exfiltration')
+    expect(ctx.sessions.list()).toEqual([])
+  })
+
+  it('retains progressive policy telemetry when the final response is malformed', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(SystemPrompt)
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(AgentRegistry)
+    await ctx.plugin(AgentLoop, { agents: [] })
+    await ctx.plugin(ActionReviewRuntime)
+    const adapter = new ReviewAdapter(true, 'not-json')
+    ctx.llm.registerAdapter(['fixture-provider'], adapter)
+    applyProvider(ctx, {
+      provider: 'fixture-provider', model: 'fixture-reviewer', reasoningEffort: 'low',
+      maxInputBytes: 65536, maxOutputTokens: 512, timeoutMs: 5000, maxAttempts: 1, retryDelayMs: 0,
+    })
+
+    await expect(ctx.actionReview.review(action, undefined, new AbortController().signal)).resolves.toMatchObject({
+      outcome: 'unavailable',
+      reviewerExecution: {
+        attempts: 1,
+        failureCategories: ['protocol'],
+        policyRetrieval: { searchCalls: 1, resultBytes: expect.any(Number) },
+      },
+    })
     expect(ctx.sessions.list()).toEqual([])
   })
 })

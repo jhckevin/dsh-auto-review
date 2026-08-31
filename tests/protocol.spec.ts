@@ -22,8 +22,20 @@ describe('Auto Review protocol', () => {
     })
   })
 
-  it('rejects Markdown, extra keys and open-vocabulary outcomes', () => {
-    expect(() => parseReviewDecision('```json\n{}\n```')).toThrow(/exactly one JSON object/)
+  it('recovers one closed JSON object from surrounding model prose', () => {
+    expect(parseReviewDecision('Decision follows:\n{"outcome":"approved"}\nDone.')).toEqual({
+      schemaVersion: 1,
+      outcome: 'approved',
+      riskLevel: 'low',
+      userAuthorization: 'unknown',
+      rationale: 'Auto-review returned a low-risk approval.',
+      policyRuleIds: [],
+      uncertainty: '',
+    })
+  })
+
+  it('rejects malformed objects, extra keys and open-vocabulary outcomes', () => {
+    expect(() => parseReviewDecision('```json\n{}\n```')).toThrow(/approved or denied/)
     expect(() => parseReviewDecision(JSON.stringify({
       schemaVersion: 1, outcome: 'approved', riskLevel: 'low', userAuthorization: 'high', rationale: 'x',
       policyRuleIds: [], uncertainty: '', extra: true,
@@ -31,14 +43,12 @@ describe('Auto Review protocol', () => {
     expect(() => parseReviewDecision(JSON.stringify({
       schemaVersion: 1, outcome: 'probably', riskLevel: 'low', userAuthorization: 'high', rationale: 'x',
       policyRuleIds: [], uncertainty: '',
-    }))).toThrow(/closed vocabulary/)
+    }))).toThrow(/approved or denied/)
   })
 
-  it('requires the canonical user-authorization score', () => {
-    expect(() => parseReviewDecision(JSON.stringify({
-      schemaVersion: 1, outcome: 'approved', riskLevel: 'low', rationale: 'x',
-      policyRuleIds: [], uncertainty: '',
-    }))).toThrow(/userAuthorization/)
+  it('reserves manual and unavailable for synthetic runtime decisions', () => {
+    expect(() => parseReviewDecision(JSON.stringify({ outcome: 'manual' }))).toThrow(/approved or denied/)
+    expect(() => parseReviewDecision(JSON.stringify({ outcome: 'unavailable' }))).toThrow(/approved or denied/)
   })
 
   it.each([null, '', '   '])('normalizes an empty optional saferAlternative (%j) to omission', value => {
@@ -64,6 +74,6 @@ describe('Auto Review protocol', () => {
       policyRuleIds: [],
       uncertainty: '',
     })
-    expect(() => parseReviewDecision(`${decision}\n${decision}`)).toThrow(/exactly one JSON object/)
+    expect(() => parseReviewDecision(`${decision}\n${decision}`)).toThrow(/one JSON object/)
   })
 })

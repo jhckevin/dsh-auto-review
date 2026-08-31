@@ -28,7 +28,7 @@ export const DEFAULT_AUTO_REVIEW_UI_SETTINGS: AutoReviewUiSettings = Object.free
   strongReviewKinds: [...STRONG_REVIEW_KINDS],
   escalateUncertainToStrong: true,
   maxInputBytes: 16384,
-  maxOutputTokens: 768,
+  maxOutputTokens: 2048,
   timeoutMs: 90000,
   maxAttempts: 3,
   transcriptMaxEntries: 12,

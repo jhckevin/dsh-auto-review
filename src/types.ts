@@ -23,6 +23,13 @@ export type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
 export type UserAuthorization = 'unknown' | 'low' | 'medium' | 'high'
 export type AutoReviewModelStrategy = 'single' | 'risk-tiered'
 export type AutoReviewModelTier = 'primary' | 'strong'
+export type ReviewerFailureCategory =
+  | 'protocol'
+  | 'timeout'
+  | 'cancelled'
+  | 'provider-transient'
+  | 'provider-terminal'
+  | 'unknown'
 
 export type ActionEffect =
   | { readonly type: 'fs.read'; readonly paths: readonly string[] }
@@ -133,6 +140,8 @@ export interface ReviewDecision {
     readonly tier: AutoReviewModelTier
     readonly provider: string
     readonly model: string
+    readonly attempts: number
+    readonly failureCategories: readonly ReviewerFailureCategory[]
     readonly escalatedFrom?: { readonly provider: string; readonly model: string }
     readonly policyRetrieval: {
       readonly outlineCalls: number
