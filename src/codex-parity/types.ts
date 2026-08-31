@@ -2,11 +2,13 @@ declare const absolutePathBrand: unique symbol
 declare const pathUriBrand: unique symbol
 declare const u16Brand: unique symbol
 declare const i32Brand: unique symbol
+declare const nonZeroUsizeBrand: unique symbol
 
 export type AbsolutePath = string & { readonly [absolutePathBrand]: true }
 export type PathUri = string & { readonly [pathUriBrand]: true }
 export type U16 = number & { readonly [u16Brand]: true }
 export type I32 = number & { readonly [i32Brand]: true }
+export type NonZeroUsize = number & { readonly [nonZeroUsizeBrand]: true }
 export type JsonPrimitive = null | boolean | number | string
 export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
 export type JsonObject = { [key: string]: JsonValue }
@@ -32,17 +34,61 @@ export interface GranularApprovalConfig {
 
 export interface NetworkPermissions { enabled?: boolean }
 export type FileSystemAccessMode = 'read' | 'write' | 'deny'
-export type FileSystemPath = { path: PathUri } | { pattern: string }
-export interface FileSystemSandboxEntry { path: FileSystemPath; access: FileSystemAccessMode }
+export type FileSystemSpecialPath =
+  | { kind: 'root' | 'minimal' | 'tmpdir' | 'slash_tmp' }
+  | { kind: 'project_roots'; subpath?: string }
+  | { kind: 'unknown'; path: string; subpath?: string }
+export type FileSystemPath =
+  | { type: 'path'; path: PathUri }
+  | { type: 'glob_pattern'; pattern: string }
+  | { type: 'special'; value: FileSystemSpecialPath }
+export interface FileSystemSandboxEntry {
+  path: FileSystemPath
+  access: FileSystemAccessMode
+  missing_path_behavior?: 'skip'
+}
 export type FileSystemPermissions =
   | { read?: AbsolutePath[]; write?: AbsolutePath[] }
-  | { entries?: FileSystemSandboxEntry[]; glob_scan_max_depth?: number }
-export interface PermissionProfile {
+  | { entries: FileSystemSandboxEntry[]; glob_scan_max_depth?: NonZeroUsize }
+export interface PartialPermissionProfile {
   network?: NetworkPermissions
   file_system?: FileSystemPermissions
 }
-export type AdditionalPermissionProfile = PermissionProfile
-export type RequestPermissionProfile = PermissionProfile
+export type AdditionalPermissionProfile = PartialPermissionProfile
+export type RequestPermissionProfile = PartialPermissionProfile
+export type SerializedFileSystemSpecialPath = JsonObject & (
+  | { kind: 'root' | 'minimal' | 'tmpdir' | 'slash_tmp' }
+  | { kind: 'project_roots'; subpath?: string }
+  | { kind: 'unknown'; path: string; subpath?: string }
+)
+export type SerializedFileSystemPath = JsonObject & (
+  | { type: 'path'; path: string }
+  | { type: 'glob_pattern'; pattern: string }
+  | { type: 'special'; value: SerializedFileSystemSpecialPath }
+)
+export interface SerializedFileSystemSandboxEntry extends JsonObject {
+  path: SerializedFileSystemPath
+  access: FileSystemAccessMode
+  missing_path_behavior?: 'skip'
+}
+export type SerializedFileSystemPermissions = JsonObject & (
+  | { read?: string[]; write?: string[] }
+  | { entries: SerializedFileSystemSandboxEntry[]; glob_scan_max_depth?: NonZeroUsize }
+)
+export interface SerializedNetworkPermissions extends JsonObject { enabled: boolean | null }
+export interface SerializedPartialPermissionProfile extends JsonObject {
+  network: SerializedNetworkPermissions | null
+  file_system: SerializedFileSystemPermissions | null
+}
+
+export type NetworkSandboxPolicy = 'restricted' | 'enabled'
+export type ManagedFileSystemPermissions =
+  | { type: 'restricted'; entries: FileSystemSandboxEntry[]; glob_scan_max_depth?: NonZeroUsize }
+  | { type: 'unrestricted' }
+export type PermissionProfile =
+  | { type: 'managed'; file_system: ManagedFileSystemPermissions; network: NetworkSandboxPolicy }
+  | { type: 'disabled' }
+  | { type: 'external'; network: NetworkSandboxPolicy }
 
 export interface ExecPolicyAmendment { command: string[] }
 export interface GuardianMcpAnnotations {
@@ -151,7 +197,7 @@ export interface UnifiedExecApprovalKey {
   cwd: PathUri
   tty: boolean
   sandboxPermissions: SandboxPermissions
-  additionalPermissions?: AdditionalPermissionProfile
+  additionalPermissions: SerializedPartialPermissionProfile | null
 }
 export interface ApplyPatchApprovalKey { type: 'apply_patch'; environmentId: string; path: PathUri }
 export type ApprovalCacheKey = UnifiedExecApprovalKey | ApplyPatchApprovalKey
@@ -172,7 +218,7 @@ export type GuardianAssessmentAction =
   | { type: 'apply_patch'; cwd: AbsolutePath; files: AbsolutePath[] }
   | { type: 'network_access'; target: string; host: string; protocol: NetworkApprovalProtocol; port: U16 }
   | { type: 'mcp_tool_call'; server: string; tool_name: string; connector_id: string | null; connector_name: string | null; tool_title: string | null }
-  | { type: 'request_permissions'; reason: string | null; permissions: RequestPermissionProfile }
+  | { type: 'request_permissions'; reason: string | null; permissions: SerializedPartialPermissionProfile }
 
 export type GuardianRiskLevel = 'low' | 'medium' | 'high' | 'critical'
 export type GuardianUserAuthorization = 'unknown' | 'low' | 'medium' | 'high'
@@ -196,10 +242,10 @@ export interface GuardianAssessmentEvent {
 }
 
 export type GuardianReviewedAction =
-  | { type: 'shell'; sandbox_permissions: SandboxPermissions; additional_permissions: AdditionalPermissionProfile | null }
-  | { type: 'unified_exec'; sandbox_permissions: SandboxPermissions; additional_permissions: AdditionalPermissionProfile | null; tty: boolean }
+  | { type: 'shell'; sandbox_permissions: SandboxPermissions; additional_permissions: SerializedPartialPermissionProfile | null }
+  | { type: 'unified_exec'; sandbox_permissions: SandboxPermissions; additional_permissions: SerializedPartialPermissionProfile | null; tty: boolean }
   | { type: 'write_stdin'; tty: boolean }
-  | { type: 'execve'; source: GuardianCommandSource; program: string; additional_permissions: AdditionalPermissionProfile | null }
+  | { type: 'execve'; source: GuardianCommandSource; program: string; additional_permissions: SerializedPartialPermissionProfile | null }
   | { type: 'apply_patch' }
   | { type: 'network_access'; protocol: NetworkApprovalProtocol; port: U16 }
   | { type: 'mcp_tool_call'; server: string; tool_name: string; connector_id: string | null; connector_name: string | null; tool_title: string | null }

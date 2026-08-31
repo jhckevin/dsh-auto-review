@@ -1,4 +1,6 @@
 import { canonicalizeCommandForApproval, shlexJoin } from './command-canonicalization.ts'
+import { pathUriCacheIdentity } from './path.ts'
+import { serializePermissionProfile } from './permission-profile.ts'
 import type {
   ApprovalAction,
   ApprovalCacheKey,
@@ -11,7 +13,7 @@ export function permissionRequestPayload(action: ApprovalAction): PermissionRequ
     case 'exec_command': {
       const toolInput: JsonObject = { command: action.hookCommand }
       if (action.justification !== undefined) toolInput.description = action.justification
-      return { toolName: 'bash', toolInput }
+      return { toolName: 'Bash', toolInput }
     }
     case 'write_stdin':
       return {
@@ -25,24 +27,24 @@ export function permissionRequestPayload(action: ApprovalAction): PermissionRequ
           cwd: action.cwd,
           tty: action.tty,
           sandbox_permissions: action.sandboxPermissions,
-          additional_permissions: (action.additionalPermissions ?? null) as unknown as JsonObject | null,
+          additional_permissions: action.additionalPermissions === undefined ? null : serializePermissionProfile(action.additionalPermissions),
         },
       }
     case 'execve':
-      return { toolName: 'bash', toolInput: { command: shlexJoin(action.command) } }
+      return { toolName: 'Bash', toolInput: { command: shlexJoin(action.command) } }
     case 'apply_patch':
       return { toolName: 'apply_patch', toolInput: { command: action.patch } }
     case 'mcp_tool_call':
       return { toolName: action.hookToolName, toolInput: action.arguments ?? {} }
     case 'network_access':
       return {
-        toolName: 'bash',
+        toolName: 'Bash',
         toolInput: { command: action.hookCommand, description: `network-access ${action.target}` },
       }
     case 'request_permissions':
       return {
         toolName: 'request_permissions',
-        toolInput: { reason: action.reason ?? null, permissions: action.permissions as unknown as JsonObject },
+        toolInput: { reason: action.reason ?? null, permissions: serializePermissionProfile(action.permissions) },
       }
   }
 }
@@ -55,13 +57,13 @@ export function approvalCacheKeys(action: ApprovalAction): ApprovalCacheKey[] {
         environmentId: action.environmentId,
         ...(action.command[0] === undefined ? {} : { executable: action.command[0] }),
         command: canonicalizeCommandForApproval(action.command),
-        cwd: action.cwd,
+        cwd: pathUriCacheIdentity(action.cwd),
         tty: action.tty,
         sandboxPermissions: action.sandboxPermissions,
-        ...(action.additionalPermissions === undefined ? {} : { additionalPermissions: action.additionalPermissions }),
+        additionalPermissions: action.additionalPermissions === undefined ? null : serializePermissionProfile(action.additionalPermissions),
       }]
     case 'apply_patch':
-      return action.files.map(path => ({ type: 'apply_patch', environmentId: action.environmentId, path }))
+      return action.files.map(path => ({ type: 'apply_patch', environmentId: action.environmentId, path: pathUriCacheIdentity(path) }))
     case 'execve':
     case 'mcp_tool_call':
     case 'network_access':

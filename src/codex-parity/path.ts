@@ -1,4 +1,4 @@
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { AbsolutePath, PathUri } from './types.ts'
 
 export const LOCAL_ENVIRONMENT_ID = 'local'
@@ -8,7 +8,9 @@ export class PathConversionError extends TypeError {
 }
 
 export function absolutePath(value: string): AbsolutePath {
-  if (value.includes('\0') || (!value.startsWith('/') && !/^[A-Za-z]:[\\/]/u.test(value) && !value.startsWith('\\\\'))) {
+  // ISSUE-022A is a Linux x86 boundary: std::path::Path::is_absolute accepts
+  // only a POSIX root here. Windows drive and UNC spellings are foreign paths.
+  if (value.includes('\0') || !value.startsWith('/')) {
     throw new PathConversionError(`path is not absolute: ${value}`)
   }
   return value as AbsolutePath
@@ -82,6 +84,10 @@ function decodedPathname(uri: PathUri): string {
   }
 }
 
+function decodedPathnameLossy(uri: PathUri): string {
+  return new TextDecoder('utf-8', { fatal: false }).decode(Uint8Array.from(decodePercentEncodedPathBytes(new URL(uri).pathname)))
+}
+
 /** Linux-x86 PathUri::to_abs_path followed by Codex's local-environment fallback. */
 export function guardianCwd(environmentId: string, cwd: PathUri): AbsolutePath {
   const url = new URL(cwd)
@@ -93,7 +99,7 @@ export function guardianCwd(environmentId: string, cwd: PathUri): AbsolutePath {
     }
   }
   if (environmentId !== LOCAL_ENVIRONMENT_ID) {
-    throw new PathConversionError(`file URI uses a foreign path convention: ${cwd}`)
+    throw new PathConversionError(`'${cwd}' is invalid on 'linux'`)
   }
   if (url.hostname.length > 0) {
     throw new PathConversionError(`local cwd URI ${cwd} is not a host-native path`)
@@ -103,7 +109,10 @@ export function guardianCwd(environmentId: string, cwd: PathUri): AbsolutePath {
 
 /** PathUri::to_abs_path: unlike guardianCwd this never uses the local-environment fallback. */
 export function pathUriToAbsolutePath(uri: PathUri): AbsolutePath {
-  if (isWindowsUri(uri)) throw new PathConversionError(`file URI uses a foreign path convention: ${uri}`)
+  if (isCanonicalOpaqueFallback(new URL(uri))) {
+    throw new PathConversionError('opaque POSIX path bytes cannot be represented losslessly by a JavaScript string')
+  }
+  if (isWindowsUri(uri)) throw new PathConversionError(`'${uri}' is invalid on 'linux'`)
   try {
     return absolutePath(fileURLToPath(new URL(uri)))
   } catch (error) {
@@ -114,9 +123,45 @@ export function pathUriToAbsolutePath(uri: PathUri): AbsolutePath {
 /** LegacyAppPathString::from(PathUri) using the URI-inferred convention. */
 export function inferredNativePathString(uri: PathUri): string {
   const url = new URL(uri)
-  const decoded = decodedPathname(uri)
+  const decoded = decodedPathnameLossy(uri)
   if (url.hostname.length > 0) return `\\\\${url.hostname}${decoded.replaceAll('/', '\\')}`
   const drive = decoded.match(/^\/([A-Za-z]:)(?:\/(.*))?$/u)
   if (drive !== null) return `${drive[1]}\\${(drive[2] ?? '').replaceAll('/', '\\')}`
   return decoded
+}
+
+/** Stable string stand-in for PathUri's Windows ASCII-case-folded Eq/Hash. */
+export function pathUriCacheIdentity(uri: PathUri): PathUri {
+  if (!isWindowsUri(uri)) return uri
+  const url = new URL(uri)
+  if (isCanonicalOpaqueFallback(url) || url.pathname.split('/').some(segment => {
+    const bytes = decodePercentEncodedPathBytes(segment)
+    return bytes.includes(0x2f) || bytes.includes(0x5c)
+  })) return uri
+  try {
+    const decoded = decodeURIComponent(url.pathname)
+    url.pathname = [...decoded].map(character => /[A-Z]/u.test(character) ? character.toLowerCase() : character).join('')
+  } catch {
+    url.pathname = url.pathname.replace(/[A-Z]/gu, character => character.toLowerCase())
+  }
+  return url.href as PathUri
+}
+
+/** Raw permission seams require LegacyAppPathString -> PathUri lossless roundtrip. */
+export function losslessLegacyAppPathString(uri: PathUri): string {
+  const raw = inferredNativePathString(uri)
+  let roundTrip: PathUri
+  if (isWindowsUri(uri)) {
+    const unc = raw.match(/^\\\\([^\\]+)\\(.*)$/u)
+    const drive = raw.match(/^([A-Za-z]):[\\/](.*)$/u)
+    if (unc !== null) roundTrip = pathUri(`file://${unc[1]}/${unc[2]!.replaceAll('\\', '/')}`)
+    else if (drive !== null) roundTrip = pathUri(`file:///${drive[1]}:/${drive[2]!.replaceAll('\\', '/')}`)
+    else throw new PathConversionError('permission path cannot be represented losslessly')
+  } else {
+    roundTrip = pathUri(pathToFileURL(raw).href)
+  }
+  if (pathUriCacheIdentity(roundTrip) !== pathUriCacheIdentity(uri)) {
+    throw new PathConversionError('permission path cannot be represented losslessly')
+  }
+  return raw
 }

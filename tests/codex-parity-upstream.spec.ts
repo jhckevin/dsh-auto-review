@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   absolutePath, canonicalizeCommandForApproval, formatGuardianActionPretty,
   guardianCwd, guardianReviewedAction, guardianTruncateText, i32,
-  inferredNativePathString, intoGuardianRequest, pathUri,
-  parseShellLcPlainCommands, shlexJoin, u16,
+  inferredNativePathString, intoGuardianRequest, nonZeroUsize, pathUri, pathUriCacheIdentity,
+  parseShellLcPlainCommands, serializePermissionProfile, serializeRuntimePermissionProfile, shlexJoin, u16,
   type ApprovalAction,
 } from '../src/codex-parity/index.ts'
 
@@ -41,6 +41,13 @@ describe('Codex shell-command corpus differential boundaries', () => {
       '__codex_shell_script__', '-lc', 'echo hi\necho bye',
     ])
   })
+
+  it('matches Linux recursive file_stem and case-sensitive shell detection', () => {
+    expect(canonicalizeCommandForApproval(['BASH','-lc','echo hi'])).toEqual(['BASH','-lc','echo hi'])
+    expect(canonicalizeCommandForApproval(['PowerShell.EXE','-Command','Write-Host hi'])).toEqual(['PowerShell.EXE','-Command','Write-Host hi'])
+    expect(canonicalizeCommandForApproval(['C:\\Windows\\pwsh.exe','-Command','Write-Host hi'])).toEqual(['C:\\Windows\\pwsh.exe','-Command','Write-Host hi'])
+    expect(canonicalizeCommandForApproval(['/bin/bash.foo.bar','-lc','echo hi'])).toEqual(['echo','hi'])
+  })
 })
 
 describe('Codex shlex 1.3 try_join parity', () => {
@@ -67,7 +74,7 @@ describe('Codex Linux PathUri and absolute-path boundaries', () => {
 
   it('rejects foreign remote paths but preserves Codex local-environment fallback', () => {
     const windows = pathUri('file:///C:/work/repo')
-    expect(() => guardianCwd('remote-env', windows)).toThrow(/foreign path convention/)
+    expect(() => guardianCwd('remote-env', windows)).toThrow("'file:///C:/work/repo' is invalid on 'linux'")
     expect(guardianCwd('local', windows)).toBe('/C:/work/repo')
     expect(inferredNativePathString(windows)).toBe('C:\\work\\repo')
   })
@@ -75,8 +82,11 @@ describe('Codex Linux PathUri and absolute-path boundaries', () => {
   it('rejects non-file URI, relative absolute path and out-of-range integers', () => {
     expect(() => pathUri('https://example.test/work')).toThrow(/scheme/)
     expect(() => absolutePath('relative/file')).toThrow(/not absolute/)
+    expect(() => absolutePath('C:/work/file')).toThrow(/not absolute/)
+    expect(() => absolutePath('\\\\server\\share\\file')).toThrow(/not absolute/)
     expect(() => u16(65_536)).toThrow(/u16/)
     expect(() => i32(2_147_483_648)).toThrow(/i32/)
+    expect(() => nonZeroUsize(0)).toThrow(/NonZeroUsize/)
   })
 
   it('matches PathUri metadata, NUL, localhost, and drive normalization', () => {
@@ -84,16 +94,50 @@ describe('Codex Linux PathUri and absolute-path boundaries', () => {
     expect(() => pathUri('file:///work#fragment')).toThrow(/fragment/)
     expect(() => pathUri('file:///work/%00/plain')).toThrow(/NUL/)
     expect(pathUri('file:///%00/bad/path/L3RtcC9h')).toBe('file:///%00/bad/path/L3RtcC9h')
+    expect(() => intoGuardianRequest({
+      type:'apply_patch',id:'opaque',environmentId:'local',cwd:pathUri('file:///work'),
+      files:[pathUri('file:///%00/bad/path/L3RtcC__')],patch:'',changes:{},permissionsPreapproved:false,
+    })).toThrow(/cannot be represented losslessly/)
     expect(pathUri('file://localhost/work')).toBe('file:///work')
     expect(pathUri('file:///c:/work')).toBe('file:///C:/work')
     expect(pathUri('file:///d%3a/work')).toBe('file:///D%3a/work')
+    expect(inferredNativePathString(pathUri('file:///tmp/non-utf8-%FF'))).toBe('/tmp/non-utf8-�')
+    expect(pathUriCacheIdentity(pathUri('file:///C:/Repo/%46oo'))).toBe(pathUriCacheIdentity(pathUri('file:///c:/repo/foo')))
+    expect(pathUriCacheIdentity(pathUri('file:///C:/Repo/a%5Cb'))).not.toBe(pathUriCacheIdentity(pathUri('file:///c:/repo/a/b')))
+  })
+
+  it('serializes permission profiles through the upstream legacy/canonical boundary', () => {
+    expect(serializePermissionProfile({ file_system: { entries: [
+      { path:{ type:'path',path:pathUri('file:///work/read') },access:'read' },
+      { path:{ type:'path',path:pathUri('file:///work/write') },access:'write' },
+    ] } })).toEqual({ network:null,file_system:{ read:['/work/read'],write:['/work/write'] } })
+    expect(serializePermissionProfile({ file_system: { entries: [
+      { path:{ type:'glob_pattern',pattern:'**/.env' },access:'deny' },
+      { path:{ type:'special',value:{ kind:'unknown',path:':future',subpath:'x' } },access:'read' },
+    ],glob_scan_max_depth:nonZeroUsize(4) } })).toEqual({ network:null,file_system:{
+      entries:[
+        { path:{ type:'glob_pattern',pattern:'**/.env' },access:'deny' },
+        { path:{ type:'special',value:{ kind:'unknown',path:':future',subpath:'x' } },access:'read' },
+      ],glob_scan_max_depth:4,
+    } })
+    expect(serializePermissionProfile({ network:{} })).toEqual({ network:{ enabled:null },file_system:null })
+    expect(serializeRuntimePermissionProfile({ type:'managed',network:'restricted',file_system:{
+      type:'restricted',entries:[{ path:{ type:'special',value:{ kind:'root' } },access:'read' }],
+    } })).toEqual({ type:'managed',network:'restricted',file_system:{
+      type:'restricted',entries:[{ path:{ type:'special',value:{ kind:'root' } },access:'read' }],
+    } })
+    expect(serializeRuntimePermissionProfile({ type:'disabled' })).toEqual({ type:'disabled' })
+    expect(serializeRuntimePermissionProfile({ type:'external',network:'enabled' })).toEqual({ type:'external',network:'enabled' })
+    expect(() => serializePermissionProfile({ file_system:{ entries:[
+      { path:{ type:'path',path:pathUri('file:///tmp/non-utf8-%FF') },access:'deny' },
+    ],glob_scan_max_depth:nonZeroUsize(1) } })).toThrow(/losslessly/)
   })
 
   it('does not apply guardian cwd fallback to apply_patch files', () => {
     expect(() => intoGuardianRequest({
       type: 'apply_patch', id: 'patch-foreign', environmentId: 'local', cwd: pathUri('file:///C:/work'),
       files: [pathUri('file:///C:/work/a.ts')], patch: '', changes: {}, permissionsPreapproved: false,
-    })).toThrow(/foreign path convention/)
+    })).toThrow("'file:///C:/work/a.ts' is invalid on 'linux'")
     expect(() => intoGuardianRequest({
       type: 'apply_patch', id: 'patch-mixed', environmentId: 'local', cwd: pathUri('file:///C:/work'),
       files: [pathUri('file:///work/a.ts')], patch: '', changes: {}, permissionsPreapproved: false,

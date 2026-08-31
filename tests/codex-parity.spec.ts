@@ -67,18 +67,18 @@ describe('Codex 9f97cb79 command approval canonicalization', () => {
 describe('Codex 9f97cb79 ApprovalAction protocol goldens', () => {
   it('emits the exact exec permission payload, cache key, Guardian JSON and assessment', () => {
     expect(permissionRequestPayload(exec)).toEqual({
-      toolName: 'bash',
+      toolName: 'Bash',
       toolInput: { command: "bash -lc 'cargo test -p codex-core'", description: 'run integration tests' },
     })
     expect(approvalCacheKeys(exec)).toEqual([{
       type: 'exec_command', environmentId: 'local', executable: '/bin/bash',
       command: ['cargo', 'test', '-p', 'codex-core'], cwd: 'file:///work', tty: false,
-      sandboxPermissions: 'require_escalated', additionalPermissions: { network: { enabled: true } },
+      sandboxPermissions: 'require_escalated', additionalPermissions: { network: { enabled: true }, file_system: null },
     }])
     const request = intoGuardianRequest(exec)
     expect(guardianApprovalRequestToJson(request)).toEqual({
       tool: 'exec_command', command: ['/bin/bash', '-lc', 'cargo   test -p codex-core'], cwd: '/work',
-      sandbox_permissions: 'require_escalated', additional_permissions: { network: { enabled: true } },
+      sandbox_permissions: 'require_escalated', additional_permissions: { network: { enabled: true }, file_system: null },
       justification: 'run integration tests', tty: false,
     })
     expect(guardianAssessmentAction(request)).toEqual({
@@ -123,7 +123,7 @@ describe('Codex 9f97cb79 ApprovalAction protocol goldens', () => {
       command: ['rm', '-f', 'a b'], cwd: absolutePath('/work'),
     }
     expect(permissionRequestPayload(action)).toEqual({
-      toolName: 'bash', toolInput: { command: "rm -f 'a b'" },
+      toolName: 'Bash', toolInput: { command: "rm -f 'a b'" },
     })
     expect(approvalCacheKeys(action)).toEqual([])
     const request = intoGuardianRequest(action)
@@ -162,8 +162,8 @@ describe('Codex 9f97cb79 ApprovalAction protocol goldens', () => {
       connectorDescription: 'Repository connector', connectedAccountEmail: 'dev@example.test',
       toolTitle: 'Create issue', toolDescription: 'Creates an issue',
       annotations: { destructive_hint: false, open_world_hint: true, read_only_hint: false },
-      hookToolName: 'mcp__github__create_issue', approvalPolicy: 'on_request', reviewer: 'auto_review',
-      approvalMode: 'ask', allowSessionRemember: true, allowPersistentApproval: false,
+      hookToolName: 'mcp__github__create_issue', approvalPolicy: 'on-request', reviewer: 'auto_review',
+      approvalMode: 'prompt', allowSessionRemember: true, allowPersistentApproval: false,
     }
     expect(permissionRequestPayload(action)).toEqual({
       toolName: 'mcp__github__create_issue', toolInput: { title: 'Bug' },
@@ -193,7 +193,7 @@ describe('Codex 9f97cb79 ApprovalAction protocol goldens', () => {
       command: ['curl', 'https://example.test'], cwd: absolutePath('/work'),
     }
     expect(permissionRequestPayload(action)).toEqual({
-      toolName: 'bash',
+      toolName: 'Bash',
       toolInput: { command: 'curl https://example.test', description: 'network-access https://example.test:443' },
     })
     const request = intoGuardianRequest(action)
@@ -201,7 +201,7 @@ describe('Codex 9f97cb79 ApprovalAction protocol goldens', () => {
       tool: 'network_access', target: 'https://example.test:443', host: 'example.test', protocol: 'https', port: 443,
       trigger: {
         callId: 'call-1', toolName: 'exec_command', command: ['curl', 'https://example.test'],
-        cwd: 'file:///work', sandboxPermissions: 'use_default', tty: false,
+        cwd: '/work', sandboxPermissions: 'use_default', tty: false,
       },
     })
     expect(guardianAssessmentAction(request)).toEqual({
@@ -213,17 +213,17 @@ describe('Codex 9f97cb79 ApprovalAction protocol goldens', () => {
 
   it('covers RequestPermissions null hook reason and omitted Guardian reason', () => {
     const action: ApprovalAction = {
-      type: 'request_permissions', id: 'perm-1', turnId: 'turn-1', permissions: { network: true },
+      type: 'request_permissions', id: 'perm-1', turnId: 'turn-1', permissions: { network: { enabled: true } },
     }
     expect(permissionRequestPayload(action)).toEqual({
-      toolName: 'request_permissions', toolInput: { reason: null, permissions: { network: true } },
+      toolName: 'request_permissions', toolInput: { reason: null, permissions: { network: { enabled: true }, file_system: null } },
     })
     const request = intoGuardianRequest(action)
     expect(guardianApprovalRequestToJson(request)).toEqual({
-      tool: 'request_permissions', turn_id: 'turn-1', permissions: { network: true },
+      tool: 'request_permissions', turn_id: 'turn-1', permissions: { network: { enabled: true }, file_system: null },
     })
     expect(guardianAssessmentAction(request)).toEqual({
-      type: 'request_permissions', reason: null, permissions: { network: true },
+      type: 'request_permissions', reason: null, permissions: { network: { enabled: true }, file_system: null },
     })
   })
 })

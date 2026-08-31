@@ -1,217 +1,33 @@
 {
-  "codex_commit": "9f97cb79eb",
-  "guardian_actions": [
-    {
-      "json": {
-        "command": [
-          "echo",
-          "hi"
-        ],
-        "cwd": "/work",
-        "sandbox_permissions": "use_default",
-        "tool": "exec_command",
-        "tty": false
-      },
-      "name": "exec_command/minimal"
-    },
-    {
-      "json": {
-        "additional_permissions": {
-          "network": {
-            "enabled": true
-          }
-        },
-        "command": [
-          "curl",
-          "x"
-        ],
-        "cwd": "/work",
-        "justification": "network",
-        "sandbox_permissions": "with_additional_permissions",
-        "tool": "exec_command",
-        "tty": true
-      },
-      "name": "exec_command/options"
-    },
-    {
-      "json": {
-        "chars": "",
-        "cwd": "/work",
-        "environment_id": "local",
-        "sandbox_permissions": "use_default",
-        "session_id": 7,
-        "tool": "write_stdin",
-        "tty": false
-      },
-      "name": "write_stdin/minimal"
-    },
-    {
-      "json": {
-        "additional_permissions": {
-          "network": {
-            "enabled": true
-          }
-        },
-        "chars": "yes\n",
-        "cwd": "/work",
-        "environment_id": "local",
-        "sandbox_permissions": "with_additional_permissions",
-        "session_id": 7,
-        "tool": "write_stdin",
-        "tty": true
-      },
-      "name": "write_stdin/options"
-    },
-    {
-      "json": {
-        "argv": [
-          "echo",
-          "hi"
-        ],
-        "cwd": "/work",
-        "program": "/bin/echo",
-        "tool": "exec_command"
-      },
-      "name": "execve/minimal"
-    },
-    {
-      "json": {
-        "additional_permissions": {
-          "network": {
-            "enabled": true
-          }
-        },
-        "argv": [
-          "bash",
-          "-lc",
-          "echo hi"
-        ],
-        "cwd": "/work",
-        "program": "/bin/bash",
-        "tool": "shell"
-      },
-      "name": "execve/options"
-    },
-    {
-      "json": {
-        "cwd": "/work",
-        "files": [
-          "/work/a.ts"
-        ],
-        "patch": "*** Begin Patch\n*** End Patch",
-        "tool": "apply_patch"
-      },
-      "name": "apply_patch"
-    },
-    {
-      "json": {
-        "server": "srv",
-        "tool": "mcp_tool_call",
-        "tool_name": "read"
-      },
-      "name": "mcp/minimal"
-    },
-    {
-      "json": {
-        "annotations": {
-          "destructive_hint": true,
-          "open_world_hint": false,
-          "read_only_hint": false
-        },
-        "arguments": {
-          "a": "x",
-          "z": 1
-        },
-        "connected_account_email": "a@example.test",
-        "connector_description": "desc",
-        "connector_id": "cid",
-        "connector_name": "conn",
-        "server": "srv",
-        "tool": "mcp_tool_call",
-        "tool_description": "writes",
-        "tool_name": "write",
-        "tool_title": "Write"
-      },
-      "name": "mcp/options"
-    },
-    {
-      "json": {
-        "host": "example.test",
-        "port": 443,
-        "protocol": "https",
-        "target": "example.test:443",
-        "tool": "network_access"
-      },
-      "name": "network/minimal"
-    },
-    {
-      "json": {
-        "host": "example.test",
-        "port": 443,
-        "protocol": "https",
-        "target": "example.test:443",
-        "tool": "network_access",
-        "trigger": {
-          "additionalPermissions": {
-            "network": {
-              "enabled": true
-            }
-          },
-          "callId": "call",
-          "command": [
-            "curl",
-            "https://example.test"
-          ],
-          "cwd": "file:///work",
-          "justification": "fetch",
-          "sandboxPermissions": "with_additional_permissions",
-          "toolName": "exec_command",
-          "tty": false
-        }
-      },
-      "name": "network/options"
-    },
-    {
-      "json": {
-        "permissions": {},
-        "tool": "request_permissions",
-        "turn_id": "turn"
-      },
-      "name": "request_permissions/minimal"
-    },
-    {
-      "json": {
-        "permissions": {
-          "file_system": {
-            "write": [
-              "/work"
-            ]
-          }
-        },
-        "reason": "write",
-        "tool": "request_permissions",
-        "turn_id": "turn"
-      },
-      "name": "request_permissions/options"
-    }
-  ],
-  "guardian_fixture_kind": "source-derived-private-serde-dto",
+  "codex_commit": "9f97cb79eb15b38d24c552c56fe24e211ff9cf3a",
   "path_uri": [
     {
       "input": "file:///work",
-      "ok": "file:///work"
+      "ok": "file:///work",
+      "to_abs_path": {
+        "Ok": "/work"
+      }
     },
     {
       "input": "file://localhost/work",
-      "ok": "file:///work"
+      "ok": "file:///work",
+      "to_abs_path": {
+        "Ok": "/work"
+      }
     },
     {
       "input": "file:///c:/work",
-      "ok": "file:///C:/work"
+      "ok": "file:///C:/work",
+      "to_abs_path": {
+        "Err": "'file:///C:/work' is invalid on 'linux'"
+      }
     },
     {
       "input": "file:///d%3a/work",
-      "ok": "file:///D%3a/work"
+      "ok": "file:///D%3a/work",
+      "to_abs_path": {
+        "Err": "'file:///D%3a/work' is invalid on 'linux'"
+      }
     },
     {
       "error": "query parameters are not allowed in path URIs",
@@ -227,15 +43,14 @@
     },
     {
       "input": "file:///%00/bad/path/L3RtcC9h",
-      "ok": "file:///%00/bad/path/L3RtcC9h"
+      "ok": "file:///%00/bad/path/L3RtcC9h",
+      "to_abs_path": {
+        "Err": "'file:///%00/bad/path/L3RtcC9h' is invalid on 'linux'"
+      }
     }
   ],
   "shell_corpus": [
     {
-      "canonical": [
-        "ls",
-        "-1"
-      ],
       "parsed": [
         [
           "ls",
@@ -245,11 +60,6 @@
       "script": "ls -1"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "ls && pwd; echo 'hi there' | wc -l"
-      ],
       "parsed": [
         [
           "ls"
@@ -269,10 +79,6 @@
       "script": "ls && pwd; echo 'hi there' | wc -l"
     },
     {
-      "canonical": [
-        "echo",
-        "hello world"
-      ],
       "parsed": [
         [
           "echo",
@@ -282,10 +88,6 @@
       "script": "echo \"hello world\""
     },
     {
-      "canonical": [
-        "echo",
-        "hi there"
-      ],
       "parsed": [
         [
           "echo",
@@ -295,12 +97,6 @@
       "script": "echo 'hi there'"
     },
     {
-      "canonical": [
-        "git",
-        "commit",
-        "-m",
-        "line1\nline2"
-      ],
       "parsed": [
         [
           "git",
@@ -312,10 +108,6 @@
       "script": "git commit -m \"line1\nline2\""
     },
     {
-      "canonical": [
-        "echo",
-        "/usr/local/bin"
-      ],
       "parsed": [
         [
           "echo",
@@ -325,10 +117,6 @@
       "script": "echo \"/usr\"'/'\"local\"/bin"
     },
     {
-      "canonical": [
-        "echo",
-        "/usr/local/bin"
-      ],
       "parsed": [
         [
           "echo",
@@ -338,29 +126,14 @@
       "script": "echo '/usr'\"/\"'local'/bin"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo \"hi ${USER}\""
-      ],
       "parsed": null,
       "script": "echo \"hi ${USER}\""
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo \"$HOME\""
-      ],
       "parsed": null,
       "script": "echo \"$HOME\""
     },
     {
-      "canonical": [
-        "echo",
-        "123",
-        "456"
-      ],
       "parsed": [
         [
           "echo",
@@ -371,218 +144,98 @@
       "script": "echo 123 456"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "(ls)"
-      ],
       "parsed": null,
       "script": "(ls)"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "ls || (pwd && echo hi)"
-      ],
       "parsed": null,
       "script": "ls || (pwd && echo hi)"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "ls > out.txt"
-      ],
       "parsed": null,
       "script": "ls > out.txt"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo hi & echo bye"
-      ],
       "parsed": null,
       "script": "echo hi & echo bye"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo $(pwd)"
-      ],
       "parsed": null,
       "script": "echo $(pwd)"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo `pwd`"
-      ],
       "parsed": null,
       "script": "echo `pwd`"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo $HOME"
-      ],
       "parsed": null,
       "script": "echo $HOME"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo \"hi $USER\""
-      ],
       "parsed": null,
       "script": "echo \"hi $USER\""
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "find . -{delete,print}"
-      ],
       "parsed": null,
       "script": "find . -{delete,print}"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "rg --pre{=,=sh} pattern payload.sh"
-      ],
       "parsed": null,
       "script": "rg --pre{=,=sh} pattern payload.sh"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "find . -del*"
-      ],
       "parsed": null,
       "script": "find . -del*"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "find . -delet?"
-      ],
       "parsed": null,
       "script": "find . -delet?"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "find . -delet[e]"
-      ],
       "parsed": null,
       "script": "find . -delet[e]"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "find . -de\\lete"
-      ],
       "parsed": null,
       "script": "find . -de\\lete"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo ~"
-      ],
       "parsed": null,
       "script": "echo ~"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo ~HOME"
-      ],
       "parsed": null,
       "script": "echo ~HOME"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo HEAD~1"
-      ],
       "parsed": null,
       "script": "echo HEAD~1"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo HEAD^"
-      ],
       "parsed": null,
       "script": "echo HEAD^"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo file~"
-      ],
       "parsed": null,
       "script": "echo file~"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo =sh"
-      ],
       "parsed": null,
       "script": "echo =sh"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo foo^bar"
-      ],
       "parsed": null,
       "script": "echo foo^bar"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo foo#bar"
-      ],
       "parsed": null,
       "script": "echo foo#bar"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "l* -l"
-      ],
       "parsed": null,
       "script": "l* -l"
     },
     {
-      "canonical": [
-        "rg",
-        "-g*.py",
-        "pattern"
-      ],
       "parsed": [
         [
           "rg",
@@ -593,10 +246,6 @@
       "script": "rg -g\"*.py\" pattern"
     },
     {
-      "canonical": [
-        "echo",
-        "\\n"
-      ],
       "parsed": [
         [
           "echo",
@@ -606,15 +255,6 @@
       "script": "echo \"\\n\""
     },
     {
-      "canonical": [
-        "echo",
-        "~HOME",
-        "HEAD~1",
-        "HEAD^",
-        "foo#bar",
-        "=sh",
-        "file~"
-      ],
       "parsed": [
         [
           "echo",
@@ -629,11 +269,6 @@
       "script": "echo \"~HOME\" 'HEAD~1' \"HEAD^\" 'foo#bar' \"=sh\" 'file~'"
     },
     {
-      "canonical": [
-        "echo",
-        "-{a,b}",
-        "*?[]~^#=\\\\"
-      ],
       "parsed": [
         [
           "echo",
@@ -644,84 +279,38 @@
       "script": "echo -\"{a,b}\" '*?[]~^#=\\\\'"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo \"\\$HOME\\`\\\"\\\\\\n\""
-      ],
       "parsed": null,
       "script": "echo \"\\$HOME\\`\\\"\\\\\\n\""
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "find . \"-de\\\nlete\""
-      ],
       "parsed": null,
       "script": "find . \"-de\\\nlete\""
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "echo \"\\\\\""
-      ],
       "parsed": null,
       "script": "echo \"\\\\\""
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "FOO=bar ls"
-      ],
       "parsed": null,
       "script": "FOO=bar ls"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "ls &&"
-      ],
       "parsed": null,
       "script": "ls &&"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "&& ls"
-      ],
       "parsed": null,
       "script": "&& ls"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "ls ;; pwd"
-      ],
       "parsed": null,
       "script": "ls ;; pwd"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "ls | | wc"
-      ],
       "parsed": null,
       "script": "ls | | wc"
     },
     {
-      "canonical": [
-        "rg",
-        "-n",
-        "foo",
-        "-g*.py"
-      ],
       "parsed": [
         [
           "rg",
@@ -733,12 +322,6 @@
       "script": "rg -n \"foo\" -g\"*.py\""
     },
     {
-      "canonical": [
-        "grep",
-        "-n",
-        "pattern",
-        "-g*.txt"
-      ],
       "parsed": [
         [
           "grep",
@@ -750,46 +333,22 @@
       "script": "grep -n 'pattern' -g'*.txt'"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "rg -g\"$VAR\" pattern"
-      ],
       "parsed": null,
       "script": "rg -g\"$VAR\" pattern"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "rg -g\"${VAR}\" pattern"
-      ],
       "parsed": null,
       "script": "rg -g\"${VAR}\" pattern"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "rg -g\"$(pwd)\" pattern"
-      ],
       "parsed": null,
       "script": "rg -g\"$(pwd)\" pattern"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "rg -g\"$(echo '*.py')\" pattern"
-      ],
       "parsed": null,
       "script": "rg -g\"$(echo '*.py')\" pattern"
     },
     {
-      "canonical": [
-        "echo",
-        "hi"
-      ],
       "parsed": [
         [
           "echo",
@@ -799,20 +358,10 @@
       "script": "echo hi;"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "case \"$x\" in a) echo a;; esac"
-      ],
       "parsed": null,
       "script": "case \"$x\" in a) echo a;; esac"
     },
     {
-      "canonical": [
-        "__codex_shell_script__",
-        "-lc",
-        "for x in a; do echo \"$x\"; done"
-      ],
       "parsed": null,
       "script": "for x in a; do echo \"$x\"; done"
     }
@@ -866,8 +415,6 @@
   ],
   "source_blobs": {
     "bash.rs": "ddd5807bfce5d1a54796e7a557b77d589be14d35",
-    "guardian/approval_request.rs": "786c3eedf0b40cf2a5ef1f0682b0bad0a7125792",
-    "path_uri/lib.rs": "3eb754bf6e28b52f57bfd4a39a260e0e426d0971",
-    "tools/approvals.rs": "5da0a46c74a9482f74158e7101ce7fc25403a2f5"
+    "path_uri/lib.rs": "3eb754bf6e28b52f57bfd4a39a260e0e426d0971"
   }
 }

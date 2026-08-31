@@ -1,5 +1,6 @@
 import { shlexJoin } from './command-canonicalization.ts'
 import { guardianCwd, inferredNativePathString, pathUriToAbsolutePath } from './path.ts'
+import { serializePermissionProfile } from './permission-profile.ts'
 import type {
   ApprovalAction, FormattedGuardianAction, GuardianApprovalRequest, GuardianAssessmentAction,
   GuardianReviewedAction, JsonObject, JsonValue,
@@ -53,17 +54,17 @@ export function guardianApprovalRequestToJson(action: GuardianApprovalRequest): 
   switch (action.type) {
     case 'exec_command': return omitUndefined({
       tool: 'exec_command', command: action.command, cwd: action.cwd,
-      sandbox_permissions: action.sandboxPermissions, additional_permissions: action.additionalPermissions as unknown as JsonObject | undefined,
+      sandbox_permissions: action.sandboxPermissions, additional_permissions: action.additionalPermissions === undefined ? undefined : serializePermissionProfile(action.additionalPermissions),
       justification: action.justification, tty: action.tty,
     })
     case 'write_stdin': return omitUndefined({
       tool: 'write_stdin', environment_id: action.environmentId, session_id: action.processId,
       chars: action.input, cwd: inferredNativePathString(action.cwd),
-      sandbox_permissions: action.sandboxPermissions, additional_permissions: action.additionalPermissions as unknown as JsonObject | undefined, tty: action.tty,
+      sandbox_permissions: action.sandboxPermissions, additional_permissions: action.additionalPermissions === undefined ? undefined : serializePermissionProfile(action.additionalPermissions), tty: action.tty,
     })
     case 'execve': return omitUndefined({
       tool: action.source === 'shell' ? 'shell' : 'exec_command', program: action.program,
-      argv: action.argv, cwd: action.cwd, additional_permissions: action.additionalPermissions as unknown as JsonObject | undefined,
+      argv: action.argv, cwd: action.cwd, additional_permissions: action.additionalPermissions === undefined ? undefined : serializePermissionProfile(action.additionalPermissions),
     })
     case 'apply_patch': return { tool: 'apply_patch', cwd: action.cwd, files: action.files, patch: action.patch }
     case 'mcp_tool_call': return omitUndefined({
@@ -76,8 +77,8 @@ export function guardianApprovalRequestToJson(action: GuardianApprovalRequest): 
     case 'network_access': {
       const trigger = action.trigger === undefined ? undefined : omitUndefined({
         callId: action.trigger.callId, toolName: action.trigger.toolName, command: action.trigger.command,
-        cwd: action.trigger.cwd, sandboxPermissions: action.trigger.sandboxPermissions,
-        additionalPermissions: action.trigger.additionalPermissions as unknown as JsonObject | undefined, justification: action.trigger.justification,
+        cwd: inferredNativePathString(action.trigger.cwd), sandboxPermissions: action.trigger.sandboxPermissions,
+        additionalPermissions: action.trigger.additionalPermissions === undefined ? undefined : serializePermissionProfile(action.trigger.additionalPermissions), justification: action.trigger.justification,
         tty: action.trigger.tty,
       })
       return omitUndefined({
@@ -86,7 +87,7 @@ export function guardianApprovalRequestToJson(action: GuardianApprovalRequest): 
       })
     }
     case 'request_permissions': return omitUndefined({
-      tool: 'request_permissions', turn_id: action.turnId, reason: action.reason, permissions: action.permissions as unknown as JsonObject,
+      tool: 'request_permissions', turn_id: action.turnId, reason: action.reason, permissions: serializePermissionProfile(action.permissions),
     })
   }
 }
@@ -174,7 +175,7 @@ export function guardianAssessmentAction(action: GuardianApprovalRequest): Guard
       connector_name: action.connectorName ?? null,
       tool_title: action.toolTitle ?? null,
     }
-    case 'request_permissions': return { type: 'request_permissions', reason: action.reason ?? null, permissions: action.permissions }
+    case 'request_permissions': return { type: 'request_permissions', reason: action.reason ?? null, permissions: serializePermissionProfile(action.permissions) }
   }
 }
 
@@ -182,12 +183,12 @@ export function guardianReviewedAction(action: GuardianApprovalRequest): Guardia
   switch (action.type) {
     case 'exec_command': return {
       type: 'unified_exec', sandbox_permissions: action.sandboxPermissions,
-      additional_permissions: action.additionalPermissions ?? null, tty: action.tty,
+      additional_permissions: action.additionalPermissions === undefined ? null : serializePermissionProfile(action.additionalPermissions), tty: action.tty,
     }
     case 'write_stdin': return { type: 'write_stdin', tty: action.tty }
     case 'execve': return {
       type: 'execve', source: action.source, program: action.program,
-      additional_permissions: action.additionalPermissions ?? null,
+      additional_permissions: action.additionalPermissions === undefined ? null : serializePermissionProfile(action.additionalPermissions),
     }
     case 'apply_patch': return { type: 'apply_patch' }
     case 'network_access': return { type: 'network_access', protocol: action.protocol, port: action.port }

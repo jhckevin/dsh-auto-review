@@ -1,0 +1,290 @@
+diff --git a/codex-rs/core/src/guardian/mod.rs b/codex-rs/core/src/guardian/mod.rs
+index 2e8b136f5d..f8a410f44b 100644
+--- a/codex-rs/core/src/guardian/mod.rs
++++ b/codex-rs/core/src/guardian/mod.rs
+@@ -11,6 +11,8 @@
+ //! 3. Fail closed on timeout, execution failure, or malformed output.
+ //! 4. Apply the guardian's explicit allow/deny outcome.
+ 
++#[cfg(test)]
++mod oracle_export;
+ mod approval_request;
+ mod metrics;
+ mod prompt;
+diff --git a/codex-rs/core/src/guardian/oracle_export.rs b/codex-rs/core/src/guardian/oracle_export.rs
+new file mode 100644
+index 0000000000..8a7b4145b5
+--- /dev/null
++++ b/codex-rs/core/src/guardian/oracle_export.rs
+@@ -0,0 +1,271 @@
++use super::approval_request::GuardianApprovalRequest;
++use super::approval_request::GuardianMcpAnnotations;
++use super::approval_request::GuardianNetworkAccessTrigger;
++use super::approval_request::format_guardian_action_pretty;
++use super::approval_request::guardian_approval_request_to_json;
++use super::approval_request::guardian_assessment_action;
++use super::approval_request::guardian_reviewed_action;
++use codex_protocol::approvals::GuardianCommandSource;
++use codex_protocol::approvals::NetworkApprovalProtocol;
++use codex_protocol::models::AdditionalPermissionProfile;
++use codex_protocol::models::ManagedFileSystemPermissions;
++use codex_protocol::models::NetworkPermissions;
++use codex_protocol::models::PermissionProfile;
++use codex_protocol::models::SandboxPermissions;
++use codex_protocol::permissions::NetworkSandboxPolicy;
++use codex_protocol::request_permissions::RequestPermissionProfile;
++use codex_protocol::config_types::ApprovalsReviewer;
++use codex_protocol::protocol::AskForApproval;
++use codex_config::types::AppToolApproval;
++use codex_utils_absolute_path::AbsolutePathBuf;
++use codex_utils_path_uri::PathUri;
++use crate::tools::sandboxing::ApprovalAction;
++use crate::tools::hook_names::HookToolName;
++use crate::command_canonicalization::canonicalize_command_for_approval;
++use serde_json::Value;
++use serde_json::json;
++use std::collections::HashMap;
++use std::path::PathBuf;
++use std::sync::Arc;
++
++fn abs(path: &str) -> AbsolutePathBuf {
++    AbsolutePathBuf::try_from(PathBuf::from(path)).expect("oracle absolute path")
++}
++
++fn extra_network() -> AdditionalPermissionProfile {
++    AdditionalPermissionProfile {
++        network: Some(NetworkPermissions { enabled: Some(true) }),
++        file_system: None,
++    }
++}
++
++fn oracle_entry(name: &str, request: GuardianApprovalRequest) -> serde_json::Result<Value> {
++    let formatted = format_guardian_action_pretty(&request)?;
++    Ok(json!({
++        "name": name,
++        "json": guardian_approval_request_to_json(&request)?,
++        "assessment": guardian_assessment_action(&request),
++        "reviewed": guardian_reviewed_action(&request),
++        "formatted": { "text": formatted.text, "truncated": formatted.truncated },
++    }))
++}
++
++fn actions() -> Vec<(&'static str, ApprovalAction)> {
++    let additional = extra_network();
++    vec![
++        ("exec_command/minimal", ApprovalAction::ExecCommand {
++            id: "exec-min".into(), environment_id: "local".into(), command: vec!["echo".into(), "hi".into()],
++            hook_command: "echo hi".into(), cwd: PathUri::parse("file:///work").unwrap(),
++            sandbox_permissions: SandboxPermissions::UseDefault, additional_permissions: None,
++            justification: None, tty: false, proposed_execpolicy_amendment: None,
++        }),
++        ("exec_command/options", ApprovalAction::ExecCommand {
++            id: "exec-opt".into(), environment_id: "local".into(), command: vec!["curl".into(), "https://example.test".into()],
++            hook_command: "curl https://example.test".into(), cwd: PathUri::parse("file:///work").unwrap(),
++            sandbox_permissions: SandboxPermissions::WithAdditionalPermissions,
++            additional_permissions: Some(additional.clone()), justification: Some("network".into()), tty: true,
++            proposed_execpolicy_amendment: None,
++        }),
++        ("write_stdin/minimal", ApprovalAction::WriteStdin {
++            id: "stdin-min".into(), approval_id: "approval-min".into(), environment_id: "local".into(),
++            process_id: 7, input: String::new(), cwd: PathUri::parse("file:///work").unwrap(), tty: false,
++            sandbox_permissions: SandboxPermissions::UseDefault, additional_permissions: None,
++        }),
++        ("write_stdin/options", ApprovalAction::WriteStdin {
++            id: "stdin-opt".into(), approval_id: "approval-opt".into(), environment_id: "local".into(),
++            process_id: 8, input: "yes\n".into(), cwd: PathUri::parse("file:///work/sub").unwrap(), tty: true,
++            sandbox_permissions: SandboxPermissions::WithAdditionalPermissions,
++            additional_permissions: Some(additional.clone()),
++        }),
++        ("execve/minimal", ApprovalAction::Execve {
++            id: "execve-min".into(), approval_id: "approval-execve-min".into(), environment_id: "local".into(),
++            source: GuardianCommandSource::UnifiedExec, program: abs("/bin/echo"),
++            argv: vec!["echo".into(), "hi".into()], command: vec!["echo".into(), "hi".into()], cwd: abs("/work"),
++            additional_permissions: None,
++        }),
++        ("execve/options", ApprovalAction::Execve {
++            id: "execve-opt".into(), approval_id: "approval-execve-opt".into(), environment_id: "local".into(),
++            source: GuardianCommandSource::Shell, program: abs("/bin/bash"),
++            argv: vec!["bash".into(), "-lc".into(), "echo hi".into()],
++            command: vec!["bash".into(), "-lc".into(), "echo hi".into()], cwd: abs("/work"),
++            additional_permissions: Some(additional.clone()),
++        }),
++        ("apply_patch/minimal", ApprovalAction::ApplyPatch {
++            id: "patch-min".into(), environment_id: "local".into(), cwd: PathUri::parse("file:///work").unwrap(),
++            files: vec![], patch: "*** Begin Patch\n*** End Patch".into(), changes: Arc::new(HashMap::new()),
++            permissions_preapproved: false,
++        }),
++        ("apply_patch/options", ApprovalAction::ApplyPatch {
++            id: "patch-opt".into(), environment_id: "local".into(), cwd: PathUri::parse("file:///work").unwrap(),
++            files: vec![PathUri::parse("file:///work/a.ts").unwrap(), PathUri::parse("file:///tmp/b.ts").unwrap()],
++            patch: "*** Begin Patch\n*** Update File: /work/a.ts\n*** End Patch".into(),
++            changes: Arc::new(HashMap::new()), permissions_preapproved: false,
++        }),
++        ("mcp/minimal", ApprovalAction::McpToolCall {
++            id: "mcp-min".into(), server: "srv".into(), tool_name: "read".into(), arguments: None,
++            connector_id: None, connector_name: None, connector_description: None,
++            connected_account_email: None, tool_title: None, tool_description: None, annotations: None,
++            hook_tool_name: HookToolName::new("mcp__srv__read"), approval_policy: AskForApproval::OnRequest,
++            reviewer: ApprovalsReviewer::AutoReview, approval_mode: AppToolApproval::Prompt,
++            allow_session_remember: false, allow_persistent_approval: false,
++        }),
++        ("mcp/options", ApprovalAction::McpToolCall {
++            id: "mcp-opt".into(), server: "srv".into(), tool_name: "write".into(),
++            arguments: Some(json!({"z": 1, "a": "x"})), connector_id: Some("cid".into()),
++            connector_name: Some("conn".into()), connector_description: Some("desc".into()),
++            connected_account_email: Some("a@example.test".into()), tool_title: Some("Write".into()),
++            tool_description: Some("writes".into()), annotations: Some(GuardianMcpAnnotations {
++                destructive_hint: Some(true), open_world_hint: Some(false), read_only_hint: Some(false),
++            }),
++            hook_tool_name: HookToolName::new("mcp__srv__write"), approval_policy: AskForApproval::OnRequest,
++            reviewer: ApprovalsReviewer::AutoReview, approval_mode: AppToolApproval::Prompt,
++            allow_session_remember: true, allow_persistent_approval: true,
++        }),
++        ("network/minimal", ApprovalAction::NetworkAccess {
++            id: "net-min".into(), turn_id: "turn-min".into(), environment_id: "local".into(), target: "example.test:443".into(),
++            host: "example.test".into(), protocol: NetworkApprovalProtocol::Https, port: 443, trigger: None,
++            hook_command: "curl https://example.test".into(), hook_run_id: "hook-min".into(),
++            command: vec!["curl".into(), "https://example.test".into()], cwd: abs("/work"),
++        }),
++        ("network/options", ApprovalAction::NetworkAccess {
++            id: "net-opt".into(), turn_id: "turn-opt".into(), environment_id: "local".into(), target: "example.test:443".into(),
++            host: "example.test".into(), protocol: NetworkApprovalProtocol::Https, port: 443,
++            trigger: Some(GuardianNetworkAccessTrigger {
++                call_id: "call".into(), tool_name: "exec_command".into(),
++                command: vec!["curl".into(), "https://example.test".into()],
++                cwd: PathUri::parse("file:///work").unwrap(),
++                sandbox_permissions: SandboxPermissions::WithAdditionalPermissions,
++                additional_permissions: Some(additional.clone()), justification: Some("fetch".into()), tty: Some(false),
++            }),
++            hook_command: "curl https://example.test".into(), hook_run_id: "hook-opt".into(),
++            command: vec!["curl".into(), "https://example.test".into()], cwd: abs("/work"),
++        }),
++        ("request_permissions/minimal", ApprovalAction::RequestPermissions {
++            id: "perm-min".into(), turn_id: "turn-min".into(), reason: None,
++            permissions: RequestPermissionProfile::default(),
++        }),
++        ("request_permissions/options", ApprovalAction::RequestPermissions {
++            id: "perm-opt".into(), turn_id: "turn-opt".into(), reason: Some("network".into()),
++            permissions: RequestPermissionProfile {
++                network: Some(NetworkPermissions { enabled: Some(true) }), file_system: None,
++            },
++        }),
++    ]
++}
++
++fn conversion_errors() -> Vec<Value> {
++    let foreign_cwd = ApprovalAction::ExecCommand {
++        id: "foreign-cwd".into(),
++        environment_id: codex_exec_server::REMOTE_ENVIRONMENT_ID.into(),
++        command: vec!["pwd".into()],
++        hook_command: "pwd".into(),
++        cwd: PathUri::parse("file:///C:/workspace").unwrap(),
++        sandbox_permissions: SandboxPermissions::UseDefault,
++        additional_permissions: None,
++        justification: None,
++        tty: false,
++        proposed_execpolicy_amendment: None,
++    };
++    let foreign_patch_file = ApprovalAction::ApplyPatch {
++        id: "foreign-patch".into(),
++        environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.into(),
++        cwd: PathUri::parse("file:///work").unwrap(),
++        files: vec![PathUri::parse("file:///C:/workspace/a.ts").unwrap()],
++        patch: "*** Begin Patch\n*** End Patch".into(),
++        changes: Arc::new(HashMap::new()),
++        permissions_preapproved: false,
++    };
++    vec![
++        json!({
++            "name": "exec_command/foreign_remote_cwd",
++            "error": foreign_cwd.into_guardian_request().unwrap_err().to_string(),
++        }),
++        json!({
++            "name": "apply_patch/foreign_file",
++            "error": foreign_patch_file.into_guardian_request().unwrap_err().to_string(),
++        }),
++    ]
++}
++
++fn canonicalization_oracle() -> Value {
++    let scripts = [
++        "ls -1", "ls && pwd; echo 'hi there' | wc -l", "echo \"hello world\"", "echo 'hi there'",
++        "git commit -m \"line1\nline2\"", "echo \"/usr\"'/'\"local\"/bin", "echo '/usr'\"/\"'local'/bin",
++        "echo \"hi ${USER}\"", "echo \"$HOME\"", "echo 123 456", "(ls)", "ls || (pwd && echo hi)",
++        "ls > out.txt", "echo hi & echo bye", "echo $(pwd)", "echo `pwd`", "echo $HOME", "echo \"hi $USER\"",
++        "find . -{delete,print}", "rg --pre{=,=sh} pattern payload.sh", "find . -del*", "find . -delet?",
++        "find . -delet[e]", r"find . -de\lete", "echo ~", "echo ~HOME", "echo HEAD~1", "echo HEAD^",
++        "echo file~", "echo =sh", "echo foo^bar", "echo foo#bar", "l* -l", r#"rg -g"*.py" pattern"#,
++        r#"echo "\n""#, r#"echo "~HOME" 'HEAD~1' "HEAD^" 'foo#bar' "=sh" 'file~'"#,
++        r#"echo -"{a,b}" '*?[]~^#=\\'"#, r#"echo "\$HOME\`\"\\\n""#, "find . \"-de\\\nlete\"",
++        r#"echo "\\""#, "FOO=bar ls", "ls &&", "&& ls", "ls ;; pwd", "ls | | wc",
++        "rg -n \"foo\" -g\"*.py\"", "grep -n 'pattern' -g'*.txt'", "rg -g\"$VAR\" pattern",
++        "rg -g\"${VAR}\" pattern", "rg -g\"$(pwd)\" pattern", "rg -g\"$(echo '*.py')\" pattern",
++        "echo hi;", "case \"$x\" in a) echo a;; esac", "for x in a; do echo \"$x\"; done",
++    ];
++    let shell_corpus = scripts.iter().map(|script| {
++        let input = vec!["bash".to_string(), "-lc".to_string(), (*script).to_string()];
++        json!({
++            "input": input,
++            "canonical": canonicalize_command_for_approval(&input),
++        })
++    }).collect::<Vec<_>>();
++    let wrapper_inputs = [
++        vec!["BASH", "-lc", "echo hi"],
++        vec!["PowerShell.EXE", "-Command", "Write-Host hi"],
++        vec![r"C:\Windows\pwsh.exe", "-Command", "Write-Host hi"],
++        vec!["/bin/bash.foo.bar", "-lc", "echo hi"],
++    ];
++    let wrapper_boundaries = wrapper_inputs.into_iter().map(|argv| {
++        let input = argv.into_iter().map(str::to_string).collect::<Vec<_>>();
++        json!({
++            "input": input,
++            "canonical": canonicalize_command_for_approval(&input),
++        })
++    }).collect::<Vec<_>>();
++    json!({
++        "shellCorpus": shell_corpus,
++        "wrapperBoundaries": wrapper_boundaries,
++    })
++}
++
++#[test]
++fn export_issue_022a_oracle() -> Result<(), Box<dyn std::error::Error>> {
++    let output_path = std::env::var("CODEX_ORACLE_OUTPUT")?;
++    let guardian = actions().into_iter()
++        .map(|(name, action)| -> Result<Value, Box<dyn std::error::Error>> {
++            let permission_request_payload = action.permission_request_payload();
++            let cache_keys = action.cache_keys();
++            let request = action.into_guardian_request()?;
++            let mut entry = oracle_entry(name, request)?;
++            entry["permissionRequestPayload"] = json!({
++                "tool_name": permission_request_payload.tool_name.name(),
++                "tool_input": permission_request_payload.tool_input,
++            });
++            entry["cacheKeys"] = serde_json::to_value(cache_keys)?;
++            Ok(entry)
++        })
++        .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
++    let profiles = vec![
++        json!({"name": "default", "json": PermissionProfile::default()}),
++        json!({"name": "read_only", "json": PermissionProfile::read_only()}),
++        json!({"name": "disabled", "json": PermissionProfile::Disabled}),
++        json!({"name": "external_enabled", "json": PermissionProfile::External {
++            network: NetworkSandboxPolicy::Enabled,
++        }}),
++        json!({"name": "managed_unrestricted", "json": PermissionProfile::Managed {
++            file_system: ManagedFileSystemPermissions::Unrestricted,
++            network: NetworkSandboxPolicy::Enabled,
++        }}),
++    ];
++    let document = json!({
++        "sourceCommit": "9f97cb79eb15b38d24c552c56fe24e211ff9cf3a",
++        "generator": "codex-core::guardian::oracle_export",
++        "guardian": guardian,
++        "conversionErrors": conversion_errors(),
++        "permissionProfiles": profiles,
++        "canonicalization": canonicalization_oracle(),
++    });
++    std::fs::write(output_path, serde_json::to_vec_pretty(&document)?)?;
++    Ok(())
++}

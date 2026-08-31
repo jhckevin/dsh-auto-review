@@ -1,4 +1,4 @@
-import type { I32, U16 } from './types.ts'
+import type { I32, NonZeroUsize, U16 } from './types.ts'
 
 export function u16(value: number): U16 {
   if (!Number.isInteger(value) || value < 0 || value > 65_535) throw new RangeError(`u16 out of range: ${value}`)
@@ -10,4 +10,9 @@ export function i32(value: number): I32 {
     throw new RangeError(`i32 out of range: ${value}`)
   }
   return value as I32
+}
+
+export function nonZeroUsize(value: number): NonZeroUsize {
+  if (!Number.isSafeInteger(value) || value <= 0) throw new RangeError(`value is not a NonZeroUsize: ${value}`)
+  return value as NonZeroUsize
 }

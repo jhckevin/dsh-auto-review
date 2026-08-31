@@ -1,0 +1,1398 @@
+{
+  "canonicalization": {
+    "shellCorpus": [
+      {
+        "canonical": [
+          "ls",
+          "-1"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "ls -1"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "ls && pwd; echo 'hi there' | wc -l"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "ls && pwd; echo 'hi there' | wc -l"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hello world"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo \"hello world\""
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi there"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo 'hi there'"
+        ]
+      },
+      {
+        "canonical": [
+          "git",
+          "commit",
+          "-m",
+          "line1\nline2"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "git commit -m \"line1\nline2\""
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "/usr/local/bin"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo \"/usr\"'/'\"local\"/bin"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "/usr/local/bin"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo '/usr'\"/\"'local'/bin"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo \"hi ${USER}\""
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo \"hi ${USER}\""
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo \"$HOME\""
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo \"$HOME\""
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "123",
+          "456"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo 123 456"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "(ls)"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "(ls)"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "ls || (pwd && echo hi)"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "ls || (pwd && echo hi)"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "ls > out.txt"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "ls > out.txt"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo hi & echo bye"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo hi & echo bye"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo $(pwd)"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo $(pwd)"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo `pwd`"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo `pwd`"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo $HOME"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo $HOME"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo \"hi $USER\""
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo \"hi $USER\""
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "find . -{delete,print}"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "find . -{delete,print}"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "rg --pre{=,=sh} pattern payload.sh"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "rg --pre{=,=sh} pattern payload.sh"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "find . -del*"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "find . -del*"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "find . -delet?"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "find . -delet?"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "find . -delet[e]"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "find . -delet[e]"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "find . -de\\lete"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "find . -de\\lete"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo ~"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo ~"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo ~HOME"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo ~HOME"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo HEAD~1"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo HEAD~1"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo HEAD^"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo HEAD^"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo file~"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo file~"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo =sh"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo =sh"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo foo^bar"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo foo^bar"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo foo#bar"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo foo#bar"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "l* -l"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "l* -l"
+        ]
+      },
+      {
+        "canonical": [
+          "rg",
+          "-g*.py",
+          "pattern"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "rg -g\"*.py\" pattern"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "\\n"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo \"\\n\""
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "~HOME",
+          "HEAD~1",
+          "HEAD^",
+          "foo#bar",
+          "=sh",
+          "file~"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo \"~HOME\" 'HEAD~1' \"HEAD^\" 'foo#bar' \"=sh\" 'file~'"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "-{a,b}",
+          "*?[]~^#=\\\\"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo -\"{a,b}\" '*?[]~^#=\\\\'"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo \"\\$HOME\\`\\\"\\\\\\n\""
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo \"\\$HOME\\`\\\"\\\\\\n\""
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "find . \"-de\\\nlete\""
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "find . \"-de\\\nlete\""
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "echo \"\\\\\""
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo \"\\\\\""
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "FOO=bar ls"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "FOO=bar ls"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "ls &&"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "ls &&"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "&& ls"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "&& ls"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "ls ;; pwd"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "ls ;; pwd"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "ls | | wc"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "ls | | wc"
+        ]
+      },
+      {
+        "canonical": [
+          "rg",
+          "-n",
+          "foo",
+          "-g*.py"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "rg -n \"foo\" -g\"*.py\""
+        ]
+      },
+      {
+        "canonical": [
+          "grep",
+          "-n",
+          "pattern",
+          "-g*.txt"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "grep -n 'pattern' -g'*.txt'"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "rg -g\"$VAR\" pattern"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "rg -g\"$VAR\" pattern"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "rg -g\"${VAR}\" pattern"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "rg -g\"${VAR}\" pattern"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "rg -g\"$(pwd)\" pattern"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "rg -g\"$(pwd)\" pattern"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "rg -g\"$(echo '*.py')\" pattern"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "rg -g\"$(echo '*.py')\" pattern"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "echo hi;"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "case \"$x\" in a) echo a;; esac"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "case \"$x\" in a) echo a;; esac"
+        ]
+      },
+      {
+        "canonical": [
+          "__codex_shell_script__",
+          "-lc",
+          "for x in a; do echo \"$x\"; done"
+        ],
+        "input": [
+          "bash",
+          "-lc",
+          "for x in a; do echo \"$x\"; done"
+        ]
+      }
+    ],
+    "wrapperBoundaries": [
+      {
+        "canonical": [
+          "BASH",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "BASH",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "PowerShell.EXE",
+          "-Command",
+          "Write-Host hi"
+        ],
+        "input": [
+          "PowerShell.EXE",
+          "-Command",
+          "Write-Host hi"
+        ]
+      },
+      {
+        "canonical": [
+          "C:\\Windows\\pwsh.exe",
+          "-Command",
+          "Write-Host hi"
+        ],
+        "input": [
+          "C:\\Windows\\pwsh.exe",
+          "-Command",
+          "Write-Host hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "/bin/bash.foo.bar",
+          "-lc",
+          "echo hi"
+        ]
+      }
+    ]
+  },
+  "conversionErrors": [
+    {
+      "error": "'file:///C:/workspace' is invalid on 'linux'",
+      "name": "exec_command/foreign_remote_cwd"
+    },
+    {
+      "error": "'file:///C:/workspace/a.ts' is invalid on 'linux'",
+      "name": "apply_patch/foreign_file"
+    }
+  ],
+  "generator": "codex-core::guardian::oracle_export",
+  "guardian": [
+    {
+      "assessment": {
+        "command": "echo hi",
+        "cwd": "/work",
+        "source": "unified_exec",
+        "type": "command"
+      },
+      "cacheKeys": [
+        {
+          "additional_permissions": null,
+          "command": [
+            "echo",
+            "hi"
+          ],
+          "cwd": "file:///work",
+          "environment_id": "local",
+          "executable": "echo",
+          "sandbox_permissions": "use_default",
+          "tty": false
+        }
+      ],
+      "formatted": {
+        "text": "{\n  \"command\": [\n    \"echo\",\n    \"hi\"\n  ],\n  \"cwd\": \"/work\",\n  \"sandbox_permissions\": \"use_default\",\n  \"tool\": \"exec_command\",\n  \"tty\": false\n}",
+        "truncated": false
+      },
+      "json": {
+        "command": [
+          "echo",
+          "hi"
+        ],
+        "cwd": "/work",
+        "sandbox_permissions": "use_default",
+        "tool": "exec_command",
+        "tty": false
+      },
+      "name": "exec_command/minimal",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "command": "echo hi"
+        },
+        "tool_name": "Bash"
+      },
+      "reviewed": {
+        "additional_permissions": null,
+        "sandbox_permissions": "use_default",
+        "tty": false,
+        "type": "unified_exec"
+      }
+    },
+    {
+      "assessment": {
+        "command": "curl https://example.test",
+        "cwd": "/work",
+        "source": "unified_exec",
+        "type": "command"
+      },
+      "cacheKeys": [
+        {
+          "additional_permissions": {
+            "file_system": null,
+            "network": {
+              "enabled": true
+            }
+          },
+          "command": [
+            "curl",
+            "https://example.test"
+          ],
+          "cwd": "file:///work",
+          "environment_id": "local",
+          "executable": "curl",
+          "sandbox_permissions": "with_additional_permissions",
+          "tty": true
+        }
+      ],
+      "formatted": {
+        "text": "{\n  \"additional_permissions\": {\n    \"file_system\": null,\n    \"network\": {\n      \"enabled\": true\n    }\n  },\n  \"command\": [\n    \"curl\",\n    \"https://example.test\"\n  ],\n  \"cwd\": \"/work\",\n  \"justification\": \"network\",\n  \"sandbox_permissions\": \"with_additional_permissions\",\n  \"tool\": \"exec_command\",\n  \"tty\": true\n}",
+        "truncated": false
+      },
+      "json": {
+        "additional_permissions": {
+          "file_system": null,
+          "network": {
+            "enabled": true
+          }
+        },
+        "command": [
+          "curl",
+          "https://example.test"
+        ],
+        "cwd": "/work",
+        "justification": "network",
+        "sandbox_permissions": "with_additional_permissions",
+        "tool": "exec_command",
+        "tty": true
+      },
+      "name": "exec_command/options",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "command": "curl https://example.test",
+          "description": "network"
+        },
+        "tool_name": "Bash"
+      },
+      "reviewed": {
+        "additional_permissions": {
+          "file_system": null,
+          "network": {
+            "enabled": true
+          }
+        },
+        "sandbox_permissions": "with_additional_permissions",
+        "tty": true,
+        "type": "unified_exec"
+      }
+    },
+    {
+      "assessment": {
+        "approval_id": "approval-min",
+        "cwd": "file:///work",
+        "process_id": "7",
+        "stdin": "",
+        "type": "write_stdin"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"chars\": \"\",\n  \"cwd\": \"/work\",\n  \"environment_id\": \"local\",\n  \"sandbox_permissions\": \"use_default\",\n  \"session_id\": 7,\n  \"tool\": \"write_stdin\",\n  \"tty\": false\n}",
+        "truncated": false
+      },
+      "json": {
+        "chars": "",
+        "cwd": "/work",
+        "environment_id": "local",
+        "sandbox_permissions": "use_default",
+        "session_id": 7,
+        "tool": "write_stdin",
+        "tty": false
+      },
+      "name": "write_stdin/minimal",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "additional_permissions": null,
+          "approval_id": "approval-min",
+          "chars": "",
+          "cwd": "file:///work",
+          "environment_id": "local",
+          "parent_call_id": "stdin-min",
+          "sandbox_permissions": "use_default",
+          "session_id": 7,
+          "tty": false
+        },
+        "tool_name": "write_stdin"
+      },
+      "reviewed": {
+        "tty": false,
+        "type": "write_stdin"
+      }
+    },
+    {
+      "assessment": {
+        "approval_id": "approval-opt",
+        "cwd": "file:///work/sub",
+        "process_id": "8",
+        "stdin": "yes\n",
+        "type": "write_stdin"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"additional_permissions\": {\n    \"file_system\": null,\n    \"network\": {\n      \"enabled\": true\n    }\n  },\n  \"chars\": \"yes\\n\",\n  \"cwd\": \"/work/sub\",\n  \"environment_id\": \"local\",\n  \"sandbox_permissions\": \"with_additional_permissions\",\n  \"session_id\": 8,\n  \"tool\": \"write_stdin\",\n  \"tty\": true\n}",
+        "truncated": false
+      },
+      "json": {
+        "additional_permissions": {
+          "file_system": null,
+          "network": {
+            "enabled": true
+          }
+        },
+        "chars": "yes\n",
+        "cwd": "/work/sub",
+        "environment_id": "local",
+        "sandbox_permissions": "with_additional_permissions",
+        "session_id": 8,
+        "tool": "write_stdin",
+        "tty": true
+      },
+      "name": "write_stdin/options",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "additional_permissions": {
+            "file_system": null,
+            "network": {
+              "enabled": true
+            }
+          },
+          "approval_id": "approval-opt",
+          "chars": "yes\n",
+          "cwd": "file:///work/sub",
+          "environment_id": "local",
+          "parent_call_id": "stdin-opt",
+          "sandbox_permissions": "with_additional_permissions",
+          "session_id": 8,
+          "tty": true
+        },
+        "tool_name": "write_stdin"
+      },
+      "reviewed": {
+        "tty": true,
+        "type": "write_stdin"
+      }
+    },
+    {
+      "assessment": {
+        "argv": [
+          "echo",
+          "hi"
+        ],
+        "cwd": "/work",
+        "program": "/bin/echo",
+        "source": "unified_exec",
+        "type": "execve"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"argv\": [\n    \"echo\",\n    \"hi\"\n  ],\n  \"cwd\": \"/work\",\n  \"program\": \"/bin/echo\",\n  \"tool\": \"exec_command\"\n}",
+        "truncated": false
+      },
+      "json": {
+        "argv": [
+          "echo",
+          "hi"
+        ],
+        "cwd": "/work",
+        "program": "/bin/echo",
+        "tool": "exec_command"
+      },
+      "name": "execve/minimal",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "command": "echo hi"
+        },
+        "tool_name": "Bash"
+      },
+      "reviewed": {
+        "additional_permissions": null,
+        "program": "/bin/echo",
+        "source": "unified_exec",
+        "type": "execve"
+      }
+    },
+    {
+      "assessment": {
+        "argv": [
+          "bash",
+          "-lc",
+          "echo hi"
+        ],
+        "cwd": "/work",
+        "program": "/bin/bash",
+        "source": "shell",
+        "type": "execve"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"additional_permissions\": {\n    \"file_system\": null,\n    \"network\": {\n      \"enabled\": true\n    }\n  },\n  \"argv\": [\n    \"bash\",\n    \"-lc\",\n    \"echo hi\"\n  ],\n  \"cwd\": \"/work\",\n  \"program\": \"/bin/bash\",\n  \"tool\": \"shell\"\n}",
+        "truncated": false
+      },
+      "json": {
+        "additional_permissions": {
+          "file_system": null,
+          "network": {
+            "enabled": true
+          }
+        },
+        "argv": [
+          "bash",
+          "-lc",
+          "echo hi"
+        ],
+        "cwd": "/work",
+        "program": "/bin/bash",
+        "tool": "shell"
+      },
+      "name": "execve/options",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "command": "bash -lc 'echo hi'"
+        },
+        "tool_name": "Bash"
+      },
+      "reviewed": {
+        "additional_permissions": {
+          "file_system": null,
+          "network": {
+            "enabled": true
+          }
+        },
+        "program": "/bin/bash",
+        "source": "shell",
+        "type": "execve"
+      }
+    },
+    {
+      "assessment": {
+        "cwd": "/work",
+        "files": [],
+        "type": "apply_patch"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"cwd\": \"/work\",\n  \"files\": [],\n  \"patch\": \"*** Begin Patch\\n*** End Patch\",\n  \"tool\": \"apply_patch\"\n}",
+        "truncated": false
+      },
+      "json": {
+        "cwd": "/work",
+        "files": [],
+        "patch": "*** Begin Patch\n*** End Patch",
+        "tool": "apply_patch"
+      },
+      "name": "apply_patch/minimal",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "command": "*** Begin Patch\n*** End Patch"
+        },
+        "tool_name": "apply_patch"
+      },
+      "reviewed": {
+        "type": "apply_patch"
+      }
+    },
+    {
+      "assessment": {
+        "cwd": "/work",
+        "files": [
+          "/work/a.ts",
+          "/tmp/b.ts"
+        ],
+        "type": "apply_patch"
+      },
+      "cacheKeys": [
+        {
+          "environment_id": "local",
+          "path": "file:///work/a.ts"
+        },
+        {
+          "environment_id": "local",
+          "path": "file:///tmp/b.ts"
+        }
+      ],
+      "formatted": {
+        "text": "{\n  \"cwd\": \"/work\",\n  \"files\": [\n    \"/work/a.ts\",\n    \"/tmp/b.ts\"\n  ],\n  \"patch\": \"*** Begin Patch\\n*** Update File: /work/a.ts\\n*** End Patch\",\n  \"tool\": \"apply_patch\"\n}",
+        "truncated": false
+      },
+      "json": {
+        "cwd": "/work",
+        "files": [
+          "/work/a.ts",
+          "/tmp/b.ts"
+        ],
+        "patch": "*** Begin Patch\n*** Update File: /work/a.ts\n*** End Patch",
+        "tool": "apply_patch"
+      },
+      "name": "apply_patch/options",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "command": "*** Begin Patch\n*** Update File: /work/a.ts\n*** End Patch"
+        },
+        "tool_name": "apply_patch"
+      },
+      "reviewed": {
+        "type": "apply_patch"
+      }
+    },
+    {
+      "assessment": {
+        "connector_id": null,
+        "connector_name": null,
+        "server": "srv",
+        "tool_name": "read",
+        "tool_title": null,
+        "type": "mcp_tool_call"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"server\": \"srv\",\n  \"tool\": \"mcp_tool_call\",\n  \"tool_name\": \"read\"\n}",
+        "truncated": false
+      },
+      "json": {
+        "server": "srv",
+        "tool": "mcp_tool_call",
+        "tool_name": "read"
+      },
+      "name": "mcp/minimal",
+      "permissionRequestPayload": {
+        "tool_input": {},
+        "tool_name": "mcp__srv__read"
+      },
+      "reviewed": {
+        "connector_id": null,
+        "connector_name": null,
+        "server": "srv",
+        "tool_name": "read",
+        "tool_title": null,
+        "type": "mcp_tool_call"
+      }
+    },
+    {
+      "assessment": {
+        "connector_id": "cid",
+        "connector_name": "conn",
+        "server": "srv",
+        "tool_name": "write",
+        "tool_title": "Write",
+        "type": "mcp_tool_call"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"annotations\": {\n    \"destructive_hint\": true,\n    \"open_world_hint\": false,\n    \"read_only_hint\": false\n  },\n  \"arguments\": {\n    \"a\": \"x\",\n    \"z\": 1\n  },\n  \"connected_account_email\": \"a@example.test\",\n  \"connector_description\": \"desc\",\n  \"connector_id\": \"cid\",\n  \"connector_name\": \"conn\",\n  \"server\": \"srv\",\n  \"tool\": \"mcp_tool_call\",\n  \"tool_description\": \"writes\",\n  \"tool_name\": \"write\",\n  \"tool_title\": \"Write\"\n}",
+        "truncated": false
+      },
+      "json": {
+        "annotations": {
+          "destructive_hint": true,
+          "open_world_hint": false,
+          "read_only_hint": false
+        },
+        "arguments": {
+          "a": "x",
+          "z": 1
+        },
+        "connected_account_email": "a@example.test",
+        "connector_description": "desc",
+        "connector_id": "cid",
+        "connector_name": "conn",
+        "server": "srv",
+        "tool": "mcp_tool_call",
+        "tool_description": "writes",
+        "tool_name": "write",
+        "tool_title": "Write"
+      },
+      "name": "mcp/options",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "a": "x",
+          "z": 1
+        },
+        "tool_name": "mcp__srv__write"
+      },
+      "reviewed": {
+        "connector_id": "cid",
+        "connector_name": "conn",
+        "server": "srv",
+        "tool_name": "write",
+        "tool_title": "Write",
+        "type": "mcp_tool_call"
+      }
+    },
+    {
+      "assessment": {
+        "host": "example.test",
+        "port": 443,
+        "protocol": "https",
+        "target": "example.test:443",
+        "type": "network_access"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"host\": \"example.test\",\n  \"port\": 443,\n  \"protocol\": \"https\",\n  \"target\": \"example.test:443\",\n  \"tool\": \"network_access\"\n}",
+        "truncated": false
+      },
+      "json": {
+        "host": "example.test",
+        "port": 443,
+        "protocol": "https",
+        "target": "example.test:443",
+        "tool": "network_access"
+      },
+      "name": "network/minimal",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "command": "curl https://example.test",
+          "description": "network-access example.test:443"
+        },
+        "tool_name": "Bash"
+      },
+      "reviewed": {
+        "port": 443,
+        "protocol": "https",
+        "type": "network_access"
+      }
+    },
+    {
+      "assessment": {
+        "host": "example.test",
+        "port": 443,
+        "protocol": "https",
+        "target": "example.test:443",
+        "type": "network_access"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"host\": \"example.test\",\n  \"port\": 443,\n  \"protocol\": \"https\",\n  \"target\": \"example.test:443\",\n  \"tool\": \"network_access\",\n  \"trigger\": {\n    \"additionalPermissions\": {\n      \"file_system\": null,\n      \"network\": {\n        \"enabled\": true\n      }\n    },\n    \"callId\": \"call\",\n    \"command\": [\n      \"curl\",\n      \"https://example.test\"\n    ],\n    \"cwd\": \"/work\",\n    \"justification\": \"fetch\",\n    \"sandboxPermissions\": \"with_additional_permissions\",\n    \"toolName\": \"exec_command\",\n    \"tty\": false\n  }\n}",
+        "truncated": false
+      },
+      "json": {
+        "host": "example.test",
+        "port": 443,
+        "protocol": "https",
+        "target": "example.test:443",
+        "tool": "network_access",
+        "trigger": {
+          "additionalPermissions": {
+            "file_system": null,
+            "network": {
+              "enabled": true
+            }
+          },
+          "callId": "call",
+          "command": [
+            "curl",
+            "https://example.test"
+          ],
+          "cwd": "/work",
+          "justification": "fetch",
+          "sandboxPermissions": "with_additional_permissions",
+          "toolName": "exec_command",
+          "tty": false
+        }
+      },
+      "name": "network/options",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "command": "curl https://example.test",
+          "description": "network-access example.test:443"
+        },
+        "tool_name": "Bash"
+      },
+      "reviewed": {
+        "port": 443,
+        "protocol": "https",
+        "type": "network_access"
+      }
+    },
+    {
+      "assessment": {
+        "permissions": {
+          "file_system": null,
+          "network": null
+        },
+        "reason": null,
+        "type": "request_permissions"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"permissions\": {\n    \"file_system\": null,\n    \"network\": null\n  },\n  \"tool\": \"request_permissions\",\n  \"turn_id\": \"turn-min\"\n}",
+        "truncated": false
+      },
+      "json": {
+        "permissions": {
+          "file_system": null,
+          "network": null
+        },
+        "tool": "request_permissions",
+        "turn_id": "turn-min"
+      },
+      "name": "request_permissions/minimal",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "permissions": {
+            "file_system": null,
+            "network": null
+          },
+          "reason": null
+        },
+        "tool_name": "request_permissions"
+      },
+      "reviewed": {
+        "type": "request_permissions"
+      }
+    },
+    {
+      "assessment": {
+        "permissions": {
+          "file_system": null,
+          "network": {
+            "enabled": true
+          }
+        },
+        "reason": "network",
+        "type": "request_permissions"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"permissions\": {\n    \"file_system\": null,\n    \"network\": {\n      \"enabled\": true\n    }\n  },\n  \"reason\": \"network\",\n  \"tool\": \"request_permissions\",\n  \"turn_id\": \"turn-opt\"\n}",
+        "truncated": false
+      },
+      "json": {
+        "permissions": {
+          "file_system": null,
+          "network": {
+            "enabled": true
+          }
+        },
+        "reason": "network",
+        "tool": "request_permissions",
+        "turn_id": "turn-opt"
+      },
+      "name": "request_permissions/options",
+      "permissionRequestPayload": {
+        "tool_input": {
+          "permissions": {
+            "file_system": null,
+            "network": {
+              "enabled": true
+            }
+          },
+          "reason": "network"
+        },
+        "tool_name": "request_permissions"
+      },
+      "reviewed": {
+        "type": "request_permissions"
+      }
+    }
+  ],
+  "permissionProfiles": [
+    {
+      "json": {
+        "file_system": {
+          "entries": [],
+          "type": "restricted"
+        },
+        "network": "restricted",
+        "type": "managed"
+      },
+      "name": "default"
+    },
+    {
+      "json": {
+        "file_system": {
+          "entries": [
+            {
+              "access": "read",
+              "path": {
+                "type": "special",
+                "value": {
+                  "kind": "root"
+                }
+              }
+            }
+          ],
+          "type": "restricted"
+        },
+        "network": "restricted",
+        "type": "managed"
+      },
+      "name": "read_only"
+    },
+    {
+      "json": {
+        "type": "disabled"
+      },
+      "name": "disabled"
+    },
+    {
+      "json": {
+        "network": "enabled",
+        "type": "external"
+      },
+      "name": "external_enabled"
+    },
+    {
+      "json": {
+        "file_system": {
+          "type": "unrestricted"
+        },
+        "network": "enabled",
+        "type": "managed"
+      },
+      "name": "managed_unrestricted"
+    }
+  ],
+  "sourceCommit": "9f97cb79eb15b38d24c552c56fe24e211ff9cf3a"
+}

@@ -11,19 +11,28 @@ const ALLOWED_PUNCT = new Set(['&&', '||', ';', '|', '"', "'"])
 const parser = new Parser()
 parser.setLanguage(Bash)
 
-function shellStem(path: string): string {
-  const name = path.split(/[\\/]/u).at(-1) ?? path
-  return name.replace(/\.[^.]*$/u, '').toLowerCase()
+type ShellType = 'zsh' | 'bash' | 'powershell' | 'sh' | 'cmd'
+
+/** Fixed Codex Linux shell_detect.rs:39-57 PathBuf/file_stem recursion. */
+function detectShellType(shellPath: string): ShellType | undefined {
+  if (shellPath === 'zsh' || shellPath === 'bash' || shellPath === 'sh' || shellPath === 'cmd') return shellPath
+  if (shellPath === 'pwsh' || shellPath === 'powershell') return 'powershell'
+  const slash = shellPath.lastIndexOf('/')
+  const name = shellPath.slice(slash + 1)
+  const dot = name.lastIndexOf('.')
+  const stem = dot > 0 ? name.slice(0, dot) : name
+  return stem !== shellPath ? detectShellType(stem) : undefined
 }
 
 function extractBashCommand(command: readonly string[]): { mode: string; script: string } | undefined {
-  if (command.length !== 3 || !['bash', 'zsh', 'sh'].includes(shellStem(command[0] ?? ''))) return undefined
+  const shell = detectShellType(command[0] ?? '')
+  if (command.length !== 3 || (shell !== 'bash' && shell !== 'zsh' && shell !== 'sh')) return undefined
   const mode = command[1]
   return mode === '-lc' || mode === '-c' ? { mode, script: command[2] ?? '' } : undefined
 }
 
 function extractPowerShellCommand(command: readonly string[]): string | undefined {
-  if (command.length < 3 || !['pwsh', 'powershell'].includes(shellStem(command[0] ?? ''))) return undefined
+  if (command.length < 3 || detectShellType(command[0] ?? '') !== 'powershell') return undefined
   const allowed = new Set(['-nologo', '-noprofile', '-command', '-c'])
   for (let index = 1; index + 1 < command.length; index += 1) {
     const flag = command[index]?.toLowerCase() ?? ''

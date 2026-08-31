@@ -42,8 +42,8 @@ try {
     'PathConversionError', 'absolutePath', 'approvalCacheKeys', 'canonicalizeCommandForApproval',
     'formatGuardianActionPretty', 'guardianApprovalRequestToJson', 'guardianAssessmentAction',
     'guardianCwd', 'guardianRequestTargetItemId', 'guardianRequestTurnId', 'guardianReviewedAction',
-    'guardianTruncateText', 'i32', 'inferredNativePathString', 'intoGuardianRequest', 'parseShellLcPlainCommands',
-    'pathUri', 'pathUriToAbsolutePath', 'permissionRequestPayload', 'shlexJoin', 'u16',
+    'guardianTruncateText', 'i32', 'inferredNativePathString', 'intoGuardianRequest', 'losslessLegacyAppPathString', 'nonZeroUsize', 'parseShellLcPlainCommands',
+    'pathUri', 'pathUriCacheIdentity', 'pathUriToAbsolutePath', 'permissionRequestPayload', 'serializePermissionProfile', 'serializeRuntimePermissionProfile', 'shlexJoin', 'u16',
   ]
   if (JSON.stringify(Object.keys(parityRuntime).sort()) !== JSON.stringify(expectedParityExports.sort())) {
     throw new Error(`packed Codex parity exports mismatch: ${Object.keys(parityRuntime).sort().join(',')}`)
