@@ -35,6 +35,10 @@
       "types": "./lib/eval.d.ts",
       "default": "./lib/eval.js"
     },
+    "./codex-parity": {
+      "types": "./lib/codex-parity/index.d.ts",
+      "default": "./lib/codex-parity/index.js"
+    },
     "./client": {
       "types": "./lib/client/index.d.ts",
       "default": "./lib/client.js"
@@ -56,7 +60,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && tsdown --config tsdown.client.config.ts",
     "test": "vitest run",
-    "check": "npm run build && npm run test",
+    "test:types": "tsc -p tsconfig.tests.json",
+    "check": "npm run build && npm run test:types && npm run test",
     "pack:check": "npm pack --dry-run",
     "policy:check": "node scripts/check-policy-provenance.mjs",
     "pack:verify": "node scripts/check-pack.mjs",
@@ -98,7 +103,9 @@
     "react": "^18.2.0"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.1"
+    "@deepseek-ai/schemastery": "^3.18.1",
+    "tree-sitter": "0.25.1",
+    "tree-sitter-bash": "0.25.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

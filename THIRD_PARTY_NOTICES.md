@@ -30,3 +30,13 @@ Source application observed during implementation:
 The denied-state slash geometry (`m2 2 20 20`) follows the Lucide shield-off
 icon bundled by Codex Desktop. Lucide is available under the ISC License:
 https://lucide.dev/license
+
+## Tree-sitter runtime and Bash grammar
+
+The Codex approval-cache canonicalizer uses `tree-sitter` and
+`tree-sitter-bash` 0.25.1 to preserve the upstream AST acceptance boundary.
+Both packages, together with their `node-addon-api` and `node-gyp-build`
+runtime dependencies, are distributed under their respective MIT licenses.
+
+Sources: https://github.com/tree-sitter/node-tree-sitter and
+https://github.com/tree-sitter/tree-sitter-bash
