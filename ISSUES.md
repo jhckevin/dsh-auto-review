@@ -2,13 +2,15 @@
 
 每个 ISSUE 单独分支、单独提交组；关闭前必须重新查看固定 Harness 源码和本 ISSUE 改动。
 
-## ISSUE-020：Guardian 协议韧性与失败遥测（进行中）
+## ISSUE-020：Guardian 协议韧性与失败遥测（完成）
 
 对齐 OpenAI Codex Guardian 当前实现的结构化输出与薄 JSON 恢复语义：模型只产生 approved/denied，manual/unavailable 保留给运行时；仅 outcome 必填，其余字段按 Codex 的安全默认值补齐。优先解析完整响应，失败时只尝试从首个左花括号到最后一个右花括号恢复一个对象，绝不在多个候选结论中择优。
 
 共享 90 秒截止时间内，仅对协议错误和瞬态 provider 错误创建全新 Session 重试并采用有界指数退避；终端 4xx、取消和超时不盲目重试。修复失败路径丢失策略检索信息的问题：每个正式决定或 fail-closed 结果记录总尝试次数、失败类别及所有尝试的 outline/search/get/resultBytes。默认 reviewer 输出预算从 768 提升到 2048，避免 Flash 完成策略检索后因输出截断制造假阴性。
 
 验收：协议恢复、多个对象拒绝、选择性重试、失败遥测聚合、共享超时、真实 DeepSeek Flash 风险矩阵、Linux sandbox 与断网生产门禁全部通过；密钥不得进入 Git、审计、session 或发布包。
+
+完成记录：固定 OpenAI Codex 源码提交 `a9519cbcdd2d664530edb2469224ee03c1056799`，逐项复核 Guardian prompt、review session、重试与 sandbox routing。Node 24/Linux x86 断网生产门禁 18 个测试文件、84 项测试通过。真实 DeepSeek Flash 风险矩阵共 6 个动作：4 批准、2 拒绝、0 unavailable/manual；其中凭据外传动作首轮协议失败后在共享截止时间内用全新 Session 重试并正确拒绝。真实 WebUI 端到端验证网络动作按 `review → approved → result` 完成，原生 Landlock 保持启用，无人工等待、fail-closed、浏览器控制台或页面异常。
 
 ## ISSUE-018：生产发布门禁与离线复现（完成）
 

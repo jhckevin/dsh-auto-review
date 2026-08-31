@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.5.3 - 2026-08-31
+
+- 对齐 OpenAI Codex Guardian 的结构化输出协议：模型仅返回 approved/denied，仅 outcome 必填；manual/unavailable 只用于运行时状态。
+- 使用完整解析优先、首个左花括号至最后一个右花括号的薄 JSON 恢复；拒绝多个对象和未知字段，不从候选结论中择优。
+- 在共享 90 秒截止时间内只重试协议错误与瞬态 provider 错误；终端 4xx、取消和超时直接 fail closed。
+- 聚合全部 reviewer 尝试、失败类别和策略 outline/search/get/resultBytes 遥测，失败结果不再丢失检索成本。
+- Flash 默认输出预算提高到 2048；真实 DeepSeek Flash 风险矩阵、WebUI 网络审批闭环、Linux sandbox 与断网生产门禁通过。
+
 ## 0.5.2 - 2026-08-18
 
 - Auto Review 设置选项卡使用与审查状态一致的 canonical shield-terminal SVG；Harness 设置插槽原生支持插件自有导航图标并保留未知插件的默认回退。
