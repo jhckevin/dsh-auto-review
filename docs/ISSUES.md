@@ -2,6 +2,24 @@
 
 每个 ISSUE 单独分支、单独提交组；关闭前必须重新查看固定 Harness 源码和本 ISSUE 改动。
 
+## ISSUE-022：Codex 公开 Auto Review/Guardian 逐模块一致性（进行中）
+
+固定上游为 OpenAI Codex `9f97cb79eb15b38d24c552c56fe24e211ff9cf3a`。本 ISSUE 不再接受“效果类似”或“策略文本相同”作为完成标准；中央 typed approval、Guardian V2、review session、跨 compaction evidence、协议、缓存、MCP/network/permissions 分支和上游测试必须逐项建立 source-to-port 映射。
+
+前置独立审计确认 `v0.5.4` 存在架构级偏差：自制 `ActionRouter` 在 `tools/pre-execute` 重分类全部工具，且 Full Access 下退出；Codex 则以中央审批阶段为核心，固定 `Hooks -> Guardian/User` 优先级，并通过 strict auto-review 覆盖原本无需用户审批的动作。旧版自制 ticket、override、saferAlternative 和渐进策略工具不得冒充 Codex 原生语义。
+
+分解为以下可独立审核的子 ISSUE：
+
+- ISSUE-022A：typed ApprovalAction、序列化、命令规范化与 cache key；
+- ISSUE-022B：中央审批优先级、strict/native 双入口和特殊结果；
+- ISSUE-022C：core Guardian prompt、严格协议、策略资产与 transcript budgets；
+- ISSUE-022D：`ext/guardian-v2` async scorer/sync reviewer、`guardian-context`、review session 复用与 deadline/cancel；
+- ISSUE-022E：GuardianReviewEvidence、user authorization、thread history 与 compaction/rollback 语义；
+- ISSUE-022F：MCP、network、permissions、metrics/events；
+- ISSUE-022G：机器生成的上游测试清单、golden/differential、app-server/UI/TUI 范围证明与生产 E2E。
+
+每个子 ISSUE 必须由 subagent 初审，整改后再由 subagent 复审；P0/P1 未清零不得关闭。完整门禁见 `docs/PARITY_MANIFEST.md`。
+
 ## ISSUE-017：WebUI 动作漏斗与策略检索遥测（完成）
 
 设置页增加与公开 Auto Review 示意一致的只读动作漏斗：全部动作、原生沙盒内、进入审查、自动批准、拒绝与人工处理。摘要来自 runtime 聚合计数，不暴露 action 参数、用户内容、提示词或策略查询。设置页同时用动态短文明确 Auto Review 开关、sandbox-default-allow 和 read-only/workspace-write/full-access 的组合行为。

@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 2,
+  "baseline": {
+    "repository": "openai/codex",
+    "commit": "9f97cb79eb15b38d24c552c56fe24e211ff9cf3a",
+    "authorTime": "2026-08-31T16:54:36Z",
+    "committerTime": "2026-08-31T17:10:38Z"
+  },
+  "inventory": {
+    "path": "docs/codex-upstream-inventory.json",
+    "generator": "scripts/generate-codex-upstream-inventory.mjs",
+    "candidateSemantics": "union(pathRule, contentPattern, mandatoryPaths)",
+    "minimumLockedFiles": 99,
+    "lockedFiles": 267
+  },
+  "inventoryCoverage": {
+    "requiredRoles": ["ported", "test", "asset", "na"],
+    "naProofs": {
+      "codex-tui-na": {
+        "path": "docs/parity-na-proofs.md",
+        "anchor": "## codex-tui-na",
+        "blob": "0c4515fb9e622e13fa301034329c4905f9182068"
+      },
+      "bazel-build-na": {
+        "path": "docs/parity-na-proofs.md",
+        "anchor": "## bazel-build-na",
+        "blob": "0c4515fb9e622e13fa301034329c4905f9182068"
+      }
+    }
+  },
+  "scope": {
+    "claim": "100% semantic parity with the machine-inventoried public Codex Auto Review and Guardian surface at the pinned commit",
+    "excludedInternalComponents": ["ARC"],
+    "requiresNaProofForExcludedPublicSurface": true
+  },
+  "modules": [
+    {
+      "id": "approval-stage",
+      "upstreamPaths": ["codex-rs/core/src/tools/approvals.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/core/src/tools/approvals.rs", "symbol": "async fn request_approval("},
+        {"path": "codex-rs/core/src/tools/approvals.rs", "symbol": "async fn request_reviewer_approval("},
+        {"path": "codex-rs/core/src/tools/approvals.rs", "symbol": "struct ApprovalResolution"}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "in_progress", "naProof": null
+    },
+    {
+      "id": "approval-action-and-cache",
+      "upstreamPaths": ["codex-rs/core/src/tools/approvals.rs", "codex-rs/core/src/command_canonicalization.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/core/src/tools/approvals.rs", "symbol": "enum ApprovalAction"},
+        {"path": "codex-rs/core/src/tools/approvals.rs", "symbol": "enum ApprovalCacheKey"},
+        {"path": "codex-rs/core/src/command_canonicalization.rs", "symbol": "fn canonicalize_command_for_approval("}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "in_progress", "naProof": null
+    },
+    {
+      "id": "approval-protocol",
+      "upstreamPaths": ["codex-rs/protocol/src/approvals.rs", "codex-rs/protocol/src/protocol.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/protocol/src/protocol.rs", "symbol": "enum ReviewDecision"},
+        {"path": "codex-rs/protocol/src/protocol.rs", "symbol": "NetworkPolicyAmendment"},
+        {"path": "codex-rs/protocol/src/protocol.rs", "symbol": "GuardianAssessmentEvent"}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    },
+    {
+      "id": "guardian-action-format",
+      "upstreamPaths": ["codex-rs/core/src/guardian/approval_request.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/core/src/guardian/approval_request.rs", "symbol": "enum GuardianApprovalRequest"},
+        {"path": "codex-rs/core/src/guardian/approval_request.rs", "symbol": "fn guardian_approval_request_to_json("},
+        {"path": "codex-rs/core/src/guardian/approval_request.rs", "symbol": "fn guardian_assessment_action("}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "in_progress", "naProof": null
+    },
+    {
+      "id": "guardian-prompt",
+      "upstreamPaths": ["codex-rs/core/src/guardian/prompt.rs", "codex-rs/core/assets/guardian/policy.md", "codex-rs/core/assets/guardian/policy_template.md"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/core/src/guardian/prompt.rs", "symbol": "fn build_guardian_prompt_items_with_parent_turn("},
+        {"path": "codex-rs/core/src/guardian/prompt.rs", "symbol": "fn parse_guardian_assessment("},
+        {"path": "codex-rs/core/src/guardian/prompt.rs", "symbol": "fn guardian_output_schema()"}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    },
+    {
+      "id": "guardian-review",
+      "upstreamPaths": ["codex-rs/core/src/guardian/review.rs", "codex-rs/core/src/guardian/mod.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/core/src/guardian/review.rs", "symbol": "async fn run_guardian_review("},
+        {"path": "codex-rs/core/src/guardian/mod.rs", "symbol": "struct GuardianRejectionCircuitBreaker"},
+        {"path": "codex-rs/core/src/guardian/review.rs", "symbol": "fn routes_approval_policy_to_guardian("}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    },
+    {
+      "id": "guardian-review-session",
+      "upstreamPaths": ["codex-rs/core/src/guardian/review_session.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/core/src/guardian/review_session.rs", "symbol": "struct GuardianReviewSessionManager"},
+        {"path": "codex-rs/core/src/guardian/review_session.rs", "symbol": "struct GuardianReviewSessionReuseKey"},
+        {"path": "codex-rs/core/src/guardian/review_session.rs", "symbol": "async fn run_review("}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    },
+    {
+      "id": "guardian-v2-async-scorer",
+      "upstreamPaths": ["codex-rs/ext/guardian-v2/src/async_scorer/config.rs", "codex-rs/ext/guardian-v2/src/async_scorer/extension.rs", "codex-rs/protocol/src/openai_models/guardian_v2.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/ext/guardian-v2/src/async_scorer/config.rs", "symbol": "struct GuardianV2Config"},
+        {"path": "codex-rs/ext/guardian-v2/src/async_scorer/extension.rs", "symbol": "struct GuardianV2Extension"},
+        {"path": "codex-rs/protocol/src/openai_models/guardian_v2.rs", "symbol": "struct GuardianV2ModelConfig"}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    },
+    {
+      "id": "guardian-v2-sync-reviewer",
+      "upstreamPaths": ["codex-rs/ext/guardian-v2/src/sync_reviewer/mod.rs", "codex-rs/ext/guardian-v2/src/sync_reviewer/prompt.rs", "codex-rs/ext/guardian-v2/src/sync_reviewer/reviewer_config.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/ext/guardian-v2/src/sync_reviewer/mod.rs", "symbol": "struct GuardianExtension"},
+        {"path": "codex-rs/ext/guardian-v2/src/sync_reviewer/prompt.rs", "symbol": "fn build("},
+        {"path": "codex-rs/ext/guardian-v2/src/sync_reviewer/reviewer_config.rs", "symbol": "async fn prepare("}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    },
+    {
+      "id": "guardian-context",
+      "upstreamPaths": ["codex-rs/guardian-context/src/lib.rs", "codex-rs/guardian-context/src/history.rs", "codex-rs/guardian-context/src/transcript.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/guardian-context/src/lib.rs", "symbol": "collect_transcript"},
+        {"path": "codex-rs/guardian-context/src/lib.rs", "symbol": "trait SectionHistory"},
+        {"path": "codex-rs/guardian-context/src/lib.rs", "symbol": "TranscriptRetentionConfig"}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    },
+    {
+      "id": "guardian-review-evidence",
+      "upstreamPaths": ["codex-rs/core/src/context/guardian_review_evidence.rs", "codex-rs/core/src/agent/control/user_authorization.rs", "codex-rs/app-server/tests/suite/v2/guardian_v2_history_tests.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/core/src/context/guardian_review_evidence.rs", "symbol": "GuardianReviewEvidence"},
+        {"path": "codex-rs/core/src/agent/control/user_authorization.rs", "symbol": "fn root_user_authorization("},
+        {"path": "codex-rs/app-server/tests/suite/v2/guardian_v2_history_tests.rs", "symbol": "async_guardian_retains_evidence_after_compaction_and_discards_it_after_rollback"}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    },
+    {
+      "id": "mcp-network-permissions",
+      "upstreamPaths": ["codex-rs/core/src/tools/approvals.rs", "codex-rs/protocol/src/approvals.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/core/src/tools/approvals.rs", "symbol": "ApprovalAction::McpToolCall"},
+        {"path": "codex-rs/core/src/tools/approvals.rs", "symbol": "ApprovalAction::NetworkAccess"},
+        {"path": "codex-rs/core/src/tools/approvals.rs", "symbol": "ApprovalAction::RequestPermissions"}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    },
+    {
+      "id": "metrics-events",
+      "upstreamPaths": ["codex-rs/core/src/guardian/metrics.rs", "codex-rs/protocol/src/protocol.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/core/src/guardian/metrics.rs", "symbol": "fn emit_guardian_review_metrics("},
+        {"path": "codex-rs/protocol/src/protocol.rs", "symbol": "GuardianAssessmentEvent"}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    },
+    {
+      "id": "app-server-ui-tui",
+      "upstreamPaths": ["codex-rs/app-server/tests/suite/v2/guardian_v2.rs", "codex-rs/tui/src/auto_review_denials.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/app-server/tests/suite/v2/guardian_v2.rs", "symbol": "ItemGuardianApprovalReviewStartedNotification"},
+        {"path": "codex-rs/tui/src/auto_review_denials.rs", "symbol": "AutoReviewDenials"}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    },
+    {
+      "id": "upstream-test-inventory",
+      "upstreamPaths": ["codex-rs/core/src/guardian/tests.rs", "codex-rs/ext/guardian-v2/src/async_scorer/extension_tests.rs", "codex-rs/guardian-context/src/transcript_tests.rs"],
+      "upstreamSymbols": [
+        {"path": "codex-rs/core/src/guardian/tests.rs", "symbol": "#[test]"},
+        {"path": "codex-rs/ext/guardian-v2/src/async_scorer/extension_tests.rs", "symbol": "#[tokio::test("},
+        {"path": "codex-rs/guardian-context/src/transcript_tests.rs", "symbol": "#[test]"}
+      ],
+      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+    }
+  ]
+}

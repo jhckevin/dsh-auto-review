@@ -1,0 +1,2235 @@
+{
+  "schemaVersion": 1,
+  "repository": "openai/codex",
+  "commit": "9f97cb79eb15b38d24c552c56fe24e211ff9cf3a",
+  "selection": {
+    "pathRule": "guardian/guardian-v2/guardian-context, approvals/auto_review names, approval_request, command_canonicalization",
+    "contentPattern": "GuardianReviewer|GuardianAssessmentEvent|GuardianReviewEvidence|GuardianApprovalRequest|ApprovalAction|AutoReview|auto_review",
+    "mandatoryPaths": [
+      "codex-rs/core/src/command_canonicalization.rs",
+      "codex-rs/core/src/exec_policy.rs",
+      "codex-rs/core/src/guardian/mod.rs",
+      "codex-rs/core/src/hook_runtime.rs",
+      "codex-rs/core/src/mcp_tool_call.rs",
+      "codex-rs/core/src/sandboxing/mod.rs",
+      "codex-rs/core/src/session/session.rs",
+      "codex-rs/core/src/tools/hook_names.rs",
+      "codex-rs/core/src/tools/runtimes/apply_patch.rs",
+      "codex-rs/core/src/tools/runtimes/unified_exec.rs",
+      "codex-rs/core/src/tools/sandboxing.rs",
+      "codex-rs/protocol/src/approvals.rs",
+      "codex-rs/protocol/src/config_types.rs",
+      "codex-rs/protocol/src/error.rs",
+      "codex-rs/protocol/src/models.rs",
+      "codex-rs/protocol/src/openai_models.rs",
+      "codex-rs/protocol/src/protocol.rs",
+      "codex-rs/protocol/src/request_permissions.rs"
+    ],
+    "mandatorySemantics": "direct local approval-stage dependencies imported by core/src/tools/approvals.rs plus the protocol types it consumes",
+    "candidateSemantics": "union(pathRule, contentPattern, mandatoryPaths)",
+    "deletionProtection": "validator regenerates this union from the pinned git tree and requires exact path, classification, reason, and blob equality"
+  },
+  "counts": {
+    "total": 267,
+    "include-test": 103,
+    "include-source": 106,
+    "include-asset": 7,
+    "na": 51
+  },
+  "files": [
+    {
+      "path": "codex-rs/analytics/src/analytics_client_tests.rs",
+      "blob": "f71362340087b3645e4a4597a52c2fd0be899ee9",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/analytics/src/events.rs",
+      "blob": "dcfed40304833781ea0b2db0424108a02b76263f",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/analytics/src/lib.rs",
+      "blob": "49a87ab845cba55e695a898ef926f9f398830150",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/item_builders.rs",
+      "blob": "153ef1703dc2c13c91871e88f8c340293eca24df",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "app-server-ui-tui",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/item_builders_tests.rs",
+      "blob": "47cc227110bcff196645e96ef035b254777f1f23",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/thread_history.rs",
+      "blob": "7a1d70c85f454afebed9d4c2965015bb62cc4ebc",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "app-server-ui-tui",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/config.rs",
+      "blob": "e36240c4ac4abff51a55cc23d122dde226b0659d",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "app-server-ui-tui",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/item.rs",
+      "blob": "67b8c41d5b30eb412e8120a2a8c603e54a49c906",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "app-server-ui-tui",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/permissions.rs",
+      "blob": "38747f0ada6a4637ffdb485e462df0d10810cf80",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "app-server-ui-tui",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/shared.rs",
+      "blob": "b5a68a073a2ac78e3078570ea8067fd9261cbd1e",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "app-server-ui-tui",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/tests.rs",
+      "blob": "c07b801c0d557e2a64e1266c7f114d30eef8fe4d",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "app-server-ui-tui",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server-protocol/src/protocol/v2/thread.rs",
+      "blob": "5c1b1921245b31a254536d816e21ddaa73795e5b",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "app-server-ui-tui",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server/src/bespoke_event_handling.rs",
+      "blob": "7fcfeb8d354071498d069dc26a9fb846f10ccec8",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "app-server-ui-tui",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/config_processor.rs",
+      "blob": "278fc8e05061e82e2d65d0c179661e77cb750436",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "app-server-ui-tui",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/feedback_processor.rs",
+      "blob": "d2948c4adef75cd3d2b6485c9038af0473b38a78",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "app-server-ui-tui",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/app-server/src/request_processors/persisted_resume_settings_tests.rs",
+      "blob": "167e770af57c0acf06ffb822d32dcb7df20e3769",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/common/models_cache.rs",
+      "blob": "e3de19b9d0f96e80daee9e41bf4c813052aeaf49",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/analytics.rs",
+      "blob": "12de3531767144a96cfe8eee34bd45e42739a0f1",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/config_requirements_in_app_browser.rs",
+      "blob": "6cdc14d455e14774148866ba176766b607d2ec0a",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/config_rpc.rs",
+      "blob": "3f681f7336bf32a417fa5265d458c21a30cd4699",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/executor_mcp.rs",
+      "blob": "2fddde479a54f0e82a866d51b5e104f5793d16cb",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/executor_skills.rs",
+      "blob": "d49c683cb4e5432dfecbba3817e9c7c3cde07f60",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/guardian_v2.rs",
+      "blob": "5e6298237d72bf126fd7caedda3b5912aba0c647",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/guardian_v2_history_tests.rs",
+      "blob": "19f8453031ebba70a67d7eaac38fe363c7713fcc",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/mcp_server_elicitation.rs",
+      "blob": "ddab6a8ecdde36eb088f7c534a969b2ac6c4c516",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/mcp_tool.rs",
+      "blob": "210ce82351f55a39501e81b5fa99493cab1c9917",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/mod.rs",
+      "blob": "7ea4813a713c6ee02d229386cd58136a161b6831",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/model_auto_review.rs",
+      "blob": "2a5b6fc98ea7465e9b89efdee1919bdc749b11c5",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/request_permissions.rs",
+      "blob": "93cb18cae799b82ade3517bd7394b4d786034f0d",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/thread_fork.rs",
+      "blob": "5d6729bfbd058666745cb9e6974036bcb17eb972",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/app-server/tests/suite/v2/thread_resume.rs",
+      "blob": "6338c57b4502011058d14abf77649e505a265359",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/cli/src/main.rs",
+      "blob": "0bfea04498c6c3ca11e64b859d1ae50d67caf2f4",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/codex-api/tests/models_integration.rs",
+      "blob": "b3092a1aaf2083646a58e9c8f1292f314a291d39",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/codex-mcp/src/binding_tests.rs",
+      "blob": "b42f75c53a11c5b6db20981ccf60941267ddffa3",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/codex-mcp/src/elicitation.rs",
+      "blob": "b575eb01a5b995a8254a3608b5fe9f9bf8ce9424",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "mcp-network-permissions",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/codex-mcp/src/elicitation_tests.rs",
+      "blob": "9bd780ccaf0733625afb148d9c4ba553412bfe0d",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/config/src/browser_computer_use_requirements.rs",
+      "blob": "93cb869d41776e39dd29bb1adcac74a043ef1947",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/config/src/config_requirements.rs",
+      "blob": "0b6785b594fde6bf100bc4adeab8c20a2e3dd167",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/config/src/config_toml.rs",
+      "blob": "e7c4525ea7abac0a23e37bbc238e9362b6dadb07",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/config/src/constraint.rs",
+      "blob": "e2c7f9430b587a4ab770d1207faf7a1cd3f96747",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/config/src/lib.rs",
+      "blob": "fc5e05a687dc33ef54f52b6a2b78bf74178dcac5",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/config/src/loader/mod.rs",
+      "blob": "48ea0d3bc53b2c5852fa79c55a71b343c73093e9",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/config/src/requirements_layers/layer.rs",
+      "blob": "3edcbbd18e935fff3bfab317ef853ce4a8098c3f",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/config/src/requirements_layers/models.rs",
+      "blob": "34b3bbc7e9dfb4f16632d0b2b3dd485d6a51f000",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/config/src/requirements_layers/stack.rs",
+      "blob": "09e3f13cd53f27e5c1692859833b88fb4df7f487",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/config/src/requirements_layers/stack_tests.rs",
+      "blob": "8b784bcff7bef1e65669fa560b0c6aabb71cf880",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/assets/guardian/node_repl_policy.md",
+      "blob": "94f198480f9c418388043f3a7c530dc2b0cbfa78",
+      "classification": "include-asset",
+      "reason": "upstream policy, prompt, or package metadata",
+      "module": "guardian-prompt",
+      "coverageRole": "asset"
+    },
+    {
+      "path": "codex-rs/core/assets/guardian/policy.md",
+      "blob": "a0c5ed2e32849d0fa3ffef637caa90e85c630d5b",
+      "classification": "include-asset",
+      "reason": "upstream policy, prompt, or package metadata",
+      "module": "guardian-prompt",
+      "coverageRole": "asset"
+    },
+    {
+      "path": "codex-rs/core/assets/guardian/policy_template.md",
+      "blob": "b59c2ca1317daa15acbb1598ef9d00ca61066cae",
+      "classification": "include-asset",
+      "reason": "upstream policy, prompt, or package metadata",
+      "module": "guardian-prompt",
+      "coverageRole": "asset"
+    },
+    {
+      "path": "codex-rs/core/src/agent/control/user_authorization.rs",
+      "blob": "56cf626faea862fc661075d7267f09010299cc72",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-review-evidence",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/codex_thread.rs",
+      "blob": "563d73c7ec3fc3e6d5e06218c8fc7ce3cd75c09e",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/command_canonicalization.rs",
+      "blob": "b88a79375d825b3438f5bcefa0f1db89b1f2e885",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-action-and-cache",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/command_canonicalization_tests.rs",
+      "blob": "c278dedafcc49f88abadc4d56b69e9314fb3e371",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/config/config_tests.rs",
+      "blob": "8f5a3fc2e2cd177ba8b2801ef10ccbecd2a518ad",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/config/managed_features.rs",
+      "blob": "1a2b970021a0fd7838c9ac0947e88150719e74f9",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/config/mod.rs",
+      "blob": "44a0411504c43980aea1156a74c4352923e74227",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/connectors.rs",
+      "blob": "ba6ca1a5442f8a13785ea95107b9b33a396cba57",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/connectors_tests.rs",
+      "blob": "34c420e2e856ab4b2a3591c3802e3d6f4b1fd523",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/context/guardian_approved_action.rs",
+      "blob": "b206b058b3bd41042996e47f171aac9895392a90",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/context/guardian_followup_review_reminder.rs",
+      "blob": "4cbb86f4a9c6d08b305bd115515abba4c14275a5",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/context/guardian_node_repl_policy.rs",
+      "blob": "7e465b6758613d0481ea1853f5264f326df98a28",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/context/guardian_policy.rs",
+      "blob": "6476c5a9047733ab818c119938c6cacf261069cb",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/context/guardian_review_evidence.rs",
+      "blob": "41e561c82d4ab66ca55c63fbdbd9c4d5f0aa273d",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-review-evidence",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/context/mod.rs",
+      "blob": "58ad8140c863bd218e44f816ce8a3c9ab8f1a7a8",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/context/node_repl_review_evidence.rs",
+      "blob": "8e4d63e7afeaf8a2f27426e8130d64cdb0e69648",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/context/world_state/permissions_tests.rs",
+      "blob": "3f76ed934db75a76b5b523cfd6b4f2cff69be386",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/exec_policy.rs",
+      "blob": "bbbe6a27ca47c46859801b73c52d9681cae4b02d",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/guardian/approval_request.rs",
+      "blob": "786c3eedf0b40cf2a5ef1f0682b0bad0a7125792",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-action-format",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/guardian/metrics.rs",
+      "blob": "31c69e1ccdf475cf68ae436539a465ef8d182bd7",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "metrics-events",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/guardian/mod.rs",
+      "blob": "2e8b136f5d221042426dc004d3541a0ddb710158",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-review",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/guardian/prompt.rs",
+      "blob": "8bbf5e6b37bdb256e06b12cdba0c8507a1400ddf",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-prompt",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/guardian/review.rs",
+      "blob": "2882cb799f372669e656a7a3de784ed540c6b570",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-review",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/guardian/review_session.rs",
+      "blob": "8cd0095ecf688d240594684b8d729174bcb7f040",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-review-session",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/guardian/review_session_tests.rs",
+      "blob": "7399adc136f6b8c4ca7b788e5360d84214c7682d",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/guardian/snapshots/codex_core__guardian__tests__guardian_followup_review_request_layout.snap",
+      "blob": "d4f1cde918fb7c5f2c21b99170c6ed8c5d290674",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/guardian/snapshots/codex_core__guardian__tests__guardian_review_request_layout.snap",
+      "blob": "0f6d8eb90417b8c1caa4cd5e88ef23b686710224",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/guardian/snapshots/codex_core__guardian__tests__network_access_guardian_prompt_layout.snap",
+      "blob": "094d04257561583b28df5b55eb76360d53b70b50",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/guardian/tests.rs",
+      "blob": "6ee7fd4badb881104d786cc7a1538b2e55557cd5",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/hook_runtime.rs",
+      "blob": "f3a0ec11c90d9115a95b658f1882a231c36e9197",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/mcp_tool_call.rs",
+      "blob": "a21fa49be18a8599189446a5ddaeb9c2694c8089",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "mcp-network-permissions",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/mcp_tool_call_tests.rs",
+      "blob": "80b0794b7a794866d8c8f4c01074cdd27d08eb96",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/responses_metadata.rs",
+      "blob": "89421a9739a27e677130e4d1ff18609ece03f939",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/sandboxing/mod.rs",
+      "blob": "fae02bf120d4187b6270dbcc2a380c0ce604b54a",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/session/elicitation_holders_tests.rs",
+      "blob": "2f85db1eecfbd9e883d4be4674e8ca46eb71d7e4",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/session/handlers.rs",
+      "blob": "b6a6d5938fe07487592533e3b14e1991801dc1ab",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/session/mcp.rs",
+      "blob": "761183e8a0d53b03b4fedb21832352cb3370ea1e",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "mcp-network-permissions",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/session/mcp_tests.rs",
+      "blob": "781dc301d72dc6b46216968cc289e68509284630",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/session/mod.rs",
+      "blob": "c99599b7d6c21664cf365ccd6f4225503de7cba9",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/session/review.rs",
+      "blob": "b2be830235ecd20bdab4809ffda6eb2f47fda0aa",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/session/session.rs",
+      "blob": "8dbfad88d381f9946143768f6e8e0d0c07cebc67",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/session/step_activation.rs",
+      "blob": "ffbe0ebd19ccbe0fcf0a3a50d936260c8b351a2c",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/session/step_activation_tests.rs",
+      "blob": "c3ca3b572a4e1f9421f390d772aece54f3040a87",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/session/step_settings.rs",
+      "blob": "cba70330647ad1c3ac2fd1e4ffe76a40cd7fb145",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/session/step_settings_tests.rs",
+      "blob": "eb75b3c7302f35c1bdd84718376186aea0bcde07",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/session/tests.rs",
+      "blob": "e962382eb7e1476de1645a001e52f50711244758",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/session/tests/guardian_tests.rs",
+      "blob": "f3e2970814fe684d0bb7777fa5f58d326f24f863",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/session/turn_context.rs",
+      "blob": "cc3681d42098956c61866dfa24e1d43f5b5768e1",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/session/turn_input_tests.rs",
+      "blob": "3ef6797c065b4d735a32a9c62dd0519edca26e97",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/state/turn.rs",
+      "blob": "fdd16120158360517c125996e34e3ba6c285c45e",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/tools/approvals.rs",
+      "blob": "5da0a46c74a9482f74158e7101ce7fc25403a2f5",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/tools/approvals_tests.rs",
+      "blob": "10f05820f886997c03c261b8a16b847a3e76e638",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/multi_agents_tests.rs",
+      "blob": "0979e8b1e7f7f6195e1c54307ca29437866a9714",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/request_user_input.rs",
+      "blob": "8608045962d28411a9a410370a366ae4f8d481d0",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/tools/handlers/request_user_input_tests.rs",
+      "blob": "d6cc5ffc1a716530d1445f4afb62c4de36d7cdc4",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/tools/hook_names.rs",
+      "blob": "92ebe8aa56de1ad7fe62be417666eb169c2c3b24",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/tools/network_approval.rs",
+      "blob": "e82780c863fce69eb2cf94187b6b2ec821aceea0",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "mcp-network-permissions",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/tools/orchestrator.rs",
+      "blob": "3b3757171b19eae4e9ae72a21928a08f382054a4",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/tools/runtimes/apply_patch.rs",
+      "blob": "723e6eb034187b931eec2d08f6025e4451742d69",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/tools/runtimes/apply_patch_tests.rs",
+      "blob": "35470229b42fbe05835ce815f59793cabf46ffa2",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/tools/runtimes/unified_exec.rs",
+      "blob": "aea36d9f48ebbc22d2ea5d3b0fbb6964009f9376",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/tools/runtimes/zsh_fork/unix_escalation.rs",
+      "blob": "0c3ae3dc4c3e4d38b4dd1e7db139c9aa899e5f65",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/tools/sandboxing.rs",
+      "blob": "615b91741386577d6a71754675f20478ba98d56e",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/turn_metadata.rs",
+      "blob": "afae92f22fd3b5cd9b987a7d705471b4be205ef3",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/turn_metadata_tests.rs",
+      "blob": "132bd644be49c3f7a7257dfbbac939f3dcaa41f3",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/unified_exec/mod_tests.rs",
+      "blob": "dc32b21ee19853f76ad1d427e277f0e1c9cfe625",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/src/unified_exec/process_manager.rs",
+      "blob": "565f9f5ce4f1d5ba121623084d0508e61332ffe2",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/src/unified_exec/stdin_approval.rs",
+      "blob": "5e4cba91b9f22d2336d240ab05e3d7587a6e60be",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/agent_websocket.rs",
+      "blob": "e600b21ae449cd4c0ecd3c8a8c38a286fb1d0bf3",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/approvals.rs",
+      "blob": "f1ab8e85959c5d4e6653836c424d643dd6b4cfc6",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/auto_review.rs",
+      "blob": "d481d262d30169c521b4c3453a25811776b74c78",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/catalog_permission_messages.rs",
+      "blob": "892dfbc4b74cf24ec86230744e777be6df21cf40",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/cloud_config.rs",
+      "blob": "a8d49a69aba67e69b86d308c2dd9a132c582cfce",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/code_mode.rs",
+      "blob": "57f98df1d1ef8ec56f55179bb82138d1df0fb3d7",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/code_mode_elicitation.rs",
+      "blob": "5b79bf6a5b097f2ce6bc739e9b43dfb7ce4e7dae",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/codex_delegate.rs",
+      "blob": "de3010cf5e542e31e55427f224e187713002b1b1",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/collaboration_instructions.rs",
+      "blob": "7c34c61a90a2cacb8be207934e9ebe9f8b5a68a6",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/context_annotations.rs",
+      "blob": "cd7c1eefe1a82a73e2a7972b4442f9a44c163198",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/cyber_exec_policy.rs",
+      "blob": "f3e37df9a9a9a583a6d2039c99c602c0f7139dc6",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/extension_sandbox.rs",
+      "blob": "b6d99659c1164168ed2c6c20f3edccb50d600511",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/git_enrichment.rs",
+      "blob": "0bad1eb28b5523bb86c8b7312644d90420ad46a4",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/guardian_authorization.rs",
+      "blob": "602dcd22015e72b76b942dc33452869422b82815",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/guardian_history.rs",
+      "blob": "6ab40196cb47f82e2d2ea80627ecaa270a277c9c",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/guardian_mcp_elicitation.rs",
+      "blob": "5ab710bd5936392715567ba35cc152acfb54671d",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/guardian_review.rs",
+      "blob": "49f52c014c419f6d90827cc00a9dabf89c3888fb",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/guardian_review_cancellation.rs",
+      "blob": "323a627e36303702aca263aaa7236206e8afe661",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/guardian_subagent_authorization.rs",
+      "blob": "90b045b6a3f94b6664cae83993be4589ac500030",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/hooks.rs",
+      "blob": "e4874b489c85d1fd5718ad0b0acdea90d824d272",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/hooks_mcp.rs",
+      "blob": "41d1e06be5822a62c7bdcc23fee3c612a8785f77",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/mcp_turn_metadata.rs",
+      "blob": "d1dab757b5f2a3753ba745851fd48cf59273dc24",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/mod.rs",
+      "blob": "5fc867a5cbc08136f777d7c5e6edd3c000e8e75e",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/model_switching.rs",
+      "blob": "6cfc82a65877d20984ad3f2e6b64756098cd1b59",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/models_cache_ttl.rs",
+      "blob": "ea663b2ac0a5185f1e650dc202ce633a0be114c5",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/network_approval.rs",
+      "blob": "5651c6f825b91d9a46a76ab7ab396509d522d81f",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/permissions_messages.rs",
+      "blob": "f58dba2c736016c08de270d7c7bba846233ef21f",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/personality.rs",
+      "blob": "fd3d7e9a05ed889b7dfa9bfa685a4de7e894bf05",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/remote_env.rs",
+      "blob": "3a57c09041cd806b220fbeb690056cd941c76b4d",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/remote_models.rs",
+      "blob": "ba73e2ebf6beff1f4972bd0141c3f561c186bd27",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/request_permissions.rs",
+      "blob": "fa48e01442917eee2a5b91bada0a5af6cacea98d",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/request_permissions_tool.rs",
+      "blob": "9538743eaead90b9ba46f5b63ca37fef9a11e347",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/review.rs",
+      "blob": "830fd1c512560ab35b1778ba9d1f4afe40be3fa1",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/rmcp_client.rs",
+      "blob": "76a92f8ec625628bc0dde04e546e1c4e04f26954",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/settings_constraints.rs",
+      "blob": "ecdca6461cdfaeeb06fb5412f84b5ceacbfc574f",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/spawn_agent_description.rs",
+      "blob": "317ce27af5d7c8691fc54ed57adfa810d617eb77",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/unified_exec_process_events.rs",
+      "blob": "89c6e28f83842f330d0963f48cf873890ef2e35d",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/unified_exec_stdin_approval.rs",
+      "blob": "dce26e37f5e47252fff76375fc24f50a1dca173a",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/unified_exec_zsh_fork_approvals.rs",
+      "blob": "cbef67fbb0864f55b248ba44ff0865e2a1126d56",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/core/tests/suite/view_image.rs",
+      "blob": "aeb606cb865bd83c402f1f2037078b38d0c7ea25",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/exec/src/cli_tests.rs",
+      "blob": "304fc8072f069a5ceaf1a325d4f3feb038e12cb2",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/exec/src/lib.rs",
+      "blob": "9552613cc73308573b154deb16bee99a139b15df",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/exec/src/lib_tests.rs",
+      "blob": "317baf3c0aec756614022e9b48a6fde940829959",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/exec/tests/suite/approval_policy.rs",
+      "blob": "5efb6d0bdad5a2bd9fdf4f5f3e14587001ad0b16",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/BUILD.bazel",
+      "blob": "356a0f44f6f1c4f13efdaf214f9767fb1a78fac7",
+      "classification": "na",
+      "reason": "Bazel metadata is not used by the pnpm extension build; source inclusion remains locked",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "bazel-build-na"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/Cargo.toml",
+      "blob": "242102a99c66e15709b9aeade8e69894f23637c4",
+      "classification": "include-asset",
+      "reason": "upstream policy, prompt, or package metadata",
+      "module": "approval-stage",
+      "coverageRole": "asset"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/action.rs",
+      "blob": "eea41dfe0c85a8f7597e33e4ce77456ff2d97556",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/action_tests.rs",
+      "blob": "cfa52a59e2e550f14ea358cc09900b8290b4338e",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/authorization.rs",
+      "blob": "2dcf369a345eda48804c1aa05f9df9c9538a0326",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/classifier_instructions.md",
+      "blob": "2ac940c8ddbaa1f6204f168d3907ee8f1235f7c2",
+      "classification": "include-asset",
+      "reason": "upstream policy, prompt, or package metadata",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "asset"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/config.rs",
+      "blob": "842cb4412ef4972422544996344ba45aae1f70b1",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/config_tests.rs",
+      "blob": "84c6a81cdb01e46e89a160720f21ed6ad2f497cb",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/extension.rs",
+      "blob": "6eb7c7f6dd212fce1ddb123a6c17606e1ebeaa30",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/extension_tests.rs",
+      "blob": "9df19ecda728c04b78f5929fe5ca5ac5bfd838b4",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/metrics.rs",
+      "blob": "235e6f6e0e17adc325155b7f8050df75647ddc64",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/mod.rs",
+      "blob": "5fcb6da9d3a3030c8409813b6ebb84b1c76646ab",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/review_evidence.rs",
+      "blob": "329c1b6a5e6d211ec1572cbc57097e306419c3e0",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/sampler.rs",
+      "blob": "f7f5aa411b75de8963d2ef3fa08235297a235b12",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/sampler_tests.rs",
+      "blob": "f797aad3c06356830671ace026e6b9417196ecd7",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/transcript.rs",
+      "blob": "4c290a6507c97a871d2771fa92463841570d16bf",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/transcript/window.rs",
+      "blob": "ccc72649ac15546254db1e02a23ea8288c8dd339",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/transcript_tests.rs",
+      "blob": "4cb2d5dfb265b7d5c7f3e0611bc0508ea2d85d7d",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/truncation.rs",
+      "blob": "f125dedd07343119c9a2d4dd2882e16a41a4fd31",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/trusted_skills.rs",
+      "blob": "5fe92b30350e562f6a62789112d243729f275685",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/trusted_skills_tests.rs",
+      "blob": "21b9b45119932e9eddfecdca62420c7913ca2466",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/trusted_tools.rs",
+      "blob": "240ea20b681e87df3ab217c007830608d701db7e",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/async_scorer/trusted_tools_tests.rs",
+      "blob": "8cd768999bebd376b4496ab37f5b8d24f1f452bd",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/lib.rs",
+      "blob": "66d661844a88bf2620130532543d233c9f9b4707",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/sync_reviewer/mod.rs",
+      "blob": "7618afaaac6c67a4bd874eb938d1992e15c67b79",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-sync-reviewer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/sync_reviewer/policy_template.md",
+      "blob": "b59c2ca1317daa15acbb1598ef9d00ca61066cae",
+      "classification": "include-asset",
+      "reason": "upstream policy, prompt, or package metadata",
+      "module": "guardian-v2-sync-reviewer",
+      "coverageRole": "asset"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/sync_reviewer/prompt.rs",
+      "blob": "dca170bbf772bf5d5f0f9c5371ea9aa4f3081bb7",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-sync-reviewer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/sync_reviewer/prompt_tests.rs",
+      "blob": "b072f194ac4738435bcec5e0a49ca206e9e78e14",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/sync_reviewer/reviewer_config.rs",
+      "blob": "d53c25563a2ef541729754de1f48e182485c65d3",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-sync-reviewer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/ext/guardian-v2/src/sync_reviewer/reviewer_config_tests.rs",
+      "blob": "3ad14810c52476e8cb2b9117c961296042f677cd",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/guardian-context/BUILD.bazel",
+      "blob": "33ce23f0c40762b78a7af3e00d72e917783463b0",
+      "classification": "na",
+      "reason": "Bazel metadata is not used by the pnpm extension build; source inclusion remains locked",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "bazel-build-na"
+    },
+    {
+      "path": "codex-rs/guardian-context/Cargo.toml",
+      "blob": "d9f3d8d779fd56e2a1723ab30456f7fee41ad014",
+      "classification": "include-asset",
+      "reason": "upstream policy, prompt, or package metadata",
+      "module": "guardian-context",
+      "coverageRole": "asset"
+    },
+    {
+      "path": "codex-rs/guardian-context/src/entry.rs",
+      "blob": "e4021d6fe68aa39545b7b898117cc319cd2316d6",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-context",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/guardian-context/src/history.rs",
+      "blob": "465dceb4d040367d34769de2b2fa298f6025fa62",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-context",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/guardian-context/src/history_tests.rs",
+      "blob": "b88ac3722da31bcee74c2e9feef297d1330c5cba",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/guardian-context/src/lib.rs",
+      "blob": "052eee165cde9fa32b4d1725186c5dc36d9821aa",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-context",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/guardian-context/src/registry_tests.rs",
+      "blob": "c9279d52cb9820675dd303f066a84f8d44bf7c82",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/guardian-context/src/transcript.rs",
+      "blob": "dda155b7bcf641f1c6fe90f9ce7ce4cf6fb67fbb",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-context",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/guardian-context/src/transcript_tests.rs",
+      "blob": "4975fed9cf0f3e36ce065120b6a3f406abd421c9",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/guardian-context/src/truncation.rs",
+      "blob": "752f84523a3c0375b49f4bcb6ebff5c4c3f0e9d9",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-context",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/guardian-context/src/truncation_tests.rs",
+      "blob": "a49e93f42eb91cce58fcd59f8f6a1593d0566596",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/model-provider/src/amazon_bedrock/runtime_catalog_tests.rs",
+      "blob": "81c39899043571d36f265780ce8eebdc49c062bc",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/models-manager/src/manager_tests.rs",
+      "blob": "324ca42cebfbd4db0211d6990b727355d62e4d85",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/models-manager/src/model_info.rs",
+      "blob": "b79c67b2cf5e42e450e8054fb1a0ae17d03e13e1",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/models-manager/src/model_info_tests.rs",
+      "blob": "921dd58189e6324c2fd696960c0c045efb68a400",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/prompts/src/permissions_instructions.rs",
+      "blob": "9966618f70dbe359637c5f14ee99c47abe47d79b",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/prompts/src/permissions_instructions_tests.rs",
+      "blob": "bf1bf07d4d4ffb93fb89ff00c851855220506934",
+      "classification": "include-test",
+      "reason": "upstream executable or snapshot conformance evidence",
+      "module": "upstream-test-inventory",
+      "coverageRole": "test"
+    },
+    {
+      "path": "codex-rs/protocol/src/approvals.rs",
+      "blob": "c051430ec4a3fde5ca30b4832bf720995a9c5467",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-protocol",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/protocol/src/config_types.rs",
+      "blob": "b5ac448ebca7f0ad7933b1361a9a6e2c1632a300",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-protocol",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/protocol/src/error.rs",
+      "blob": "1b4cf067fc5229426c41e70ee12998f7b076a5ab",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-protocol",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/protocol/src/mcp_approval_meta.rs",
+      "blob": "b5323708d8aba0b8a4fe1512f290c98501ca1a9e",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "mcp-network-permissions",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/protocol/src/models.rs",
+      "blob": "9005f811a0ca2ecd0746cd882140208bcb0de43d",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-protocol",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/protocol/src/openai_models.rs",
+      "blob": "2e3104e86489cb8b6154eb435b0bc6bf6c01ab09",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-protocol",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/protocol/src/openai_models/guardian_v2.rs",
+      "blob": "953a89a4e7606944cc43306bb612fff50fd851b2",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "guardian-v2-async-scorer",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/protocol/src/protocol.rs",
+      "blob": "3a8c087efa15e7c2357e99a555368a683a945eb5",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-protocol",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/protocol/src/request_permissions.rs",
+      "blob": "f9ade7d149edd38460107d97c874878348e52061",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-protocol",
+      "coverageRole": "ported"
+    },
+    {
+      "path": "codex-rs/tui/src/app.rs",
+      "blob": "f064fd018ec14cc4b00bc8e766427b34983751fc",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/app/app_server_requests.rs",
+      "blob": "7598bbbca2d9a1751970c626929683d17595a0ef",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/app/config_persistence.rs",
+      "blob": "2b01c7a0106002deb61ae0e83b7aa64f495390bc",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/app/event_dispatch.rs",
+      "blob": "055612ef0ba2ef40dd4a6a77fc092666206c4cb3",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests.rs",
+      "blob": "adeca53331f295a7e93bc8cf485c5826d8146f43",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/permission_shortcuts_tests.rs",
+      "blob": "a15b2a09669b268ac49c52240d2b5c5451d6d7fb",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/app/tests/session_lifecycle_requests.rs",
+      "blob": "285b21c8aa93c5baa92f41ed11c65286b5503b6c",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_session_state.rs",
+      "blob": "dfcc34080071da63f96793f545703d4756c26d1c",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/app/thread_settings.rs",
+      "blob": "58383388b702c2014a26d5a4be9d53c11421b12f",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/app_command.rs",
+      "blob": "fef3fbb5d394a2cd77c9e09e523c765696e3d8a5",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/app_event.rs",
+      "blob": "bb5b57aa3da561bd4e60c27b671457c0a3fb6d32",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/app_server_session.rs",
+      "blob": "4bd7a56ef97e3ebc44d44135b848a139ddd39b48",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/auto_review_denials.rs",
+      "blob": "516766e57a0fca342ebc9dfe58d56497462319f1",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/bottom_pane/approval_overlay.rs",
+      "blob": "836cd1dba5b53e4749378cb349e1e858bbe131f1",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/bottom_pane/feedback_view.rs",
+      "blob": "15874531bc9b62e28087932de293c3559dfeb29b",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/bottom_pane/mcp_server_elicitation.rs",
+      "blob": "b43c8b5383fa3019c11303f0d92ad50af352acae",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget.rs",
+      "blob": "4b601e5728f48763079c0ba55c0063c91db10a52",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/permission_popups.rs",
+      "blob": "93e85db009adcf8935defba849af772785533f0a",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/permission_shortcuts.rs",
+      "blob": "499dbe4b906235ec5265e4ff14719bc2395a5317",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/permissions_menu.rs",
+      "blob": "49251f873659664388cbcb14cc306e5b1e4d7b61",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/protocol_requests.rs",
+      "blob": "36b47f6c629d5b475b9bb83b755cfbb3e20d5c0a",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/review.rs",
+      "blob": "d2b9461e71640a5e10a0974506db62de61b11be5",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/session_flow.rs",
+      "blob": "ce996c784a1007b42cca7218be83403d5f865c35",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/slash_dispatch.rs",
+      "blob": "6925ef5a6e3aa9e8f44f466ce4d3dcd7037521d3",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/status_surfaces.rs",
+      "blob": "e79c0d3ca6d7256506c8b7df00d6026a009c2a6d",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests.rs",
+      "blob": "d59533eb295740a3ceb3ffbf6a16558d94a9579f",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/app_server.rs",
+      "blob": "d9e085bc50a8679b676acab369369ba17b7d63f0",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/approval_requests.rs",
+      "blob": "2d33e50c74b95bf1d03d46e570b05c549f8a456d",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/guardian.rs",
+      "blob": "7783b47434b8448ce3ea8686916e79df06dd0d93",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/mcp_startup.rs",
+      "blob": "e12a99d31780438da9d6222333b1514cb8b303c0",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/permission_shortcuts_tests.rs",
+      "blob": "76b7eb5472aa281f26549e21a4defd4e35a257df",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/permissions.rs",
+      "blob": "8a359534daa5fcb08742600da022e34f55528f1a",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__approval_requests__exec_approval_history_decision_aborted_long.snap",
+      "blob": "44ed1f401ca355623db72e68e0cd2fbb3318e4ac",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__approval_requests__exec_approval_history_decision_aborted_multiline.snap",
+      "blob": "5aee3b28464efba5b663d381ebe012960096606a",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__approval_requests__exec_approval_history_decision_approved_short.snap",
+      "blob": "2f0f1412a1fbb33603c781662011cec4a69a92fd",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__approval_requests__exec_approval_modal_exec.snap",
+      "blob": "fbb12551fde0e941d37c49d8fcf7aea010036a46",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__approval_requests__network_exec_approval_history_canceled_host_request.snap",
+      "blob": "3d09cd7087dbf59ec69a6c7fb6c818486d9c96ac",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__approval_requests__network_exec_approval_history_one_time_host_allowance.snap",
+      "blob": "4b56b187aafcf2bdb1581d5c327c5e2b36221c1f",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__approval_requests__network_exec_approval_history_session_host_allowance.snap",
+      "blob": "e5197e9e71e13bb74fd950e739e2b3cab701b504",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tests/snapshots/codex_tui__chatwidget__tests__approval_requests__write_stdin_approval_modal.snap",
+      "blob": "e0108c8d80879af7b0fe0a13cf575b217e54383c",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/chatwidget/tool_requests.rs",
+      "blob": "4beb0660f3a7f9050ededdc79dc10304e5f5b953",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/cli.rs",
+      "blob": "641dd621e45ace897cdcc9c9a70af7d1ebe59762",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/debug_config.rs",
+      "blob": "1564d36606dc3a31c62cc16fd4e0b8ffe0e986e0",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/history_cell/approvals.rs",
+      "blob": "ef10ad6c9876dbdbe3fa78797119d2c3bd3e38f9",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/lib.rs",
+      "blob": "5cbf403654ed766f0f3ad299eff88db9b8abe8c3",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/slash_command.rs",
+      "blob": "aab133ffb72a2fef1de550ec9314a8050c295754",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/startup_orchestration.rs",
+      "blob": "3bcb8fea8772238c44bc57569545e8bee0840567",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/status/card.rs",
+      "blob": "93f959c8db293682adcc3585affd2e5b51ff5a30",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/tui/src/status/tests.rs",
+      "blob": "161bbf4c748d5e8872006dac48c135ec8eb68995",
+      "classification": "na",
+      "reason": "target has WebUI rather than Codex TUI; lifecycle semantics still require a mapped module proof",
+      "module": "app-server-ui-tui",
+      "coverageRole": "na",
+      "proofId": "codex-tui-na"
+    },
+    {
+      "path": "codex-rs/utils/cli/src/shared_options.rs",
+      "blob": "c6c3e05e65fcba611c525a4c623e59ddd4d2d560",
+      "classification": "include-source",
+      "reason": "upstream runtime, protocol, configuration, or integration surface",
+      "module": "approval-stage",
+      "coverageRole": "ported"
+    }
+  ],
+  "nonPublic": [
+    {
+      "id": "arc",
+      "classification": "excluded-non-public",
+      "reason": "Public Codex comments reference earlier ARC blocking, but the pinned public git tree contains no ARC decision implementation to port or hash."
+    }
+  ]
+}
