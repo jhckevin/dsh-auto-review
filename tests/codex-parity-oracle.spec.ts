@@ -31,7 +31,12 @@ interface GuardianOracle {
   sourceCommit: string
   canonicalization: {
     shellCorpus: Array<{ input: string[]; canonical: string[] }>
-    wrapperBoundaries: Array<{ input: string[]; canonical: string[] }>
+    wrapperBoundaries: Array<{
+      input: string[]
+      canonical: string[]
+      detected: 'bash' | 'zsh' | 'sh' | 'cmd' | 'powershell' | null
+      signal: 'bash' | 'powershell' | 'raw'
+    }>
   }
   guardian: GuardianOracleFixture[]
   permissionProfiles: Array<{ name: string; json: JsonObject }>
@@ -150,6 +155,18 @@ describe('machine-generated Codex 9f97cb79 Rust oracle', () => {
       ...guardianOracle.canonicalization.shellCorpus,
       ...guardianOracle.canonicalization.wrapperBoundaries,
     ]) expect(canonicalizeCommandForApproval(fixture.input), fixture.input.join(' ')).toEqual(fixture.canonical)
+    const signals = { bash: 0, powershell: 0, raw: 0 }
+    const detections: Record<string, number> = {}
+    for (const fixture of guardianOracle.canonicalization.wrapperBoundaries) {
+      signals[fixture.signal] += 1
+      const detection = fixture.detected ?? 'null'
+      detections[detection] = (detections[detection] ?? 0) + 1
+      if (fixture.signal === 'bash') expect(fixture.canonical, fixture.input[0]).not.toEqual(fixture.input)
+      else if (fixture.signal === 'powershell') expect(fixture.canonical[0], fixture.input[0]).toBe('__codex_powershell_script__')
+      else expect(fixture.canonical, fixture.input[0]).toEqual(fixture.input)
+    }
+    expect(signals).toEqual({ bash: 27, powershell: 24, raw: 33 })
+    expect(detections).toEqual({ bash: 25, null: 32, powershell: 24, sh: 1, zsh: 1, cmd: 1 })
   })
 
   it('matches upstream PathUri acceptance and canonical spelling', () => {

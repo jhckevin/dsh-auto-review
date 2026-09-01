@@ -55,8 +55,8 @@ WriteStdin/Network Guardian cwd 的 lossy seam。opaque 边界同时证明 Linux
 ## 已验证门禁
 
 固定提交上的真实生成已通过：`1 passed; 0 failed; 2381 filtered out`，golden 为
-57,051 bytes，SHA-256 为
-`3af75c684033ca8a4a06960600e5c49db3225384add51eda10649d59308fe5e0`。
+62,426 bytes，SHA-256 为
+`736f37e91bb8c2ef125b8600b556296bd7e88d43685a62c62bc23d425c9a5743`。
 生成结束后 scratch、owner lock 与 Git worktree registration 均不存在。
 
 同一 golden 还包含 54 个既有 shell corpus 与 84 个系统性 wrapper path 边界，其中包含
@@ -64,6 +64,11 @@ WriteStdin/Network Guardian cwd 的 lossy seam。opaque 边界同时证明 Linux
 `/bin/bash/.`、`/bin/bash//.` 与 `bash/.`、`/bin/bash/..` 的相反结果。所有 canonical
 输出均由上游 `canonicalize_command_for_approval` 在 `codex-core` 内实际执行，而不是由
 测试仓库中的复制版 shell detector 推算。
+
+84 个 wrapper fixture 均带有真实 `detect_shell_type` 结果和可判别信号分类：27 个 Bash
+规范化、24 个 PowerShell `__codex_powershell_script__`、33 个 raw。detector 真值为
+25 bash、24 powershell、1 sh、1 zsh、1 cmd、32 none；`cmd` 等 canonicalizer
+不可观察的 detector-only 分支因此仍由固定上游函数直接证明，而非把恒等输出当作覆盖。
 
 `test-codex-guardian-oracle-wrapper.sh` 是不触发 Rust 编译的 wrapper 故障门禁：它验证
 已有 scratch/lock 时第二实例退出 `1` 且不夺取 owner；再以发送 `TERM` 的 fake cargo

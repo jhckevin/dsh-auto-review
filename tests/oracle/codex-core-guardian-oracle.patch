@@ -13,10 +13,10 @@ index 2e8b136f5d..f8a410f44b 100644
  mod prompt;
 diff --git a/codex-rs/core/src/guardian/oracle_export.rs b/codex-rs/core/src/guardian/oracle_export.rs
 new file mode 100644
-index 0000000000..9f2e6a5c24
+index 0000000000..2442e7ddad
 --- /dev/null
 +++ b/codex-rs/core/src/guardian/oracle_export.rs
-@@ -0,0 +1,475 @@
+@@ -0,0 +1,500 @@
 +use super::approval_request::GuardianApprovalRequest;
 +use super::approval_request::GuardianMcpAnnotations;
 +use super::approval_request::GuardianNetworkAccessTrigger;
@@ -46,6 +46,7 @@ index 0000000000..9f2e6a5c24
 +use crate::tools::sandboxing::ApprovalAction;
 +use crate::tools::hook_names::HookToolName;
 +use crate::command_canonicalization::canonicalize_command_for_approval;
++use codex_shell_command::shell_detect::detect_shell_type;
 +use serde_json::Value;
 +use serde_json::json;
 +use std::collections::HashMap;
@@ -256,7 +257,12 @@ index 0000000000..9f2e6a5c24
 +    for prefix in ["", "/bin/", "/usr//local///bin/", "./", "../bin/"] {
 +        for name in ["bash", "pwsh"] {
 +            for suffix in ["", "/", "//", "/.", "//.", "/.."] {
-+                wrapper_inputs.push(vec![format!("{prefix}{name}{suffix}"), "-lc".into(), "echo hi".into()]);
++                let (flag, script) = if name == "pwsh" {
++                    ("-Command", "Write-Host hi")
++                } else {
++                    ("-lc", "echo hi")
++                };
++                wrapper_inputs.push(vec![format!("{prefix}{name}{suffix}"), flag.into(), script.into()]);
 +            }
 +        }
 +    }
@@ -265,13 +271,32 @@ index 0000000000..9f2e6a5c24
 +        "powershell", "sh", "zsh", "cmd", ".bash", "..bash", "bash..exe",
 +    ] {
 +        for suffix in ["", "/."] {
-+            wrapper_inputs.push(vec![format!("{name}{suffix}"), "-lc".into(), "echo hi".into()]);
++            let powershell_args = name.to_ascii_lowercase().contains("pwsh")
++                || name.to_ascii_lowercase().contains("powershell");
++            let (flag, script) = if powershell_args {
++                ("-Command", "Write-Host hi")
++            } else {
++                ("-lc", "echo hi")
++            };
++            wrapper_inputs.push(vec![format!("{name}{suffix}"), flag.into(), script.into()]);
 +        }
 +    }
 +    let wrapper_boundaries = wrapper_inputs.into_iter().map(|input| {
++        let canonical = canonicalize_command_for_approval(&input);
++        let signal = if canonical.first().map(String::as_str) == Some("__codex_powershell_script__") {
++            "powershell"
++        } else if canonical != input {
++            // A plain single Bash command canonicalizes directly to its argv;
++            // complex scripts instead use __codex_shell_script__.
++            "bash"
++        } else {
++            "raw"
++        };
 +        json!({
 +            "input": input,
-+            "canonical": canonicalize_command_for_approval(&input),
++            "detected": detect_shell_type(&input[0]).map(|shell| shell.name()),
++            "canonical": canonical,
++            "signal": signal,
 +        })
 +    }).collect::<Vec<_>>();
 +    json!({

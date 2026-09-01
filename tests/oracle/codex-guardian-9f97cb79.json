@@ -656,11 +656,13 @@
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "bash",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
@@ -668,11 +670,13 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "bash/",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -680,11 +684,13 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "bash//",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -692,11 +698,13 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "bash/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -704,11 +712,13 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "bash//.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -716,138 +726,161 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "bash/..",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
-          "pwsh",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "pwsh",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
           "pwsh/",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "pwsh/",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "pwsh//",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "pwsh//",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "pwsh/.",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "pwsh/.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "pwsh//.",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "pwsh//.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "pwsh/..",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "pwsh/..",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "/bin/bash",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "/bin/bash/",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "/bin/bash//",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "/bin/bash/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "/bin/bash//.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
@@ -855,138 +888,157 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "/bin/bash/..",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
-          "/bin/pwsh",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "/bin/pwsh",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "/bin/pwsh/",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "/bin/pwsh/",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "/bin/pwsh//",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "/bin/pwsh//",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "/bin/pwsh/.",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "/bin/pwsh/.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "/bin/pwsh//.",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "/bin/pwsh//.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
           "/bin/pwsh/..",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "/bin/pwsh/..",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "/usr//local///bin/bash",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "/usr//local///bin/bash/",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "/usr//local///bin/bash//",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "/usr//local///bin/bash/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "/usr//local///bin/bash//.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
@@ -994,138 +1046,157 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "/usr//local///bin/bash/..",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
-          "/usr//local///bin/pwsh",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "/usr//local///bin/pwsh",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "/usr//local///bin/pwsh/",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "/usr//local///bin/pwsh/",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "/usr//local///bin/pwsh//",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "/usr//local///bin/pwsh//",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "/usr//local///bin/pwsh/.",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "/usr//local///bin/pwsh/.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "/usr//local///bin/pwsh//.",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "/usr//local///bin/pwsh//.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
           "/usr//local///bin/pwsh/..",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "/usr//local///bin/pwsh/..",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "./bash",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "./bash/",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "./bash//",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "./bash/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "./bash//.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
@@ -1133,138 +1204,157 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "./bash/..",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
-          "./pwsh",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "./pwsh",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "./pwsh/",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "./pwsh/",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "./pwsh//",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "./pwsh//",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "./pwsh/.",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "./pwsh/.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "./pwsh//.",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "./pwsh//.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
           "./pwsh/..",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "./pwsh/..",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "../bin/bash",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "../bin/bash/",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "../bin/bash//",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "../bin/bash/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "../bin/bash//.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
@@ -1272,83 +1362,92 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "../bin/bash/..",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
-          "../bin/pwsh",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "../bin/pwsh",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "../bin/pwsh/",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "../bin/pwsh/",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "../bin/pwsh//",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "../bin/pwsh//",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "../bin/pwsh/.",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "../bin/pwsh/.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "../bin/pwsh//.",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "../bin/pwsh//.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
           "../bin/pwsh/..",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "../bin/pwsh/..",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -1356,11 +1455,13 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "BASH",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -1368,140 +1469,161 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "BASH/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "PowerShell.EXE",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "PowerShell.EXE",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "PowerShell.EXE/.",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "PowerShell.EXE/.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "C:\\Windows\\pwsh.exe",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "C:\\Windows\\pwsh.exe",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "C:\\Windows\\pwsh.exe/.",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "C:\\Windows\\pwsh.exe/.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "bash.foo.bar",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "bash.foo.bar/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
-          "pwsh.exe",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "pwsh.exe",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "pwsh.exe/.",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "pwsh.exe/.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
-          "powershell",
-          "-lc",
-          "echo hi"
+          "__codex_powershell_script__",
+          "Write-Host hi"
         ],
+        "detected": "powershell",
         "input": [
           "powershell",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "powershell"
       },
       {
         "canonical": [
           "powershell/.",
-          "-lc",
-          "echo hi"
+          "-Command",
+          "Write-Host hi"
         ],
+        "detected": null,
         "input": [
           "powershell/.",
-          "-lc",
-          "echo hi"
-        ]
+          "-Command",
+          "Write-Host hi"
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "sh",
         "input": [
           "sh",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
@@ -1509,22 +1631,26 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "sh/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "zsh",
         "input": [
           "zsh",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
@@ -1532,11 +1658,13 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "zsh/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -1544,11 +1672,13 @@
           "-lc",
           "echo hi"
         ],
+        "detected": "cmd",
         "input": [
           "cmd",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -1556,11 +1686,13 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "cmd/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -1568,11 +1700,13 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           ".bash",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -1580,11 +1714,13 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           ".bash/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -1592,11 +1728,13 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "..bash",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
@@ -1604,33 +1742,39 @@
           "-lc",
           "echo hi"
         ],
+        "detected": null,
         "input": [
           "..bash/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "raw"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "bash..exe",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       },
       {
         "canonical": [
           "echo",
           "hi"
         ],
+        "detected": "bash",
         "input": [
           "bash..exe/.",
           "-lc",
           "echo hi"
-        ]
+        ],
+        "signal": "bash"
       }
     ]
   },
