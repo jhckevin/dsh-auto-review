@@ -1,0 +1,63 @@
+{
+  "route": [
+    {
+      "guardian": false,
+      "policy": "untrusted",
+      "reviewer": "user"
+    },
+    {
+      "guardian": false,
+      "policy": "untrusted",
+      "reviewer": "auto_review"
+    },
+    {
+      "guardian": false,
+      "policy": "on-request",
+      "reviewer": "user"
+    },
+    {
+      "guardian": true,
+      "policy": "on-request",
+      "reviewer": "auto_review"
+    },
+    {
+      "guardian": false,
+      "policy": "granular",
+      "reviewer": "user"
+    },
+    {
+      "guardian": true,
+      "policy": "granular",
+      "reviewer": "auto_review"
+    },
+    {
+      "guardian": false,
+      "policy": "never",
+      "reviewer": "user"
+    },
+    {
+      "guardian": false,
+      "policy": "never",
+      "reviewer": "auto_review"
+    }
+  ],
+  "store": {
+    "all": [
+      "approved_for_session",
+      "approved_for_session"
+    ],
+    "empty": [
+      null,
+      null
+    ],
+    "nonSession": [
+      "approved_for_session",
+      "approved"
+    ],
+    "partial": [
+      "approved_for_session",
+      null
+    ]
+  },
+  "upstream": "9f97cb79eb15b38d24c552c56fe24e211ff9cf3a"
+}

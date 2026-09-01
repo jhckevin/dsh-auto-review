@@ -13,3 +13,17 @@ canonicalization oracle. Guardian conversion, payload, cache-key, serde,
 assessment, reviewed-action, formatting, and command canonicalization truth
 comes exclusively from the real codex-core oracle documented in
 `CODEX-GUARDIAN-ORACLE.md`.
+
+## Approval protocol oracle
+
+`scripts/generate-codex-approval-protocol-oracle.sh` creates a clean detached
+worktree at the same full commit and applies
+`codex-approval-protocol-oracle.patch`. The injected Rust tests call the real
+core protocol, app-server v2 protocol, PermissionRequest parser/fold, and
+codex-core ApprovalStore/reviewer-route implementations. Each source input is
+locked by its Git blob ID; output is written to scratch files and only replaces
+the four checked-in JSON fixtures after every Rust test succeeds.
+
+The PermissionRequest and ApprovalStore fixtures are dependency truth for the
+next runtime stage. Their presence does not claim that the hook/store lifecycle
+is integrated in ISSUE-022B1.

@@ -1,0 +1,178 @@
+{
+  "askForApproval": [
+    {
+      "input": "on-request",
+      "result": {
+        "ok": "on-request"
+      }
+    },
+    {
+      "input": "on-failure",
+      "result": {
+        "error": "unknown variant `on-failure`, expected one of `untrusted`, `on-request`, `granular`, `never`"
+      }
+    },
+    {
+      "input": {
+        "granular": {
+          "mcp_elicitations": true,
+          "rules": false,
+          "sandbox_approval": true
+        }
+      },
+      "result": {
+        "ok": {
+          "granular": {
+            "mcp_elicitations": true,
+            "request_permissions": false,
+            "rules": false,
+            "sandbox_approval": true,
+            "skill_approval": false
+          }
+        }
+      }
+    },
+    {
+      "input": {
+        "granular": {
+          "mcp_elicitations": true,
+          "rules": false
+        }
+      },
+      "result": {
+        "error": "missing field `sandbox_approval`"
+      }
+    }
+  ],
+  "fileChange": [
+    {
+      "input": {
+        "grantRoot": null,
+        "itemId": "item",
+        "reason": null,
+        "startedAtMs": 17,
+        "threadId": "thread",
+        "turnId": "turn"
+      },
+      "result": {
+        "ok": {
+          "grantRoot": null,
+          "itemId": "item",
+          "reason": null,
+          "startedAtMs": 17,
+          "threadId": "thread",
+          "turnId": "turn"
+        }
+      }
+    },
+    {
+      "input": {
+        "itemId": "item",
+        "startedAtMs": 17,
+        "threadId": "thread",
+        "turnId": "turn"
+      },
+      "result": {
+        "ok": {
+          "grantRoot": null,
+          "itemId": "item",
+          "reason": null,
+          "startedAtMs": 17,
+          "threadId": "thread",
+          "turnId": "turn"
+        }
+      }
+    }
+  ],
+  "reviewDecisionMapping": [
+    {
+      "core": "approved",
+      "v2": "accept"
+    },
+    {
+      "core": "approved_for_session",
+      "v2": "acceptForSession"
+    },
+    {
+      "core": "approved_mcp_policy_amendment",
+      "v2": "decline"
+    },
+    {
+      "core": "timed_out",
+      "v2": "decline"
+    },
+    {
+      "core": {
+        "denied": {
+          "rejection": "x"
+        }
+      },
+      "v2": "decline"
+    },
+    {
+      "core": "abort",
+      "v2": "cancel"
+    },
+    {
+      "core": {
+        "approved_execpolicy_amendment": {
+          "proposed_execpolicy_amendment": [
+            "git"
+          ]
+        }
+      },
+      "v2": {
+        "acceptWithExecpolicyAmendment": {
+          "execpolicy_amendment": [
+            "git"
+          ]
+        }
+      }
+    },
+    {
+      "core": {
+        "network_policy_amendment": {
+          "network_policy_amendment": {
+            "action": "allow",
+            "host": "example.test"
+          }
+        }
+      },
+      "v2": {
+        "applyNetworkPolicyAmendment": {
+          "network_policy_amendment": {
+            "action": "allow",
+            "host": "example.test"
+          }
+        }
+      }
+    }
+  ],
+  "reviewer": [
+    {
+      "input": "user",
+      "result": {
+        "ok": "user"
+      }
+    },
+    {
+      "input": "auto_review",
+      "result": {
+        "ok": "auto_review"
+      }
+    },
+    {
+      "input": "guardian_subagent",
+      "result": {
+        "ok": "auto_review"
+      }
+    },
+    {
+      "input": "bad",
+      "result": {
+        "error": "unknown variant `bad`, expected one of `user`, `auto_review`, `guardian_subagent`"
+      }
+    }
+  ],
+  "upstream": "9f97cb79eb15b38d24c552c56fe24e211ff9cf3a"
+}

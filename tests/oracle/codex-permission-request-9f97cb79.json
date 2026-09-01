@@ -1,0 +1,54 @@
+{
+  "fold": {
+    "allow": {
+      "allow": true
+    },
+    "allowThenDeny": {
+      "deny": "first deny"
+    },
+    "empty": null,
+    "firstDenyWins": {
+      "deny": "first deny"
+    }
+  },
+  "parser": [
+    {
+      "input": "",
+      "result": null
+    },
+    {
+      "input": "plain text",
+      "result": null
+    },
+    {
+      "input": "{",
+      "result": null
+    },
+    {
+      "input": "{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\"}}}",
+      "result": {
+        "decision": {
+          "allow": true
+        },
+        "invalidReason": null
+      }
+    },
+    {
+      "input": "{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"deny\",\"message\":\"blocked\"}}}",
+      "result": {
+        "decision": {
+          "deny": "blocked"
+        },
+        "invalidReason": null
+      }
+    },
+    {
+      "input": "{\"hookSpecificOutput\":{\"hookEventName\":\"PermissionRequest\",\"decision\":{\"behavior\":\"allow\",\"updatedInput\":{}}}}",
+      "result": {
+        "decision": null,
+        "invalidReason": "PermissionRequest hook returned unsupported updatedInput"
+      }
+    }
+  ],
+  "upstream": "9f97cb79eb15b38d24c552c56fe24e211ff9cf3a"
+}

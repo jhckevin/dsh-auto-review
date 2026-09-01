@@ -1,0 +1,212 @@
+diff --git a/codex-rs/protocol/tests/approval_protocol_oracle.rs b/codex-rs/protocol/tests/approval_protocol_oracle.rs
+new file mode 100644
+index 000000000..111111111
+--- /dev/null
++++ b/codex-rs/protocol/tests/approval_protocol_oracle.rs
+@@ -0,0 +1,79 @@
++use codex_protocol::approvals::{ExecApprovalRequestEvent, ExecPolicyAmendment, NetworkApprovalContext, NetworkPolicyAmendment, NetworkPolicyRuleAction};
++use codex_protocol::config_types::ApprovalsReviewer;
++use codex_protocol::protocol::{AskForApproval, FileChange, ReviewDecision};
++use serde_json::{json, Value};
++
++fn parse_result<T: serde::de::DeserializeOwned + serde::Serialize>(value: Value) -> Value {
++    match serde_json::from_value::<T>(value) {
++        Ok(value) => json!({"ok": serde_json::to_value(value).unwrap()}),
++        Err(error) => json!({"error": error.to_string()}),
++    }
++}
++
++#[test]
++fn export_approval_protocol_oracle() -> Result<(), Box<dyn std::error::Error>> {
++    let reviewer = ["user", "auto_review", "guardian_subagent", "bad"]
++        .into_iter().map(|input| json!({"input": input, "result": parse_result::<ApprovalsReviewer>(json!(input))})).collect::<Vec<_>>();
++    let ask_inputs = vec![
++        json!("untrusted"), json!("on-request"), json!("on-failure"), json!("never"),
++        json!({"granular":{"sandbox_approval":true,"rules":false,"mcp_elicitations":true}}),
++        json!({"granular":{"sandbox_approval":true,"rules":false,"skill_approval":true,"request_permissions":true,"mcp_elicitations":true}}),
++        json!({"granular":{"sandbox_approval":true,"rules":false}}),
++        json!({"granular":{"skill_approval":true,"request_permissions":true,"mcp_elicitations":true}}),
++    ];
++    let ask = ask_inputs.into_iter().map(|input| json!({"input":input,"result":parse_result::<AskForApproval>(input.clone())})).collect::<Vec<_>>();
++    let decisions = vec![
++        ReviewDecision::Approved,
++        ReviewDecision::ApprovedExecpolicyAmendment { proposed_execpolicy_amendment: ExecPolicyAmendment::new(vec!["git".into(), "status".into()]) },
++        ReviewDecision::ApprovedForSession,
++        ReviewDecision::ApprovedMcpPolicyAmendment,
++        ReviewDecision::NetworkPolicyAmendment { network_policy_amendment: NetworkPolicyAmendment { host: "example.test".into(), action: NetworkPolicyRuleAction::Allow } },
++        ReviewDecision::denied("opaque rejection"), ReviewDecision::TimedOut, ReviewDecision::Abort,
++    ];
++    let decision_json = decisions.iter().map(|value| json!({"json":value,"opaque":value.to_opaque_string()})).collect::<Vec<_>>();
++    let minimal = json!({"call_id":"call","started_at_ms":17,"command":["echo","hi"],"cwd":"/work","parsed_cmd":[]});
++    let minimal_event: ExecApprovalRequestEvent = serde_json::from_value(minimal.clone())?;
++    let explicit_empty: ExecApprovalRequestEvent = serde_json::from_value(json!({"call_id":"call","turn_id":"turn","started_at_ms":18,"command":["echo"],"cwd":"/work","parsed_cmd":[],"available_decisions":[]}))?;
++    let network_context = NetworkApprovalContext { host: "example.test".into(), protocol: codex_protocol::approvals::NetworkApprovalProtocol::Https };
++    let allow = NetworkPolicyAmendment { host: "example.test".into(), action: NetworkPolicyRuleAction::Allow };
++    let deny = NetworkPolicyAmendment { host: "example.test".into(), action: NetworkPolicyRuleAction::Deny };
++    let exec = json!({
++        "kindDefault": serde_json::to_value(&minimal_event)?,
++        "effectiveId": minimal_event.effective_approval_id(),
++        "explicitEmpty": explicit_empty.effective_available_decisions(),
++        "defaults": {
++            "ordinary": ExecApprovalRequestEvent::default_available_decisions(None,None,None,None),
++            "execAmendment": ExecApprovalRequestEvent::default_available_decisions(None,Some(&ExecPolicyAmendment::new(vec!["git".into()])),None,None),
++            "network": ExecApprovalRequestEvent::default_available_decisions(Some(&network_context),None,Some(&[deny.clone(),allow.clone()]),None),
++            "networkDenyOnly": ExecApprovalRequestEvent::default_available_decisions(Some(&network_context),None,Some(&[deny]),None),
++            "additionalPermissions": ExecApprovalRequestEvent::default_available_decisions(None,None,None,Some(&Default::default()))
++        },
++        "environmentAlias": parse_result::<ExecApprovalRequestEvent>(json!({"call_id":"call","environment_id":"local","started_at_ms":19,"command":[],"cwd":"/work","parsed_cmd":[]})),
++        "unsafeTime": parse_result::<ExecApprovalRequestEvent>(json!({"call_id":"call","started_at_ms":9223372036854775808u64,"command":[],"cwd":"/work","parsed_cmd":[]}))
++    });
++    let apply = vec![
++        json!({"call_id":"patch","started_at_ms":20,"changes":{}}),
++        json!({"call_id":"patch","turn_id":"turn","started_at_ms":21,"changes":{"/tmp/a":{"type":"update","unified_diff":"@@","move_path":null}},"reason":null,"grant_root":null}),
++    ].into_iter().map(|input| json!({"input":input,"result":parse_result::<codex_protocol::approvals::ApplyPatchApprovalRequestEvent>(input.clone())})).collect::<Vec<_>>();
++    let file_change_inputs = vec![
++        json!({"type":"add","content":"new"}),
++        json!({"type":"delete","content":"old"}),
++        json!({"type":"update","unified_diff":"@@","move_path":null}),
++        json!({"type":"update","unified_diff":"@@","move_path":"/tmp/moved"}),
++        json!({"Add":{"content":"external"}}),
++        json!({"content":"missing type"}),
++        json!({"type":"unknown","content":"x"}),
++        Value::Null,
++        json!({"type":"add"}),
++        json!({"type":"update","unified_diff":"@@"}),
++        json!({"type":"add","content":"new","extra":true}),
++    ];
++    let file_changes = file_change_inputs.into_iter().map(|input| json!({"input":input,"result":parse_result::<FileChange>(input.clone())})).collect::<Vec<_>>();
++    let output = json!({
++        "upstream":"9f97cb79eb15b38d24c552c56fe24e211ff9cf3a",
++        "defaults":{"askForApproval":AskForApproval::default(),"approvalsReviewer":ApprovalsReviewer::default(),"reviewDecision":ReviewDecision::default()},
++        "reviewer":reviewer,"askForApproval":ask,"reviewDecisions":decision_json,"exec":exec,"fileChange":file_changes,"applyPatch":apply
++    });
++    std::fs::write(std::env::var("CODEX_APPROVAL_PROTOCOL_ORACLE_OUTPUT")?, serde_json::to_vec_pretty(&output)?)?;
++    Ok(())
++}
+diff --git a/codex-rs/core/src/tools/sandboxing_tests.rs b/codex-rs/core/src/tools/sandboxing_tests.rs
+index 0a9e1fe11..444444444 100644
+--- a/codex-rs/core/src/tools/sandboxing_tests.rs
++++ b/codex-rs/core/src/tools/sandboxing_tests.rs
+@@ -404,3 +404,42 @@ fn sandbox_attempt_uses_managed_network_context_for_remote_exec_server() {
+     attempt.enforce_managed_network = false;
+     assert!(!attempt.is_escalated(), "full access is not an escalation");
+ }
++
++#[test]
++fn export_approval_store_and_route_oracle() -> Result<(), Box<dyn std::error::Error>> {
++    use codex_protocol::config_types::ApprovalsReviewer;
++    let a = serde_json::json!({"path":"a"});
++    let b = serde_json::json!({"path":"b"});
++    let mut store = ApprovalStore::default();
++    let empty = [store.get(&a), store.get(&b)];
++    store.put(a.clone(), ReviewDecision::ApprovedForSession);
++    let partial = [store.get(&a), store.get(&b)];
++    store.put(b.clone(), ReviewDecision::ApprovedForSession);
++    let all = [store.get(&a), store.get(&b)];
++    store.put(b.clone(), ReviewDecision::Approved);
++    let non_session = [store.get(&a), store.get(&b)];
++    let granular = AskForApproval::Granular(GranularApprovalConfig {
++        sandbox_approval: true, rules: true, skill_approval: false,
++        request_permissions: false, mcp_elicitations: true,
++    });
++    let policies = [
++        ("untrusted", AskForApproval::UnlessTrusted),
++        ("on-request", AskForApproval::OnRequest),
++        ("granular", granular),
++        ("never", AskForApproval::Never),
++    ];
++    let reviewers = [("user", ApprovalsReviewer::User), ("auto_review", ApprovalsReviewer::AutoReview)];
++    let route = policies.into_iter().flat_map(|(policy_name, policy)| {
++        reviewers.into_iter().map(move |(reviewer_name, reviewer)| serde_json::json!({
++            "policy":policy_name,"reviewer":reviewer_name,
++            "guardian":crate::guardian::routes_approval_policy_to_guardian(policy,reviewer)
++        }))
++    }).collect::<Vec<_>>();
++    let output = serde_json::json!({
++        "upstream":"9f97cb79eb15b38d24c552c56fe24e211ff9cf3a",
++        "store":{"empty":empty,"partial":partial,"all":all,"nonSession":non_session},
++        "route":route
++    });
++    std::fs::write(std::env::var("CODEX_APPROVAL_STORE_ORACLE_OUTPUT")?,serde_json::to_vec_pretty(&output)?)?;
++    Ok(())
++}
+diff --git a/codex-rs/hooks/src/events/permission_request.rs b/codex-rs/hooks/src/events/permission_request.rs
+index d2487494b..333333333 100644
+--- a/codex-rs/hooks/src/events/permission_request.rs
++++ b/codex-rs/hooks/src/events/permission_request.rs
+@@ -335,3 +335,46 @@ mod tests {
+         assert_eq!(resolve_permission_request_decision(decisions.iter()), None);
+     }
++
++    fn decision_json(value: Option<PermissionRequestDecision>) -> serde_json::Value {
++        match value {
++            None => serde_json::Value::Null,
++            Some(PermissionRequestDecision::Allow) => serde_json::json!({"allow":true}),
++            Some(PermissionRequestDecision::Deny { message }) => serde_json::json!({"deny":message}),
++        }
++    }
++
++    #[test]
++    fn export_permission_request_protocol_oracle() -> Result<(), Box<dyn std::error::Error>> {
++        let parser_inputs = [
++            "", "plain text", "{",
++            r#"{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}"#,
++            r#"{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"deny","message":"blocked"}}}"#,
++            r#"{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow","updatedInput":{}}}}"#,
++        ];
++        let parser = parser_inputs.into_iter().map(|input| {
++            let parsed = crate::engine::output_parser::parse_permission_request(input);
++            let result = parsed.map(|output| serde_json::json!({
++                "decision": match output.decision {
++                    None => serde_json::Value::Null,
++                    Some(crate::engine::output_parser::PermissionRequestDecision::Allow) => serde_json::json!({"allow":true}),
++                    Some(crate::engine::output_parser::PermissionRequestDecision::Deny { message }) => serde_json::json!({"deny":message}),
++                },
++                "invalidReason": output.invalid_reason,
++            }));
++            serde_json::json!({"input":input,"result":result})
++        }).collect::<Vec<_>>();
++        let allow = PermissionRequestDecision::Allow;
++        let deny_a = PermissionRequestDecision::Deny { message: "first deny".into() };
++        let deny_b = PermissionRequestDecision::Deny { message: "second deny".into() };
++        let empty = Vec::<PermissionRequestDecision>::new();
++        let fold = serde_json::json!({
++            "empty": decision_json(resolve_permission_request_decision(empty.iter())),
++            "allow": decision_json(resolve_permission_request_decision([&allow])),
++            "allowThenDeny": decision_json(resolve_permission_request_decision([&allow,&deny_a])),
++            "firstDenyWins": decision_json(resolve_permission_request_decision([&deny_a,&deny_b])),
++        });
++        let output = serde_json::json!({"upstream":"9f97cb79eb15b38d24c552c56fe24e211ff9cf3a","parser":parser,"fold":fold});
++        std::fs::write(std::env::var("CODEX_PERMISSION_REQUEST_ORACLE_OUTPUT")?,serde_json::to_vec_pretty(&output)?)?;
++        Ok(())
++    }
+ }
+diff --git a/codex-rs/app-server-protocol/tests/approval_protocol_v2_oracle.rs b/codex-rs/app-server-protocol/tests/approval_protocol_v2_oracle.rs
+new file mode 100644
+index 000000000..222222222
+--- /dev/null
++++ b/codex-rs/app-server-protocol/tests/approval_protocol_v2_oracle.rs
+@@ -0,0 +1,23 @@
++use codex_app_server_protocol::{ApprovalsReviewer, AskForApproval, CommandExecutionApprovalDecision, FileChangeRequestApprovalParams};
++use codex_protocol::approvals::{ExecPolicyAmendment, NetworkPolicyAmendment, NetworkPolicyRuleAction};
++use codex_protocol::protocol::ReviewDecision;
++use serde_json::{json, Value};
++
++fn parse_result<T: serde::de::DeserializeOwned + serde::Serialize>(value: Value) -> Value {
++    match serde_json::from_value::<T>(value) { Ok(value) => json!({"ok":value}), Err(error) => json!({"error":error.to_string()}) }
++}
++#[test]
++fn export_approval_protocol_v2_oracle() -> Result<(), Box<dyn std::error::Error>> {
++    let asks = vec![json!("on-request"),json!("on-failure"),json!({"granular":{"sandbox_approval":true,"rules":false,"mcp_elicitations":true}}),json!({"granular":{"rules":false,"mcp_elicitations":true}})]
++        .into_iter().map(|input|json!({"input":input,"result":parse_result::<AskForApproval>(input.clone())})).collect::<Vec<_>>();
++    let reviewers = ["user","auto_review","guardian_subagent","bad"].into_iter().map(|input|json!({"input":input,"result":parse_result::<ApprovalsReviewer>(json!(input))})).collect::<Vec<_>>();
++    let core = vec![ReviewDecision::Approved,ReviewDecision::ApprovedForSession,ReviewDecision::ApprovedMcpPolicyAmendment,ReviewDecision::TimedOut,ReviewDecision::denied("x"),ReviewDecision::Abort,ReviewDecision::ApprovedExecpolicyAmendment{proposed_execpolicy_amendment:ExecPolicyAmendment::new(vec!["git".into()])},ReviewDecision::NetworkPolicyAmendment{network_policy_amendment:NetworkPolicyAmendment{host:"example.test".into(),action:NetworkPolicyRuleAction::Allow}}];
++    let mapped = core.into_iter().map(|input| { let output=CommandExecutionApprovalDecision::from(input.clone()); json!({"core":input,"v2":output}) }).collect::<Vec<_>>();
++    let file_change = vec![
++        json!({"threadId":"thread","turnId":"turn","itemId":"item","startedAtMs":17,"reason":null,"grantRoot":null}),
++        json!({"threadId":"thread","turnId":"turn","itemId":"item","startedAtMs":17}),
++    ].into_iter().map(|input|json!({"input":input,"result":parse_result::<FileChangeRequestApprovalParams>(input.clone())})).collect::<Vec<_>>();
++    let output=json!({"upstream":"9f97cb79eb15b38d24c552c56fe24e211ff9cf3a","askForApproval":asks,"reviewer":reviewers,"reviewDecisionMapping":mapped,"fileChange":file_change});
++    std::fs::write(std::env::var("CODEX_APPROVAL_PROTOCOL_V2_ORACLE_OUTPUT")?,serde_json::to_vec_pretty(&output)?)?;
++    Ok(())
++}

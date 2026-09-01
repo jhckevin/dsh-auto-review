@@ -39,10 +39,14 @@ try {
   if (packedRuntime.GUARDIAN_POLICY_SECTIONS.length < 10) throw new Error('packed runtime failed to load Guardian policy corpus')
   const parityRuntime = await import(new URL(`file://${join(packageRoot, 'lib/codex-parity/index.js').replaceAll('\\\\', '/')}`))
   const expectedParityExports = [
-    'PathConversionError', 'absolutePath', 'absolutePathToLossyString', 'approvalCacheKeys', 'canonicalizeCommandForApproval',
+    'ApprovalProtocolError', 'PathConversionError', 'absolutePath', 'absolutePathToLossyString', 'approvalCacheKeys', 'approvalRoute', 'canonicalizeCommandForApproval',
+    'coreDecisionToV2CommandDecision',
+    'effectiveExecApprovalId', 'effectiveExecAvailableDecisions',
     'formatGuardianActionPretty', 'guardianApprovalRequestToJson', 'guardianAssessmentAction',
     'guardianCwd', 'guardianRequestTargetItemId', 'guardianRequestTurnId', 'guardianReviewedAction',
     'guardianTruncateText', 'i32', 'inferredNativePathString', 'intoGuardianRequest', 'isPosixAbsolutePathBytes', 'losslessLegacyAppPathString', 'nonZeroUsize', 'parseShellLcPlainCommands',
+    'parseCoreApprovalsReviewer', 'parseCoreApplyPatchApprovalRequestEvent', 'parseCoreAskForApproval', 'parseCoreFileChange', 'parseCoreReviewDecision',
+    'parseV2ApprovalsReviewer', 'parseV2AskForApproval', 'parseV2FileChangeRequestApprovalParams',
     'pathUri', 'pathUriCacheIdentity', 'pathUriToAbsolutePath', 'permissionRequestPayload', 'serializeAbsolutePath', 'serializePermissionProfile', 'serializeRuntimePermissionProfile', 'shlexJoin', 'u16',
   ]
   if (JSON.stringify(Object.keys(parityRuntime).sort()) !== JSON.stringify(expectedParityExports.sort())) {
@@ -96,6 +100,21 @@ try {
   const packedMcp = { type: 'mcp_tool_call', id: 'packed-mcp', server: 'srv', toolName: 'tool', arguments: null, hookToolName: 'mcp__srv__tool', approvalPolicy: 'on-request', reviewer: 'auto_review', approvalMode: 'prompt', allowSessionRemember: false, allowPersistentApproval: false }
   if (parityRuntime.permissionRequestPayload(packedMcp).toolInput !== null) throw new Error('packed MCP explicit null arguments were defaulted')
   if (parityRuntime.shlexJoin(['printf', 'a\0b']) !== '<command included NUL byte>') throw new Error('packed shlex NUL mismatch')
+  if (parityRuntime.parseCoreApprovalsReviewer('guardian_subagent') !== 'auto_review'
+    || parityRuntime.parseCoreAskForApproval('on-failure') !== 'on-request'
+    || parityRuntime.approvalRoute('on-request', 'auto_review', false) !== 'guardian') {
+    throw new Error('packed approval protocol behavior mismatch')
+  }
+  try {
+    parityRuntime.parseV2AskForApproval('on-failure')
+    throw new Error('packed v2 protocol accepted core-only on-failure alias')
+  } catch (error) {
+    if (!(error instanceof parityRuntime.ApprovalProtocolError)) throw error
+  }
+  if (JSON.stringify(parityRuntime.effectiveExecAvailableDecisions({ kind:'command', call_id:'packed', turn_id:'', started_at_ms:1, command:[], cwd:'/work', parsed_cmd:[] }))
+    !== JSON.stringify(['approved','abort'])) {
+    throw new Error('packed effective approval decision mismatch')
+  }
   if (!parityRuntime.guardianTruncateText('🙂'.repeat(100), 8).truncated) throw new Error('packed UTF-8 truncation mismatch')
   for (const file of ['guardian-policy-template.md', 'guardian-policy.md']) {
     const content = await readFile(join(packageRoot, 'policies/codex', file), 'utf8')

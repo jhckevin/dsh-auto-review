@@ -11,7 +11,7 @@
     "generator": "scripts/generate-codex-upstream-inventory.mjs",
     "candidateSemantics": "union(pathRule, contentPattern, mandatoryPaths)",
     "minimumLockedFiles": 99,
-    "lockedFiles": 267
+    "lockedFiles": 270
   },
   "inventoryCoverage": {
     "requiredRoles": ["ported", "test", "asset", "na"],
@@ -90,13 +90,35 @@
     },
     {
       "id": "approval-protocol",
-      "upstreamPaths": ["codex-rs/protocol/src/approvals.rs", "codex-rs/protocol/src/protocol.rs"],
+      "upstreamPaths": [
+        "codex-rs/protocol/src/approvals.rs",
+        "codex-rs/protocol/src/config_types.rs",
+        "codex-rs/protocol/src/protocol.rs",
+        "codex-rs/app-server-protocol/src/protocol/v2/shared.rs",
+        "codex-rs/app-server-protocol/src/protocol/v2/item.rs",
+        "codex-rs/hooks/src/events/permission_request.rs",
+        "codex-rs/hooks/src/engine/output_parser.rs",
+        "codex-rs/core/src/tools/sandboxing.rs",
+        "codex-rs/core/src/tools/sandboxing_tests.rs",
+        "codex-rs/core/src/guardian/review.rs"
+      ],
       "upstreamSymbols": [
         {"path": "codex-rs/protocol/src/protocol.rs", "symbol": "enum ReviewDecision"},
         {"path": "codex-rs/protocol/src/protocol.rs", "symbol": "NetworkPolicyAmendment"},
-        {"path": "codex-rs/protocol/src/protocol.rs", "symbol": "GuardianAssessmentEvent"}
+        {"path": "codex-rs/protocol/src/protocol.rs", "symbol": "enum AskForApproval"},
+        {"path": "codex-rs/protocol/src/config_types.rs", "symbol": "enum ApprovalsReviewer"},
+        {"path": "codex-rs/protocol/src/approvals.rs", "symbol": "struct ExecApprovalRequestEvent"},
+        {"path": "codex-rs/app-server-protocol/src/protocol/v2/item.rs", "symbol": "enum CommandExecutionApprovalDecision"}
       ],
-      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "blocked", "naProof": null
+      "portPaths": ["src/codex-parity/approval-protocol.ts", "src/codex-parity/index.ts"],
+      "portSymbols": [
+        {"path": "src/codex-parity/approval-protocol.ts", "symbol": "export function parseCoreAskForApproval"},
+        {"path": "src/codex-parity/approval-protocol.ts", "symbol": "export function parseCoreReviewDecision"},
+        {"path": "src/codex-parity/approval-protocol.ts", "symbol": "export function effectiveExecAvailableDecisions"},
+        {"path": "src/codex-parity/approval-protocol.ts", "symbol": "export function coreDecisionToV2CommandDecision"}
+      ],
+      "tests": ["tests/approval-protocol.spec.ts", "tests/oracle/codex-approval-protocol-oracle.patch"],
+      "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "in_progress", "naProof": null
     },
     {
       "id": "guardian-action-format",

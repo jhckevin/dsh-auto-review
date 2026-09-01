@@ -1,0 +1,419 @@
+{
+  "applyPatch": [
+    {
+      "input": {
+        "call_id": "patch",
+        "changes": {},
+        "started_at_ms": 20
+      },
+      "result": {
+        "ok": {
+          "call_id": "patch",
+          "changes": {},
+          "started_at_ms": 20,
+          "turn_id": ""
+        }
+      }
+    },
+    {
+      "input": {
+        "call_id": "patch",
+        "changes": {
+          "/tmp/a": {
+            "move_path": null,
+            "type": "update",
+            "unified_diff": "@@"
+          }
+        },
+        "grant_root": null,
+        "reason": null,
+        "started_at_ms": 21,
+        "turn_id": "turn"
+      },
+      "result": {
+        "ok": {
+          "call_id": "patch",
+          "changes": {
+            "/tmp/a": {
+              "move_path": null,
+              "type": "update",
+              "unified_diff": "@@"
+            }
+          },
+          "started_at_ms": 21,
+          "turn_id": "turn"
+        }
+      }
+    }
+  ],
+  "askForApproval": [
+    {
+      "input": "untrusted",
+      "result": {
+        "ok": "untrusted"
+      }
+    },
+    {
+      "input": "on-request",
+      "result": {
+        "ok": "on-request"
+      }
+    },
+    {
+      "input": "on-failure",
+      "result": {
+        "ok": "on-request"
+      }
+    },
+    {
+      "input": "never",
+      "result": {
+        "ok": "never"
+      }
+    },
+    {
+      "input": {
+        "granular": {
+          "mcp_elicitations": true,
+          "rules": false,
+          "sandbox_approval": true
+        }
+      },
+      "result": {
+        "ok": {
+          "granular": {
+            "mcp_elicitations": true,
+            "request_permissions": false,
+            "rules": false,
+            "sandbox_approval": true,
+            "skill_approval": false
+          }
+        }
+      }
+    },
+    {
+      "input": {
+        "granular": {
+          "mcp_elicitations": true,
+          "request_permissions": true,
+          "rules": false,
+          "sandbox_approval": true,
+          "skill_approval": true
+        }
+      },
+      "result": {
+        "ok": {
+          "granular": {
+            "mcp_elicitations": true,
+            "request_permissions": true,
+            "rules": false,
+            "sandbox_approval": true,
+            "skill_approval": true
+          }
+        }
+      }
+    },
+    {
+      "input": {
+        "granular": {
+          "rules": false,
+          "sandbox_approval": true
+        }
+      },
+      "result": {
+        "error": "missing field `mcp_elicitations`"
+      }
+    },
+    {
+      "input": {
+        "granular": {
+          "mcp_elicitations": true,
+          "request_permissions": true,
+          "skill_approval": true
+        }
+      },
+      "result": {
+        "error": "missing field `sandbox_approval`"
+      }
+    }
+  ],
+  "defaults": {
+    "approvalsReviewer": "user",
+    "askForApproval": "on-request",
+    "reviewDecision": {
+      "denied": {
+        "rejection": "denied"
+      }
+    }
+  },
+  "exec": {
+    "defaults": {
+      "additionalPermissions": [
+        "approved",
+        "abort"
+      ],
+      "execAmendment": [
+        "approved",
+        {
+          "approved_execpolicy_amendment": {
+            "proposed_execpolicy_amendment": [
+              "git"
+            ]
+          }
+        },
+        "abort"
+      ],
+      "network": [
+        "approved",
+        "approved_for_session",
+        {
+          "network_policy_amendment": {
+            "network_policy_amendment": {
+              "action": "allow",
+              "host": "example.test"
+            }
+          }
+        },
+        "abort"
+      ],
+      "networkDenyOnly": [
+        "approved",
+        "approved_for_session",
+        "abort"
+      ],
+      "ordinary": [
+        "approved",
+        "abort"
+      ]
+    },
+    "effectiveId": "call",
+    "environmentAlias": {
+      "ok": {
+        "call_id": "call",
+        "command": [],
+        "cwd": "/work",
+        "environmentId": "local",
+        "kind": "command",
+        "parsed_cmd": [],
+        "started_at_ms": 19,
+        "turn_id": ""
+      }
+    },
+    "explicitEmpty": [],
+    "kindDefault": {
+      "call_id": "call",
+      "command": [
+        "echo",
+        "hi"
+      ],
+      "cwd": "/work",
+      "kind": "command",
+      "parsed_cmd": [],
+      "started_at_ms": 17,
+      "turn_id": ""
+    },
+    "unsafeTime": {
+      "error": "invalid number"
+    }
+  },
+  "fileChange": [
+    {
+      "input": {
+        "content": "new",
+        "type": "add"
+      },
+      "result": {
+        "ok": {
+          "content": "new",
+          "type": "add"
+        }
+      }
+    },
+    {
+      "input": {
+        "content": "old",
+        "type": "delete"
+      },
+      "result": {
+        "ok": {
+          "content": "old",
+          "type": "delete"
+        }
+      }
+    },
+    {
+      "input": {
+        "move_path": null,
+        "type": "update",
+        "unified_diff": "@@"
+      },
+      "result": {
+        "ok": {
+          "move_path": null,
+          "type": "update",
+          "unified_diff": "@@"
+        }
+      }
+    },
+    {
+      "input": {
+        "move_path": "/tmp/moved",
+        "type": "update",
+        "unified_diff": "@@"
+      },
+      "result": {
+        "ok": {
+          "move_path": "/tmp/moved",
+          "type": "update",
+          "unified_diff": "@@"
+        }
+      }
+    },
+    {
+      "input": {
+        "Add": {
+          "content": "external"
+        }
+      },
+      "result": {
+        "error": "missing field `type`"
+      }
+    },
+    {
+      "input": {
+        "content": "missing type"
+      },
+      "result": {
+        "error": "missing field `type`"
+      }
+    },
+    {
+      "input": {
+        "content": "x",
+        "type": "unknown"
+      },
+      "result": {
+        "error": "unknown variant `unknown`, expected one of `add`, `delete`, `update`"
+      }
+    },
+    {
+      "input": null,
+      "result": {
+        "error": "invalid type: null, expected internally tagged enum FileChange"
+      }
+    },
+    {
+      "input": {
+        "type": "add"
+      },
+      "result": {
+        "error": "missing field `content`"
+      }
+    },
+    {
+      "input": {
+        "type": "update",
+        "unified_diff": "@@"
+      },
+      "result": {
+        "ok": {
+          "move_path": null,
+          "type": "update",
+          "unified_diff": "@@"
+        }
+      }
+    },
+    {
+      "input": {
+        "content": "new",
+        "extra": true,
+        "type": "add"
+      },
+      "result": {
+        "ok": {
+          "content": "new",
+          "type": "add"
+        }
+      }
+    }
+  ],
+  "reviewDecisions": [
+    {
+      "json": "approved",
+      "opaque": "approved"
+    },
+    {
+      "json": {
+        "approved_execpolicy_amendment": {
+          "proposed_execpolicy_amendment": [
+            "git",
+            "status"
+          ]
+        }
+      },
+      "opaque": "approved_with_amendment"
+    },
+    {
+      "json": "approved_for_session",
+      "opaque": "approved_for_session"
+    },
+    {
+      "json": "approved_mcp_policy_amendment",
+      "opaque": "approved_mcp_policy_amendment"
+    },
+    {
+      "json": {
+        "network_policy_amendment": {
+          "network_policy_amendment": {
+            "action": "allow",
+            "host": "example.test"
+          }
+        }
+      },
+      "opaque": "approved_with_network_policy_allow"
+    },
+    {
+      "json": {
+        "denied": {
+          "rejection": "opaque rejection"
+        }
+      },
+      "opaque": "denied"
+    },
+    {
+      "json": "timed_out",
+      "opaque": "timed_out"
+    },
+    {
+      "json": "abort",
+      "opaque": "abort"
+    }
+  ],
+  "reviewer": [
+    {
+      "input": "user",
+      "result": {
+        "ok": "user"
+      }
+    },
+    {
+      "input": "auto_review",
+      "result": {
+        "ok": "auto_review"
+      }
+    },
+    {
+      "input": "guardian_subagent",
+      "result": {
+        "ok": "auto_review"
+      }
+    },
+    {
+      "input": "bad",
+      "result": {
+        "error": "unknown variant `bad`, expected one of `user`, `auto_review`, `guardian_subagent`"
+      }
+    }
+  ],
+  "upstream": "9f97cb79eb15b38d24c552c56fe24e211ff9cf3a"
+}
