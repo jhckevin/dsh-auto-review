@@ -55,12 +55,13 @@ WriteStdin/Network Guardian cwd 的 lossy seam。opaque 边界同时证明 Linux
 ## 已验证门禁
 
 固定提交上的真实生成已通过：`1 passed; 0 failed; 2381 filtered out`，golden 为
-41,887 bytes，SHA-256 为
-`90fc9c0429c5ce67da26beca4b01aef8535c5a6bfd8960c93dd0e24ba2b4d1c2`。
+57,051 bytes，SHA-256 为
+`3af75c684033ca8a4a06960600e5c49db3225384add51eda10649d59308fe5e0`。
 生成结束后 scratch、owner lock 与 Git worktree registration 均不存在。
 
-同一 golden 还包含 54 个既有 shell corpus 与 6 个 wrapper 边界，其中包含
-`/bin/bash/` 与 `bash/` 的相反结果。所有 canonical
+同一 golden 还包含 54 个既有 shell corpus 与 84 个系统性 wrapper path 边界，其中包含
+相对/绝对路径、重复 slash、`.`/`..`、多扩展名、大小写、反斜杠和尾 separator；并固定
+`/bin/bash/.`、`/bin/bash//.` 与 `bash/.`、`/bin/bash/..` 的相反结果。所有 canonical
 输出均由上游 `canonicalize_command_for_approval` 在 `codex-core` 内实际执行，而不是由
 测试仓库中的复制版 shell detector 推算。
 

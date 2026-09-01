@@ -52,7 +52,11 @@ try {
     throw new Error('packed Codex parity runtime failed to load native tree-sitter parser')
   }
   if (JSON.stringify(parityRuntime.canonicalizeCommandForApproval(['/bin/bash/', '-lc', 'echo hi'])) !== '[\"echo\",\"hi\"]'
-    || JSON.stringify(parityRuntime.canonicalizeCommandForApproval(['bash/', '-lc', 'echo hi'])) !== '[\"bash/\",\"-lc\",\"echo hi\"]') {
+    || JSON.stringify(parityRuntime.canonicalizeCommandForApproval(['bash/', '-lc', 'echo hi'])) !== '[\"bash/\",\"-lc\",\"echo hi\"]'
+    || JSON.stringify(parityRuntime.canonicalizeCommandForApproval(['/bin/bash/.', '-lc', 'echo hi'])) !== '[\"echo\",\"hi\"]'
+    || JSON.stringify(parityRuntime.canonicalizeCommandForApproval(['/bin/bash//.', '-lc', 'echo hi'])) !== '[\"echo\",\"hi\"]'
+    || JSON.stringify(parityRuntime.canonicalizeCommandForApproval(['bash/.', '-lc', 'echo hi'])) !== '[\"bash/.\",\"-lc\",\"echo hi\"]'
+    || JSON.stringify(parityRuntime.canonicalizeCommandForApproval(['/bin/bash/..', '-lc', 'echo hi'])) !== '[\"/bin/bash/..\",\"-lc\",\"echo hi\"]') {
     throw new Error('packed recursive shell file_stem boundary mismatch')
   }
   if (parityRuntime.pathUri('file:///d%3a/work') !== 'file:///D%3a/work') throw new Error('packed PathUri drive normalization mismatch')

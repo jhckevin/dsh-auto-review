@@ -13,23 +13,56 @@ parser.setLanguage(Bash)
 
 type ShellType = 'zsh' | 'bash' | 'powershell' | 'sh' | 'cmd'
 
-function rustPathEqualitySpelling(path: string): string {
-  if (path === '/') return path
-  return path.replace(/\/+$/u, '')
+type RustUnixPathComponent =
+  | { kind: 'root' | 'cur' | 'parent' }
+  | { kind: 'normal'; value: string }
+
+/** The lexical normalization performed by std::path::Components on Unix. */
+function rustUnixPathComponents(path: string): RustUnixPathComponent[] {
+  const components: RustUnixPathComponent[] = []
+  const rooted = path.startsWith('/')
+  if (rooted) components.push({ kind: 'root' })
+  for (const segment of path.split('/')) {
+    if (segment.length === 0) continue
+    if (segment === '.') {
+      // Components preserves only a leading CurDir on a relative path.
+      if (!rooted && components.length === 0) components.push({ kind: 'cur' })
+      continue
+    }
+    components.push(segment === '..' ? { kind: 'parent' } : { kind: 'normal', value: segment })
+  }
+  return components
 }
 
-/** Fixed Codex Linux shell_detect.rs:39-57 PathBuf/file_stem recursion. */
+function rustUnixPathEquals(left: string, right: string): boolean {
+  const lhs = rustUnixPathComponents(left)
+  const rhs = rustUnixPathComponents(right)
+  return lhs.length === rhs.length && lhs.every((component, index) => {
+    const other = rhs[index]
+    return other !== undefined && component.kind === other.kind
+      && (component.kind !== 'normal' || (other.kind === 'normal' && component.value === other.value))
+  })
+}
+
+/** std::path::Path::file_stem for UTF-8 Unix paths. */
+function rustUnixFileStem(path: string): string | undefined {
+  const tail = rustUnixPathComponents(path).at(-1)
+  if (tail?.kind !== 'normal') return undefined
+  const lastDot = tail.value.lastIndexOf('.')
+  return lastDot > 0 ? tail.value.slice(0, lastDot) : tail.value
+}
+
+/**
+ * Fixed Codex Linux shell_detect.rs:39-57 PathBuf/file_stem recursion.
+ * A runtime Rust bridge is unnecessary here: the upstream function observes
+ * only UTF-8 argv and pure Unix lexical Path operations (no filesystem or
+ * process state), and the fixed-core oracle covers every syntax partition.
+ */
 function detectShellType(shellPath: string): ShellType | undefined {
   if (shellPath === 'zsh' || shellPath === 'bash' || shellPath === 'sh' || shellPath === 'cmd') return shellPath
   if (shellPath === 'pwsh' || shellPath === 'powershell') return 'powershell'
-  const slash = shellPath.lastIndexOf('/')
-  const name = shellPath.slice(slash + 1)
-  const effectiveName = name.length === 0
-    ? rustPathEqualitySpelling(shellPath).slice(rustPathEqualitySpelling(shellPath).lastIndexOf('/') + 1)
-    : name
-  const dot = effectiveName.lastIndexOf('.')
-  const stem = dot > 0 ? effectiveName.slice(0, dot) : effectiveName
-  return rustPathEqualitySpelling(stem) !== rustPathEqualitySpelling(shellPath)
+  const stem = rustUnixFileStem(shellPath)
+  return stem !== undefined && !rustUnixPathEquals(stem, shellPath)
     ? detectShellType(stem)
     : undefined
 }

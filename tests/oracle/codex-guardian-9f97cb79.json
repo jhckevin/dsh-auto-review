@@ -653,38 +653,145 @@
     "wrapperBoundaries": [
       {
         "canonical": [
-          "BASH",
-          "-lc",
-          "echo hi"
+          "echo",
+          "hi"
         ],
         "input": [
-          "BASH",
+          "bash",
           "-lc",
           "echo hi"
         ]
       },
       {
         "canonical": [
-          "PowerShell.EXE",
-          "-Command",
-          "Write-Host hi"
+          "bash/",
+          "-lc",
+          "echo hi"
         ],
         "input": [
-          "PowerShell.EXE",
-          "-Command",
-          "Write-Host hi"
+          "bash/",
+          "-lc",
+          "echo hi"
         ]
       },
       {
         "canonical": [
-          "C:\\Windows\\pwsh.exe",
-          "-Command",
-          "Write-Host hi"
+          "bash//",
+          "-lc",
+          "echo hi"
         ],
         "input": [
-          "C:\\Windows\\pwsh.exe",
-          "-Command",
-          "Write-Host hi"
+          "bash//",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "bash/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "bash/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "bash//.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "bash//.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "bash/..",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "bash/..",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "pwsh",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "pwsh",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "pwsh/",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "pwsh/",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "pwsh//",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "pwsh//",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "pwsh/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "pwsh/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "pwsh//.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "pwsh//.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "pwsh/..",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "pwsh/..",
+          "-lc",
+          "echo hi"
         ]
       },
       {
@@ -693,7 +800,7 @@
           "hi"
         ],
         "input": [
-          "/bin/bash.foo.bar",
+          "/bin/bash",
           "-lc",
           "echo hi"
         ]
@@ -711,12 +818,816 @@
       },
       {
         "canonical": [
-          "bash/",
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "/bin/bash//",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "/bin/bash/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "/bin/bash//.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/bin/bash/..",
           "-lc",
           "echo hi"
         ],
         "input": [
-          "bash/",
+          "/bin/bash/..",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/bin/pwsh",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/bin/pwsh",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/bin/pwsh/",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/bin/pwsh/",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/bin/pwsh//",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/bin/pwsh//",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/bin/pwsh/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/bin/pwsh/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/bin/pwsh//.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/bin/pwsh//.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/bin/pwsh/..",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/bin/pwsh/..",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "/usr//local///bin/bash",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "/usr//local///bin/bash/",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "/usr//local///bin/bash//",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "/usr//local///bin/bash/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "/usr//local///bin/bash//.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/usr//local///bin/bash/..",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/usr//local///bin/bash/..",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/usr//local///bin/pwsh",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/usr//local///bin/pwsh",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/usr//local///bin/pwsh/",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/usr//local///bin/pwsh/",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/usr//local///bin/pwsh//",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/usr//local///bin/pwsh//",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/usr//local///bin/pwsh/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/usr//local///bin/pwsh/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/usr//local///bin/pwsh//.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/usr//local///bin/pwsh//.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "/usr//local///bin/pwsh/..",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "/usr//local///bin/pwsh/..",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "./bash",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "./bash/",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "./bash//",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "./bash/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "./bash//.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "./bash/..",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "./bash/..",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "./pwsh",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "./pwsh",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "./pwsh/",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "./pwsh/",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "./pwsh//",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "./pwsh//",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "./pwsh/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "./pwsh/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "./pwsh//.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "./pwsh//.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "./pwsh/..",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "./pwsh/..",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "../bin/bash",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "../bin/bash/",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "../bin/bash//",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "../bin/bash/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "../bin/bash//.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "../bin/bash/..",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "../bin/bash/..",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "../bin/pwsh",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "../bin/pwsh",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "../bin/pwsh/",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "../bin/pwsh/",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "../bin/pwsh//",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "../bin/pwsh//",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "../bin/pwsh/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "../bin/pwsh/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "../bin/pwsh//.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "../bin/pwsh//.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "../bin/pwsh/..",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "../bin/pwsh/..",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "BASH",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "BASH",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "BASH/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "BASH/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "PowerShell.EXE",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "PowerShell.EXE",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "PowerShell.EXE/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "PowerShell.EXE/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "C:\\Windows\\pwsh.exe",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "C:\\Windows\\pwsh.exe",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "C:\\Windows\\pwsh.exe/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "C:\\Windows\\pwsh.exe/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "bash.foo.bar",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "bash.foo.bar/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "pwsh.exe",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "pwsh.exe",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "pwsh.exe/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "pwsh.exe/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "powershell",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "powershell",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "powershell/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "powershell/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "sh",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "sh/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "sh/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "zsh",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "zsh/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "zsh/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "cmd",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "cmd",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "cmd/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "cmd/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          ".bash",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          ".bash",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          ".bash/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          ".bash/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "..bash",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "..bash",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "..bash/.",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "..bash/.",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "bash..exe",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "bash..exe/.",
           "-lc",
           "echo hi"
         ]

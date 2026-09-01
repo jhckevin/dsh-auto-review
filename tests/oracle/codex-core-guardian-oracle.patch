@@ -13,10 +13,10 @@ index 2e8b136f5d..f8a410f44b 100644
  mod prompt;
 diff --git a/codex-rs/core/src/guardian/oracle_export.rs b/codex-rs/core/src/guardian/oracle_export.rs
 new file mode 100644
-index 0000000000..1921840fb0
+index 0000000000..9f2e6a5c24
 --- /dev/null
 +++ b/codex-rs/core/src/guardian/oracle_export.rs
-@@ -0,0 +1,465 @@
+@@ -0,0 +1,475 @@
 +use super::approval_request::GuardianApprovalRequest;
 +use super::approval_request::GuardianMcpAnnotations;
 +use super::approval_request::GuardianNetworkAccessTrigger;
@@ -249,16 +249,26 @@ index 0000000000..1921840fb0
 +            "canonical": canonicalize_command_for_approval(&input),
 +        })
 +    }).collect::<Vec<_>>();
-+    let wrapper_inputs = [
-+        vec!["BASH", "-lc", "echo hi"],
-+        vec!["PowerShell.EXE", "-Command", "Write-Host hi"],
-+        vec![r"C:\Windows\pwsh.exe", "-Command", "Write-Host hi"],
-+        vec!["/bin/bash.foo.bar", "-lc", "echo hi"],
-+        vec!["/bin/bash/", "-lc", "echo hi"],
-+        vec!["bash/", "-lc", "echo hi"],
-+    ];
-+    let wrapper_boundaries = wrapper_inputs.into_iter().map(|argv| {
-+        let input = argv.into_iter().map(str::to_string).collect::<Vec<_>>();
++    // Systematic lexical partitions for Unix Path::file_stem + Path equality:
++    // relative/absolute paths, repeated separators, leading/trailing dot and
++    // parent components, recursive extensions, case, and literal backslashes.
++    let mut wrapper_inputs = Vec::<Vec<String>>::new();
++    for prefix in ["", "/bin/", "/usr//local///bin/", "./", "../bin/"] {
++        for name in ["bash", "pwsh"] {
++            for suffix in ["", "/", "//", "/.", "//.", "/.."] {
++                wrapper_inputs.push(vec![format!("{prefix}{name}{suffix}"), "-lc".into(), "echo hi".into()]);
++            }
++        }
++    }
++    for name in [
++        "BASH", "PowerShell.EXE", r"C:\Windows\pwsh.exe", "bash.foo.bar", "pwsh.exe",
++        "powershell", "sh", "zsh", "cmd", ".bash", "..bash", "bash..exe",
++    ] {
++        for suffix in ["", "/."] {
++            wrapper_inputs.push(vec![format!("{name}{suffix}"), "-lc".into(), "echo hi".into()]);
++        }
++    }
++    let wrapper_boundaries = wrapper_inputs.into_iter().map(|input| {
 +        json!({
 +            "input": input,
 +            "canonical": canonicalize_command_for_approval(&input),

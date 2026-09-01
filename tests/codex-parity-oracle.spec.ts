@@ -145,7 +145,7 @@ describe('machine-generated Codex 9f97cb79 Rust oracle', () => {
 
   it('matches real codex-core command canonicalization for the corpus and wrapper boundaries', () => {
     expect(guardianOracle.canonicalization.shellCorpus).toHaveLength(54)
-    expect(guardianOracle.canonicalization.wrapperBoundaries).toHaveLength(6)
+    expect(guardianOracle.canonicalization.wrapperBoundaries).toHaveLength(84)
     for (const fixture of [
       ...guardianOracle.canonicalization.shellCorpus,
       ...guardianOracle.canonicalization.wrapperBoundaries,

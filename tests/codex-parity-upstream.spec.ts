@@ -49,6 +49,10 @@ describe('Codex shell-command corpus differential boundaries', () => {
     expect(canonicalizeCommandForApproval(['/bin/bash.foo.bar','-lc','echo hi'])).toEqual(['echo','hi'])
     expect(canonicalizeCommandForApproval(['/bin/bash/','-lc','echo hi'])).toEqual(['echo','hi'])
     expect(canonicalizeCommandForApproval(['bash/','-lc','echo hi'])).toEqual(['bash/','-lc','echo hi'])
+    expect(canonicalizeCommandForApproval(['/bin/bash/.','-lc','echo hi'])).toEqual(['echo','hi'])
+    expect(canonicalizeCommandForApproval(['/bin/bash//.','-lc','echo hi'])).toEqual(['echo','hi'])
+    expect(canonicalizeCommandForApproval(['bash/.','-lc','echo hi'])).toEqual(['bash/.','-lc','echo hi'])
+    expect(canonicalizeCommandForApproval(['/bin/bash/..','-lc','echo hi'])).toEqual(['/bin/bash/..','-lc','echo hi'])
   })
 })
 
