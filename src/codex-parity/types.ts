@@ -4,7 +4,11 @@ declare const u16Brand: unique symbol
 declare const i32Brand: unique symbol
 declare const nonZeroUsizeBrand: unique symbol
 
-export type AbsolutePath = string & { readonly [absolutePathBrand]: true }
+export interface PosixAbsolutePathBytes {
+  readonly kind: 'posix_absolute_path_bytes'
+  readonly bytesBase64: string
+}
+export type AbsolutePath = (string & { readonly [absolutePathBrand]: true }) | PosixAbsolutePathBytes
 export type PathUri = string & { readonly [pathUriBrand]: true }
 export type U16 = number & { readonly [u16Brand]: true }
 export type I32 = number & { readonly [i32Brand]: true }

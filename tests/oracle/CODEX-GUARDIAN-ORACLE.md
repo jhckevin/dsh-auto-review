@@ -14,6 +14,8 @@
 - `guardian_reviewed_action`
 - `format_guardian_action_pretty`
 - 上游 `PermissionProfile` 的 `Serialize`
+- `AdditionalPermissionProfile` 的 legacy/canonical 反序列化后再序列化
+- `PathUri` 的 Eq/Hash、cache-key serde、原始 POSIX bytes 恢复与 Guardian cwd seam
 
 它不是重新声明 DTO，也不会修改提供的 Codex checkout。脚本先锁定提交及所有参与
 conversion、Guardian serde、权限、路径与 shell 解析的上游 Git blob，再建立临时 worktree、注入、运行
@@ -23,9 +25,10 @@ conversion、Guardian serde、权限、路径与 shell 解析的上游 Git blob�
 
 ```sh
 CODEX_ORACLE_ROOT=/srv/pi-lab-dev/tmp/codex-9f97cb79 \
-CARGO_BIN=/srv/pi-lab-dev/tmp/cargo/bin/cargo \
+CARGO_BIN=/srv/pi-lab-dev/tmp/rustup/toolchains/1.96.0-x86_64-unknown-linux-gnu/bin/cargo \
 CARGO_HOME=/srv/pi-lab-dev/tmp/cargo \
 RUSTUP_HOME=/srv/pi-lab-dev/tmp/rustup \
+RUSTUP_TOOLCHAIN=1.96.0-x86_64-unknown-linux-gnu \
 CARGO_TARGET_DIR=/srv/pi-lab-dev/tmp/codex-oracle-target \
 scripts/generate-codex-guardian-oracle.sh
 ```
@@ -36,11 +39,17 @@ minimal/options）、两个严格转换错误边界和五个 `PermissionProfile`
 payload、cache keys、assessment、reviewed analytics 与 pretty/truncation 输出。两个错误边界
 覆盖 foreign remote cwd 与 ApplyPatch 工作区外文件，确保 oracle 也验证拒绝路径。
 
+此外还包括六个 `AdditionalPermissionProfile` fixture，覆盖 legacy 空数组正规化、
+legacy path、canonical-to-legacy collapse、deny/glob/missing/depth、unknown/project_roots、
+Windows raw path，以及一个非 UTF-8 permission path 的真实序列化错误。PathUri 真值覆盖
+Windows decoded-byte ASCII case folding、encoded separator、cache key 原 URI、普通与 opaque
+POSIX bytes 恢复，以及 WriteStdin/Network Guardian cwd 的 lossy seam。
+
 ## 已验证门禁
 
 固定提交上的真实生成已通过：`1 passed; 0 failed; 2381 filtered out`，golden 为
-32,706 bytes，SHA-256 为
-`17b9e1d349efbb208d8c922d0edba9feb4151fe505dbe7ba9b868e670f766d0e`。
+39,258 bytes，SHA-256 为
+`2ceec505266cd6571f7e6e6ae153c0f2b7bbe8f1914a4ed82f3bdecbfc34fb21`。
 生成结束后 scratch、owner lock 与 Git worktree registration 均不存在。
 
 同一 golden 还包含 54 个既有 shell corpus 与 4 个 wrapper 边界。所有 canonical

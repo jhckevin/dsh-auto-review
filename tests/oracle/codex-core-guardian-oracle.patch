@@ -13,10 +13,10 @@ index 2e8b136f5d..f8a410f44b 100644
  mod prompt;
 diff --git a/codex-rs/core/src/guardian/oracle_export.rs b/codex-rs/core/src/guardian/oracle_export.rs
 new file mode 100644
-index 0000000000..8a7b4145b5
+index 0000000000..462ae3dcb9
 --- /dev/null
 +++ b/codex-rs/core/src/guardian/oracle_export.rs
-@@ -0,0 +1,271 @@
+@@ -0,0 +1,388 @@
 +use super::approval_request::GuardianApprovalRequest;
 +use super::approval_request::GuardianMcpAnnotations;
 +use super::approval_request::GuardianNetworkAccessTrigger;
@@ -27,17 +27,22 @@ index 0000000000..8a7b4145b5
 +use codex_protocol::approvals::GuardianCommandSource;
 +use codex_protocol::approvals::NetworkApprovalProtocol;
 +use codex_protocol::models::AdditionalPermissionProfile;
++use codex_protocol::models::FileSystemPermissions;
 +use codex_protocol::models::ManagedFileSystemPermissions;
 +use codex_protocol::models::NetworkPermissions;
 +use codex_protocol::models::PermissionProfile;
 +use codex_protocol::models::SandboxPermissions;
 +use codex_protocol::permissions::NetworkSandboxPolicy;
++use codex_protocol::permissions::FileSystemAccessMode;
++use codex_protocol::permissions::FileSystemPath;
++use codex_protocol::permissions::FileSystemSandboxEntry;
 +use codex_protocol::request_permissions::RequestPermissionProfile;
 +use codex_protocol::config_types::ApprovalsReviewer;
 +use codex_protocol::protocol::AskForApproval;
 +use codex_config::types::AppToolApproval;
 +use codex_utils_absolute_path::AbsolutePathBuf;
 +use codex_utils_path_uri::PathUri;
++use base64::Engine;
 +use crate::tools::sandboxing::ApprovalAction;
 +use crate::tools::hook_names::HookToolName;
 +use crate::command_canonicalization::canonicalize_command_for_approval;
@@ -45,6 +50,11 @@ index 0000000000..8a7b4145b5
 +use serde_json::json;
 +use std::collections::HashMap;
 +use std::path::PathBuf;
++use std::num::NonZeroUsize;
++#[cfg(unix)]
++use std::os::unix::ffi::OsStrExt;
++#[cfg(unix)]
++use std::os::unix::ffi::OsStringExt;
 +use std::sync::Arc;
 +
 +fn abs(path: &str) -> AbsolutePathBuf {
@@ -248,6 +258,111 @@ index 0000000000..8a7b4145b5
 +    })
 +}
 +
++fn partial_permission_profiles_oracle() -> Value {
++    let inputs = [
++        ("legacy_empty", json!({"file_system":{"read":[],"write":[]}})),
++        ("legacy_paths", json!({"file_system":{"read":["/work/read"],"write":["/work/write"]}})),
++        ("canonical_native_collapses", json!({"file_system":{"entries":[
++            {"path":{"type":"path","path":"/work/read"},"access":"read"},
++            {"path":{"type":"path","path":"/work/write"},"access":"write"}
++        ]}})),
++        ("canonical_glob_deny_missing_depth", json!({"file_system":{
++            "entries":[
++                {"path":{"type":"glob_pattern","pattern":"**/.env"},"access":"deny","missing_path_behavior":"skip"},
++                {"path":{"type":"special","value":{"kind":"unknown","path":":future","subpath":"x"}},"access":"read"}
++            ],"glob_scan_max_depth":4
++        }})),
++        ("canonical_project_roots", json!({"file_system":{
++            "entries":[{"path":{"type":"special","value":{"kind":"project_roots","subpath":"docs"}},"access":"write"}]
++        }})),
++        ("canonical_windows_path", json!({"file_system":{
++            "entries":[{"path":{"type":"path","path":"C:\\Repo\\A"},"access":"deny"}],
++            "glob_scan_max_depth":1
++        }})),
++    ];
++    let fixtures = inputs.into_iter().map(|(name, input)| {
++        let parsed: AdditionalPermissionProfile = serde_json::from_value(input.clone()).unwrap();
++        json!({"name":name,"input":input,"json":serde_json::to_value(parsed).unwrap()})
++    }).collect::<Vec<_>>();
++
++    let non_utf = PathUri::parse("file:///tmp/non-utf8-%FF").unwrap();
++    let non_utf_profile = AdditionalPermissionProfile {
++        network: None,
++        file_system: Some(FileSystemPermissions {
++            entries: vec![FileSystemSandboxEntry {
++                path: FileSystemPath::Path { path: non_utf },
++                access: FileSystemAccessMode::Deny,
++                missing_path_behavior: None,
++            }],
++            glob_scan_max_depth: NonZeroUsize::new(1),
++        }),
++    };
++    let error = serde_json::to_value(non_utf_profile).unwrap_err().to_string();
++    json!({
++        "fixtures": fixtures,
++        "serializationErrors": [{"name":"canonical_non_utf8_path","error":error}],
++    })
++}
++
++#[cfg(unix)]
++fn path_uri_oracle() -> Value {
++    let left = PathUri::parse("file:///C:/Repo/%41%FF").unwrap();
++    let right = PathUri::parse("file:///c:/repo/a%FF").unwrap();
++    let encoded_separator = PathUri::parse("file:///C:/Repo/a%5Cb").unwrap();
++    let slash = PathUri::parse("file:///c:/repo/a/b").unwrap();
++    let cache_action = ApprovalAction::ExecCommand {
++        id: "path-cache".into(), environment_id: "remote".into(), command: vec!["pwd".into()],
++        hook_command: "pwd".into(), cwd: left.clone(), sandbox_permissions: SandboxPermissions::UseDefault,
++        additional_permissions: None, justification: None, tty: false, proposed_execpolicy_amendment: None,
++    };
++
++    let opaque_bytes = vec![b'/', b't', b'm', b'p', b'/', 0xff, 0, b'x'];
++    let opaque_path = AbsolutePathBuf::try_from(PathBuf::from(std::ffi::OsString::from_vec(opaque_bytes.clone()))).unwrap();
++    let opaque_uri = PathUri::from_abs_path(&opaque_path);
++    let recovered_opaque = opaque_uri.to_abs_path().unwrap();
++    let ordinary_non_utf = PathUri::parse("file:///tmp/non-utf8-%FF").unwrap();
++    let recovered_ordinary = ordinary_non_utf.to_abs_path().unwrap();
++    let valid_utf8_fallback = PathUri::parse("file:///%00/bad/path/L3RtcC9h").unwrap();
++    let write_stdin = GuardianApprovalRequest::WriteStdin {
++        id: "path-write".into(), approval_id: "path-approval".into(), environment_id: "local".into(),
++        process_id: 9, input: String::new(), cwd: ordinary_non_utf.clone(), tty: false,
++        sandbox_permissions: SandboxPermissions::UseDefault, additional_permissions: None,
++    };
++    let network = GuardianApprovalRequest::NetworkAccess {
++        id: "path-network".into(), turn_id: "path-turn".into(), target: "example.test:443".into(),
++        host: "example.test".into(), protocol: NetworkApprovalProtocol::Https, port: 443,
++        trigger: Some(GuardianNetworkAccessTrigger {
++            call_id: "path-call".into(), tool_name: "exec_command".into(), command: vec!["curl".into()],
++            cwd: ordinary_non_utf.clone(), sandbox_permissions: SandboxPermissions::UseDefault,
++            additional_permissions: None, justification: None, tty: None,
++        }),
++    };
++
++    json!({
++        "windowsEquality": [
++            {"left":left,"right":right,"equal":left == right},
++            {"left":encoded_separator,"right":slash,"equal":encoded_separator == slash}
++        ],
++        "cacheKeyPreservesUri": serde_json::to_value(cache_action.cache_keys()).unwrap(),
++        "opaquePosix": {
++            "uri": opaque_uri,
++            "bytesBase64": base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&opaque_bytes),
++            "recoveredBytesBase64": base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(recovered_opaque.as_path().as_os_str().as_bytes()),
++            "lossy": opaque_uri.inferred_native_path_string()
++        },
++        "ordinaryNonUtf8": {
++            "uri": ordinary_non_utf,
++            "recoveredBytesBase64": base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(recovered_ordinary.as_path().as_os_str().as_bytes()),
++            "lossy": ordinary_non_utf.inferred_native_path_string()
++        },
++        "guardianCwdSerialization": {
++            "writeStdin": guardian_approval_request_to_json(&write_stdin).unwrap(),
++            "network": guardian_approval_request_to_json(&network).unwrap()
++        },
++        "validUtf8OpaqueError": valid_utf8_fallback.to_abs_path().unwrap_err().to_string()
++    })
++}
++
 +#[test]
 +fn export_issue_022a_oracle() -> Result<(), Box<dyn std::error::Error>> {
 +    let output_path = std::env::var("CODEX_ORACLE_OUTPUT")?;
@@ -283,6 +398,8 @@ index 0000000000..8a7b4145b5
 +        "guardian": guardian,
 +        "conversionErrors": conversion_errors(),
 +        "permissionProfiles": profiles,
++        "partialPermissionProfiles": partial_permission_profiles_oracle(),
++        "pathUri": path_uri_oracle(),
 +        "canonicalization": canonicalization_oracle(),
 +    });
 +    std::fs::write(output_path, serde_json::to_vec_pretty(&document)?)?;

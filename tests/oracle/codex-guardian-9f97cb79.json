@@ -1337,6 +1337,277 @@
       }
     }
   ],
+  "partialPermissionProfiles": {
+    "fixtures": [
+      {
+        "input": {
+          "file_system": {
+            "read": [],
+            "write": []
+          }
+        },
+        "json": {
+          "file_system": {},
+          "network": null
+        },
+        "name": "legacy_empty"
+      },
+      {
+        "input": {
+          "file_system": {
+            "read": [
+              "/work/read"
+            ],
+            "write": [
+              "/work/write"
+            ]
+          }
+        },
+        "json": {
+          "file_system": {
+            "read": [
+              "/work/read"
+            ],
+            "write": [
+              "/work/write"
+            ]
+          },
+          "network": null
+        },
+        "name": "legacy_paths"
+      },
+      {
+        "input": {
+          "file_system": {
+            "entries": [
+              {
+                "access": "read",
+                "path": {
+                  "path": "/work/read",
+                  "type": "path"
+                }
+              },
+              {
+                "access": "write",
+                "path": {
+                  "path": "/work/write",
+                  "type": "path"
+                }
+              }
+            ]
+          }
+        },
+        "json": {
+          "file_system": {
+            "read": [
+              "/work/read"
+            ],
+            "write": [
+              "/work/write"
+            ]
+          },
+          "network": null
+        },
+        "name": "canonical_native_collapses"
+      },
+      {
+        "input": {
+          "file_system": {
+            "entries": [
+              {
+                "access": "deny",
+                "missing_path_behavior": "skip",
+                "path": {
+                  "pattern": "**/.env",
+                  "type": "glob_pattern"
+                }
+              },
+              {
+                "access": "read",
+                "path": {
+                  "type": "special",
+                  "value": {
+                    "kind": "unknown",
+                    "path": ":future",
+                    "subpath": "x"
+                  }
+                }
+              }
+            ],
+            "glob_scan_max_depth": 4
+          }
+        },
+        "json": {
+          "file_system": {
+            "entries": [
+              {
+                "access": "deny",
+                "missing_path_behavior": "skip",
+                "path": {
+                  "pattern": "**/.env",
+                  "type": "glob_pattern"
+                }
+              },
+              {
+                "access": "read",
+                "path": {
+                  "type": "special",
+                  "value": {
+                    "kind": "unknown",
+                    "path": ":future",
+                    "subpath": "x"
+                  }
+                }
+              }
+            ],
+            "glob_scan_max_depth": 4
+          },
+          "network": null
+        },
+        "name": "canonical_glob_deny_missing_depth"
+      },
+      {
+        "input": {
+          "file_system": {
+            "entries": [
+              {
+                "access": "write",
+                "path": {
+                  "type": "special",
+                  "value": {
+                    "kind": "project_roots",
+                    "subpath": "docs"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "json": {
+          "file_system": {
+            "entries": [
+              {
+                "access": "write",
+                "path": {
+                  "type": "special",
+                  "value": {
+                    "kind": "project_roots",
+                    "subpath": "docs"
+                  }
+                }
+              }
+            ]
+          },
+          "network": null
+        },
+        "name": "canonical_project_roots"
+      },
+      {
+        "input": {
+          "file_system": {
+            "entries": [
+              {
+                "access": "deny",
+                "path": {
+                  "path": "C:\\Repo\\A",
+                  "type": "path"
+                }
+              }
+            ],
+            "glob_scan_max_depth": 1
+          }
+        },
+        "json": {
+          "file_system": {
+            "entries": [
+              {
+                "access": "deny",
+                "path": {
+                  "path": "C:\\Repo\\A",
+                  "type": "path"
+                }
+              }
+            ],
+            "glob_scan_max_depth": 1
+          },
+          "network": null
+        },
+        "name": "canonical_windows_path"
+      }
+    ],
+    "serializationErrors": [
+      {
+        "error": "permission path cannot be represented losslessly",
+        "name": "canonical_non_utf8_path"
+      }
+    ]
+  },
+  "pathUri": {
+    "cacheKeyPreservesUri": [
+      {
+        "additional_permissions": null,
+        "command": [
+          "pwd"
+        ],
+        "cwd": "file:///C:/Repo/%41%FF",
+        "environment_id": "remote",
+        "executable": "pwd",
+        "sandbox_permissions": "use_default",
+        "tty": false
+      }
+    ],
+    "guardianCwdSerialization": {
+      "network": {
+        "host": "example.test",
+        "port": 443,
+        "protocol": "https",
+        "target": "example.test:443",
+        "tool": "network_access",
+        "trigger": {
+          "callId": "path-call",
+          "command": [
+            "curl"
+          ],
+          "cwd": "/tmp/non-utf8-�",
+          "sandboxPermissions": "use_default",
+          "toolName": "exec_command"
+        }
+      },
+      "writeStdin": {
+        "chars": "",
+        "cwd": "/tmp/non-utf8-�",
+        "environment_id": "local",
+        "sandbox_permissions": "use_default",
+        "session_id": 9,
+        "tool": "write_stdin",
+        "tty": false
+      }
+    },
+    "opaquePosix": {
+      "bytesBase64": "L3RtcC__AHg",
+      "lossy": "/tmp/�\u0000x",
+      "recoveredBytesBase64": "L3RtcC__AHg",
+      "uri": "file:///%00/bad/path/L3RtcC__AHg"
+    },
+    "ordinaryNonUtf8": {
+      "lossy": "/tmp/non-utf8-�",
+      "recoveredBytesBase64": "L3RtcC9ub24tdXRmOC3_",
+      "uri": "file:///tmp/non-utf8-%FF"
+    },
+    "validUtf8OpaqueError": "'file:///%00/bad/path/L3RtcC9h' is invalid on 'linux'",
+    "windowsEquality": [
+      {
+        "equal": true,
+        "left": "file:///C:/Repo/%41%FF",
+        "right": "file:///C:/repo/a%FF"
+      },
+      {
+        "equal": false,
+        "left": "file:///C:/Repo/a%5Cb",
+        "right": "file:///C:/repo/a/b"
+      }
+    ]
+  },
   "permissionProfiles": [
     {
       "json": {

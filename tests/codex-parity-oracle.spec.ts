@@ -2,10 +2,10 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   absolutePath, approvalCacheKeys, canonicalizeCommandForApproval, formatGuardianActionPretty,
-  guardianApprovalRequestToJson, guardianAssessmentAction, guardianReviewedAction, i32,
-  intoGuardianRequest, parseShellLcPlainCommands, pathUri, pathUriToAbsolutePath, permissionRequestPayload,
-  PathConversionError, serializeRuntimePermissionProfile, shlexJoin, u16,
-  type ApprovalAction, type JsonObject, type JsonValue, type PermissionProfile,
+  guardianApprovalRequestToJson, guardianAssessmentAction, guardianReviewedAction, i32, inferredNativePathString,
+  intoGuardianRequest, nonZeroUsize, parseShellLcPlainCommands, pathUri, pathUriCacheIdentity, pathUriToAbsolutePath, permissionRequestPayload,
+  PathConversionError, serializePermissionProfile, serializeRuntimePermissionProfile, shlexJoin, u16,
+  type ApprovalAction, type FileSystemPath, type JsonObject, type JsonValue, type PartialPermissionProfile, type PermissionProfile,
 } from '../src/codex-parity/index.ts'
 
 interface Oracle {
@@ -35,10 +35,54 @@ interface GuardianOracle {
   }
   guardian: GuardianOracleFixture[]
   permissionProfiles: Array<{ name: string; json: JsonObject }>
+  partialPermissionProfiles: {
+    fixtures: Array<{ name: string; input: JsonObject; json: JsonObject }>
+    serializationErrors: Array<{ name: string; error: string }>
+  }
+  pathUri: {
+    windowsEquality: Array<{ left: string; right: string; equal: boolean }>
+    cacheKeyPreservesUri: JsonObject[]
+    opaquePosix: { uri: string; bytesBase64: string; recoveredBytesBase64: string; lossy: string }
+    ordinaryNonUtf8: { uri: string; recoveredBytesBase64: string; lossy: string }
+    guardianCwdSerialization: { writeStdin: JsonObject; network: JsonObject }
+    validUtf8OpaqueError: string
+  }
   conversionErrors: Array<{ name: string; error: string }>
 }
 const guardianOracle = JSON.parse(readFileSync(new URL('./oracle/codex-guardian-9f97cb79.json', import.meta.url), 'utf8')) as GuardianOracle
 const additional = { network: { enabled: true } } as const
+
+type RawOracleFileSystem = {
+  read?: string[]
+  write?: string[]
+  entries?: Array<{ path: ({ type:'path';path:string } | Exclude<FileSystemPath,{type:'path'}>); access:'read'|'write'|'deny'; missing_path_behavior?:'skip' }>
+  glob_scan_max_depth?: number
+}
+
+function oraclePathUri(raw: string) {
+  if (raw.startsWith('file:')) return pathUri(raw)
+  if (raw.startsWith('/')) return pathUri(`file://${raw}`)
+  if (/^[A-Za-z]:[\\/]/u.test(raw)) return pathUri(`file:///${raw.replaceAll('\\','/')}`)
+  throw new Error(`unsupported oracle path: ${raw}`)
+}
+
+function partialProfileFromOracle(input: JsonObject): PartialPermissionProfile {
+  const raw = input as unknown as { network?: {enabled?:boolean}; file_system?: RawOracleFileSystem }
+  const fileSystem = raw.file_system
+  return {
+    ...(raw.network === undefined ? {} : { network: raw.network }),
+    ...(fileSystem === undefined ? {} : { file_system: fileSystem.entries === undefined ? {
+      ...(fileSystem.read === undefined ? {} : { read:fileSystem.read.map(absolutePath) }),
+      ...(fileSystem.write === undefined ? {} : { write:fileSystem.write.map(absolutePath) }),
+    } : {
+      entries:fileSystem.entries.map(entry => ({
+        ...entry,
+        path:entry.path.type === 'path' ? { type:'path' as const,path:oraclePathUri(entry.path.path) } : entry.path,
+      })),
+      ...(fileSystem.glob_scan_max_depth === undefined ? {} : { glob_scan_max_depth:nonZeroUsize(fileSystem.glob_scan_max_depth) }),
+    } }),
+  }
+}
 
 function guardianAction(name: string): ApprovalAction {
   switch (name) {
@@ -159,5 +203,41 @@ describe('machine-generated Codex 9f97cb79 Rust oracle', () => {
     for (const fixture of guardianOracle.permissionProfiles) {
       expect(serializeRuntimePermissionProfile(profiles[fixture.name]!), fixture.name).toEqual(fixture.json)
     }
+  })
+
+  it('matches real PartialPermissionProfile normalization and serialization failures', () => {
+    expect(guardianOracle.partialPermissionProfiles.fixtures).toHaveLength(6)
+    for (const fixture of guardianOracle.partialPermissionProfiles.fixtures) {
+      expect(serializePermissionProfile(partialProfileFromOracle(fixture.input)), fixture.name).toEqual(fixture.json)
+    }
+    expect(guardianOracle.partialPermissionProfiles.serializationErrors).toHaveLength(1)
+    for (const fixture of guardianOracle.partialPermissionProfiles.serializationErrors) {
+      expect(() => serializePermissionProfile({ file_system:{ entries:[{
+        path:{ type:'path',path:pathUri('file:///tmp/non-utf8-%FF') },access:'deny',
+      }],glob_scan_max_depth:nonZeroUsize(1) } }), fixture.name).toThrow(fixture.error)
+    }
+  })
+
+  it('matches real PathUri equality, byte recovery, cache serde, and Guardian cwd seams', () => {
+    for (const fixture of guardianOracle.pathUri.windowsEquality) {
+      expect(pathUriCacheIdentity(pathUri(fixture.left)) === pathUriCacheIdentity(pathUri(fixture.right)), `${fixture.left} == ${fixture.right}`).toBe(fixture.equal)
+    }
+    const cacheCwd = pathUri(guardianOracle.pathUri.windowsEquality[0]!.left)
+    const cacheAction: ApprovalAction = { type:'exec_command',id:'path-cache',environmentId:'remote',command:['pwd'],hookCommand:'pwd',cwd:cacheCwd,sandboxPermissions:'use_default',tty:false }
+    expect(serializedCacheKeys(cacheAction)).toEqual(guardianOracle.pathUri.cacheKeyPreservesUri)
+
+    const opaque = guardianOracle.pathUri.opaquePosix
+    expect(pathUriToAbsolutePath(pathUri(opaque.uri))).toEqual({ kind:'posix_absolute_path_bytes',bytesBase64:opaque.recoveredBytesBase64 })
+    expect(opaque.recoveredBytesBase64).toBe(opaque.bytesBase64)
+    expect(inferredNativePathString(pathUri(opaque.uri))).toBe(opaque.lossy)
+    const ordinary = guardianOracle.pathUri.ordinaryNonUtf8
+    expect(pathUriToAbsolutePath(pathUri(ordinary.uri))).toEqual({ kind:'posix_absolute_path_bytes',bytesBase64:ordinary.recoveredBytesBase64 })
+    expect(inferredNativePathString(pathUri(ordinary.uri))).toBe(ordinary.lossy)
+    expect(() => pathUriToAbsolutePath(pathUri('file:///%00/bad/path/L3RtcC9h'))).toThrow(guardianOracle.pathUri.validUtf8OpaqueError)
+
+    const writeAction: ApprovalAction = { type:'write_stdin',id:'path-write',approvalId:'path-approval',environmentId:'local',processId:i32(9),input:'',cwd:pathUri(ordinary.uri),tty:false,sandboxPermissions:'use_default' }
+    expect(guardianApprovalRequestToJson(intoGuardianRequest(writeAction))).toEqual(guardianOracle.pathUri.guardianCwdSerialization.writeStdin)
+    const networkAction: ApprovalAction = { type:'network_access',id:'path-network',turnId:'path-turn',environmentId:'local',target:'example.test:443',host:'example.test',protocol:'https',port:u16(443),trigger:{ callId:'path-call',toolName:'exec_command',command:['curl'],cwd:pathUri(ordinary.uri),sandboxPermissions:'use_default' },hookCommand:'curl',hookRunId:'path-hook',command:['curl'],cwd:absolutePath('/work') }
+    expect(guardianApprovalRequestToJson(intoGuardianRequest(networkAction))).toEqual(guardianOracle.pathUri.guardianCwdSerialization.network)
   })
 })

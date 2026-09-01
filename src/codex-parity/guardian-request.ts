@@ -1,5 +1,5 @@
 import { shlexJoin } from './command-canonicalization.ts'
-import { guardianCwd, inferredNativePathString, pathUriToAbsolutePath } from './path.ts'
+import { absolutePathToLossyString, guardianCwd, inferredNativePathString, pathUriToAbsolutePath, serializeAbsolutePath } from './path.ts'
 import { serializePermissionProfile } from './permission-profile.ts'
 import type {
   ApprovalAction, FormattedGuardianAction, GuardianApprovalRequest, GuardianAssessmentAction,
@@ -22,7 +22,7 @@ export function intoGuardianRequest(action: ApprovalAction): GuardianApprovalReq
     }
     case 'write_stdin': return { ...action }
     case 'execve': return {
-      type: 'execve', id: action.id, source: action.source, program: action.program,
+      type: 'execve', id: action.id, source: action.source, program: absolutePathToLossyString(action.program),
       argv: [...action.argv], cwd: action.cwd,
       ...(action.additionalPermissions === undefined ? {} : { additionalPermissions: action.additionalPermissions }),
     }
@@ -53,7 +53,7 @@ export function intoGuardianRequest(action: ApprovalAction): GuardianApprovalReq
 export function guardianApprovalRequestToJson(action: GuardianApprovalRequest): JsonObject {
   switch (action.type) {
     case 'exec_command': return omitUndefined({
-      tool: 'exec_command', command: action.command, cwd: action.cwd,
+      tool: 'exec_command', command: action.command, cwd: serializeAbsolutePath(action.cwd),
       sandbox_permissions: action.sandboxPermissions, additional_permissions: action.additionalPermissions === undefined ? undefined : serializePermissionProfile(action.additionalPermissions),
       justification: action.justification, tty: action.tty,
     })
@@ -64,9 +64,9 @@ export function guardianApprovalRequestToJson(action: GuardianApprovalRequest): 
     })
     case 'execve': return omitUndefined({
       tool: action.source === 'shell' ? 'shell' : 'exec_command', program: action.program,
-      argv: action.argv, cwd: action.cwd, additional_permissions: action.additionalPermissions === undefined ? undefined : serializePermissionProfile(action.additionalPermissions),
+      argv: action.argv, cwd: serializeAbsolutePath(action.cwd), additional_permissions: action.additionalPermissions === undefined ? undefined : serializePermissionProfile(action.additionalPermissions),
     })
-    case 'apply_patch': return { tool: 'apply_patch', cwd: action.cwd, files: action.files, patch: action.patch }
+    case 'apply_patch': return { tool: 'apply_patch', cwd: serializeAbsolutePath(action.cwd), files: action.files.map(serializeAbsolutePath), patch: action.patch }
     case 'mcp_tool_call': return omitUndefined({
       tool: 'mcp_tool_call', server: action.server, tool_name: action.toolName, arguments: action.arguments,
       connector_id: action.connectorId, connector_name: action.connectorName,

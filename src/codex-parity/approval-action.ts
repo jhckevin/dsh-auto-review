@@ -1,5 +1,4 @@
 import { canonicalizeCommandForApproval, shlexJoin } from './command-canonicalization.ts'
-import { pathUriCacheIdentity } from './path.ts'
 import { serializePermissionProfile } from './permission-profile.ts'
 import type {
   ApprovalAction,
@@ -57,13 +56,13 @@ export function approvalCacheKeys(action: ApprovalAction): ApprovalCacheKey[] {
         environmentId: action.environmentId,
         ...(action.command[0] === undefined ? {} : { executable: action.command[0] }),
         command: canonicalizeCommandForApproval(action.command),
-        cwd: pathUriCacheIdentity(action.cwd),
+        cwd: action.cwd,
         tty: action.tty,
         sandboxPermissions: action.sandboxPermissions,
         additionalPermissions: action.additionalPermissions === undefined ? null : serializePermissionProfile(action.additionalPermissions),
       }]
     case 'apply_patch':
-      return action.files.map(path => ({ type: 'apply_patch', environmentId: action.environmentId, path: pathUriCacheIdentity(path) }))
+      return action.files.map(path => ({ type: 'apply_patch', environmentId: action.environmentId, path }))
     case 'execve':
     case 'mcp_tool_call':
     case 'network_access':

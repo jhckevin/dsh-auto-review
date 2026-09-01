@@ -1,4 +1,4 @@
-import { losslessLegacyAppPathString, pathUriToAbsolutePath } from './path.ts'
+import { losslessLegacyAppPathString, pathUriToAbsolutePath, serializeAbsolutePath } from './path.ts'
 import type { JsonObject, JsonValue, PartialPermissionProfile, PermissionProfile, SerializedPartialPermissionProfile } from './types.ts'
 
 function serializeRawEntry(entry: Extract<NonNullable<PartialPermissionProfile['file_system']>, { entries: unknown }>['entries'][number]): JsonObject {
@@ -12,7 +12,10 @@ function serializeRawEntry(entry: Extract<NonNullable<PartialPermissionProfile['
 }
 
 function serializeFileSystem(fileSystem: NonNullable<PartialPermissionProfile['file_system']>): JsonObject {
-  if (!('entries' in fileSystem)) return { ...fileSystem } as unknown as JsonObject
+  if (!('entries' in fileSystem)) return {
+    ...(fileSystem.read === undefined || fileSystem.read.length === 0 ? {} : { read: fileSystem.read.map(serializeAbsolutePath) }),
+    ...(fileSystem.write === undefined || fileSystem.write.length === 0 ? {} : { write: fileSystem.write.map(serializeAbsolutePath) }),
+  }
   if (fileSystem.glob_scan_max_depth === undefined) {
     const read: string[] = []
     const write: string[] = []
@@ -20,7 +23,7 @@ function serializeFileSystem(fileSystem: NonNullable<PartialPermissionProfile['f
     for (const entry of fileSystem.entries) {
       if (entry.path.type !== 'path' || entry.access === 'deny') { legacy = false; break }
       try {
-        const absolute = pathUriToAbsolutePath(entry.path.path)
+        const absolute = serializeAbsolutePath(pathUriToAbsolutePath(entry.path.path))
         ;(entry.access === 'read' ? read : write).push(absolute)
       } catch { legacy = false; break }
     }

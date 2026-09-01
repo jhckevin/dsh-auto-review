@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  absolutePath, canonicalizeCommandForApproval, formatGuardianActionPretty,
-  guardianCwd, guardianReviewedAction, guardianTruncateText, i32,
-  inferredNativePathString, intoGuardianRequest, nonZeroUsize, pathUri, pathUriCacheIdentity,
-  parseShellLcPlainCommands, serializePermissionProfile, serializeRuntimePermissionProfile, shlexJoin, u16,
+  absolutePath, approvalCacheKeys, canonicalizeCommandForApproval, formatGuardianActionPretty,
+  guardianApprovalRequestToJson, guardianCwd, guardianReviewedAction, guardianTruncateText, i32,
+  inferredNativePathString, intoGuardianRequest, nonZeroUsize, pathUri, pathUriCacheIdentity, pathUriToAbsolutePath,
+  parseShellLcPlainCommands, serializeAbsolutePath, serializePermissionProfile, serializeRuntimePermissionProfile, shlexJoin, u16,
   type ApprovalAction,
 } from '../src/codex-parity/index.ts'
 
@@ -94,19 +94,34 @@ describe('Codex Linux PathUri and absolute-path boundaries', () => {
     expect(() => pathUri('file:///work#fragment')).toThrow(/fragment/)
     expect(() => pathUri('file:///work/%00/plain')).toThrow(/NUL/)
     expect(pathUri('file:///%00/bad/path/L3RtcC9h')).toBe('file:///%00/bad/path/L3RtcC9h')
-    expect(() => intoGuardianRequest({
+    const opaqueRequest = intoGuardianRequest({
       type:'apply_patch',id:'opaque',environmentId:'local',cwd:pathUri('file:///work'),
       files:[pathUri('file:///%00/bad/path/L3RtcC__')],patch:'',changes:{},permissionsPreapproved:false,
-    })).toThrow(/cannot be represented losslessly/)
+    })
+    if (opaqueRequest.type !== 'apply_patch') throw new Error('expected apply_patch')
+    expect(opaqueRequest.files[0]).toEqual({ kind:'posix_absolute_path_bytes',bytesBase64:'L3RtcC__' })
+    expect(() => serializeAbsolutePath(opaqueRequest.files[0]!)).toThrow(/invalid UTF-8/)
+    expect(() => guardianApprovalRequestToJson(opaqueRequest)).toThrow(/invalid UTF-8/)
+    expect(inferredNativePathString(pathUri('file:///%00/bad/path/L3RtcC__'))).toBe('/tmp/�')
+    expect(() => guardianCwd('local',pathUri('file:///%00/bad/path/L3RtcC9h'))).toThrow(/not a host-native path/)
     expect(pathUri('file://localhost/work')).toBe('file:///work')
     expect(pathUri('file:///c:/work')).toBe('file:///C:/work')
     expect(pathUri('file:///d%3a/work')).toBe('file:///D%3a/work')
     expect(inferredNativePathString(pathUri('file:///tmp/non-utf8-%FF'))).toBe('/tmp/non-utf8-�')
+    expect(pathUriToAbsolutePath(pathUri('file:///tmp/non-utf8-%FF'))).toEqual({
+      kind:'posix_absolute_path_bytes',bytesBase64:'L3RtcC9ub24tdXRmOC3_',
+    })
     expect(pathUriCacheIdentity(pathUri('file:///C:/Repo/%46oo'))).toBe(pathUriCacheIdentity(pathUri('file:///c:/repo/foo')))
+    expect(pathUriCacheIdentity(pathUri('file:///C:/Repo/%41%FF'))).toBe(pathUriCacheIdentity(pathUri('file:///c:/repo/a%FF')))
     expect(pathUriCacheIdentity(pathUri('file:///C:/Repo/a%5Cb'))).not.toBe(pathUriCacheIdentity(pathUri('file:///c:/repo/a/b')))
+    const encodedCwd = pathUri('file:///C:/Repo/%41%FF')
+    const cacheAction: ApprovalAction = { type:'exec_command',id:'cache-uri',environmentId:'remote',command:['pwd'],hookCommand:'pwd',cwd:encodedCwd,sandboxPermissions:'use_default',tty:false }
+    expect(approvalCacheKeys(cacheAction)[0]).toMatchObject({ cwd: encodedCwd })
   })
 
   it('serializes permission profiles through the upstream legacy/canonical boundary', () => {
+    expect(serializePermissionProfile({ file_system:{ read:[],write:[] } })).toEqual({ network:null,file_system:{} })
+    expect(serializePermissionProfile({ file_system:{ read:[],write:[absolutePath('/work')] } })).toEqual({ network:null,file_system:{ write:['/work'] } })
     expect(serializePermissionProfile({ file_system: { entries: [
       { path:{ type:'path',path:pathUri('file:///work/read') },access:'read' },
       { path:{ type:'path',path:pathUri('file:///work/write') },access:'write' },

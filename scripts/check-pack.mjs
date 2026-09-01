@@ -39,11 +39,11 @@ try {
   if (packedRuntime.GUARDIAN_POLICY_SECTIONS.length < 10) throw new Error('packed runtime failed to load Guardian policy corpus')
   const parityRuntime = await import(new URL(`file://${join(packageRoot, 'lib/codex-parity/index.js').replaceAll('\\\\', '/')}`))
   const expectedParityExports = [
-    'PathConversionError', 'absolutePath', 'approvalCacheKeys', 'canonicalizeCommandForApproval',
+    'PathConversionError', 'absolutePath', 'absolutePathToLossyString', 'approvalCacheKeys', 'canonicalizeCommandForApproval',
     'formatGuardianActionPretty', 'guardianApprovalRequestToJson', 'guardianAssessmentAction',
     'guardianCwd', 'guardianRequestTargetItemId', 'guardianRequestTurnId', 'guardianReviewedAction',
-    'guardianTruncateText', 'i32', 'inferredNativePathString', 'intoGuardianRequest', 'losslessLegacyAppPathString', 'nonZeroUsize', 'parseShellLcPlainCommands',
-    'pathUri', 'pathUriCacheIdentity', 'pathUriToAbsolutePath', 'permissionRequestPayload', 'serializePermissionProfile', 'serializeRuntimePermissionProfile', 'shlexJoin', 'u16',
+    'guardianTruncateText', 'i32', 'inferredNativePathString', 'intoGuardianRequest', 'isPosixAbsolutePathBytes', 'losslessLegacyAppPathString', 'nonZeroUsize', 'parseShellLcPlainCommands',
+    'pathUri', 'pathUriCacheIdentity', 'pathUriToAbsolutePath', 'permissionRequestPayload', 'serializeAbsolutePath', 'serializePermissionProfile', 'serializeRuntimePermissionProfile', 'shlexJoin', 'u16',
   ]
   if (JSON.stringify(Object.keys(parityRuntime).sort()) !== JSON.stringify(expectedParityExports.sort())) {
     throw new Error(`packed Codex parity exports mismatch: ${Object.keys(parityRuntime).sort().join(',')}`)
@@ -52,6 +52,13 @@ try {
     throw new Error('packed Codex parity runtime failed to load native tree-sitter parser')
   }
   if (parityRuntime.pathUri('file:///d%3a/work') !== 'file:///D%3a/work') throw new Error('packed PathUri drive normalization mismatch')
+  const packedOpaquePath = parityRuntime.pathUriToAbsolutePath(parityRuntime.pathUri('file:///tmp/non-utf8-%FF'))
+  if (!parityRuntime.isPosixAbsolutePathBytes(packedOpaquePath) || parityRuntime.absolutePathToLossyString(packedOpaquePath) !== '/tmp/non-utf8-�') {
+    throw new Error('packed non-UTF-8 PathUri byte preservation mismatch')
+  }
+  try { parityRuntime.serializeAbsolutePath(packedOpaquePath); throw new Error('packed non-UTF-8 path serialized lossily') } catch (error) {
+    if (!(error instanceof parityRuntime.PathConversionError)) throw error
+  }
   try { parityRuntime.pathUri('file:///work?query=yes'); throw new Error('packed PathUri accepted query') } catch (error) {
     if (!(error instanceof parityRuntime.PathConversionError)) throw error
   }

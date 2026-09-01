@@ -1,5 +1,5 @@
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import type { AbsolutePath, PathUri } from './types.ts'
+import type { AbsolutePath, PathUri, PosixAbsolutePathBytes } from './types.ts'
 
 export const LOCAL_ENVIRONMENT_ID = 'local'
 
@@ -59,29 +59,55 @@ function decodePercentEncodedPathBytes(pathname: string): number[] {
   return bytes
 }
 
-function isCanonicalOpaqueFallback(url: URL): boolean {
+function opaqueFallbackBytes(url: URL): Uint8Array | undefined {
   const match = url.href.match(/^file:\/\/\/%00\/bad\/path\/([A-Za-z0-9_-]+)$/u)
-  if (match === null) return false
+  if (match === null) return undefined
   try {
     const encoded = match[1]!
     const bytes = Buffer.from(encoded, 'base64url')
-    return bytes.length > 0 && bytes.toString('base64url') === encoded
+    return bytes.length > 0 && bytes.toString('base64url') === encoded ? bytes : undefined
   } catch {
-    return false
+    return undefined
   }
+}
+
+function isCanonicalOpaqueFallback(url: URL): boolean { return opaqueFallbackBytes(url) !== undefined }
+
+function strictUtf8(bytes: Uint8Array): string | undefined {
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes) } catch { return undefined }
+}
+
+function opaqueAbsolutePath(bytes: Uint8Array): PosixAbsolutePathBytes {
+  return { kind: 'posix_absolute_path_bytes', bytesBase64: Buffer.from(bytes).toString('base64url') }
+}
+
+export function isPosixAbsolutePathBytes(path: AbsolutePath): path is PosixAbsolutePathBytes {
+  return typeof path !== 'string'
+}
+
+export function absolutePathToLossyString(path: AbsolutePath): string {
+  return typeof path === 'string'
+    ? path
+    : new TextDecoder('utf-8', { fatal: false }).decode(Buffer.from(path.bytesBase64, 'base64url'))
+}
+
+/** Mirrors PathBuf's serde string boundary; non-UTF-8 paths fail closed. */
+export function serializeAbsolutePath(path: AbsolutePath): string {
+  if (typeof path === 'string') return path
+  const decoded = strictUtf8(Buffer.from(path.bytesBase64, 'base64url'))
+  if (decoded === undefined) throw new PathConversionError('path contains invalid UTF-8 characters')
+  return decoded
 }
 
 function isWindowsUri(uri: PathUri): boolean {
   const url = new URL(uri)
-  return url.hostname.length > 0 || /^\/[A-Za-z](?:%3A|:)(?:\/|$)/iu.test(url.pathname)
-}
-
-function decodedPathname(uri: PathUri): string {
-  try {
-    return decodeURIComponent(new URL(uri).pathname)
-  } catch {
-    throw new PathConversionError(`file URI path is not representable: ${uri}`)
+  const opaque = opaqueFallbackBytes(url)
+  if (opaque !== undefined) {
+    if (opaque[0] === 0x2f || opaque.length % 2 !== 0) return false
+    const text = new TextDecoder('utf-16le', { fatal: false }).decode(opaque)
+    return /^[A-Za-z]:[\\/]/u.test(text) || /^[\\/]{2}/u.test(text)
   }
+  return url.hostname.length > 0 || /^\/[A-Za-z](?:%3A|:)(?:\/|$)/iu.test(url.pathname)
 }
 
 function decodedPathnameLossy(uri: PathUri): string {
@@ -91,38 +117,46 @@ function decodedPathnameLossy(uri: PathUri): string {
 /** Linux-x86 PathUri::to_abs_path followed by Codex's local-environment fallback. */
 export function guardianCwd(environmentId: string, cwd: PathUri): AbsolutePath {
   const url = new URL(cwd)
-  if (!isWindowsUri(cwd)) {
-    try {
-      return absolutePath(fileURLToPath(url))
-    } catch (error) {
-      throw new PathConversionError(error instanceof Error ? error.message : `invalid local path: ${cwd}`)
-    }
+  try { return pathUriToAbsolutePath(cwd) } catch (error) {
+    if (environmentId !== LOCAL_ENVIRONMENT_ID) throw error
   }
-  if (environmentId !== LOCAL_ENVIRONMENT_ID) {
-    throw new PathConversionError(`'${cwd}' is invalid on 'linux'`)
-  }
-  if (url.hostname.length > 0) {
+  try { return absolutePath(fileURLToPath(url)) } catch {
     throw new PathConversionError(`local cwd URI ${cwd} is not a host-native path`)
   }
-  return absolutePath(decodedPathname(cwd))
 }
 
 /** PathUri::to_abs_path: unlike guardianCwd this never uses the local-environment fallback. */
 export function pathUriToAbsolutePath(uri: PathUri): AbsolutePath {
-  if (isCanonicalOpaqueFallback(new URL(uri))) {
-    throw new PathConversionError('opaque POSIX path bytes cannot be represented losslessly by a JavaScript string')
+  const url = new URL(uri)
+  const opaque = opaqueFallbackBytes(url)
+  if (opaque !== undefined) {
+    if (opaque[0] !== 0x2f) throw new PathConversionError(`'${uri}' is invalid on 'linux'`)
+    // A canonical fallback only round-trips through PathUri::from_abs_path when
+    // the native bytes cannot use an ordinary URI spelling (non-UTF-8 or NUL).
+    if (strictUtf8(opaque) !== undefined && !opaque.includes(0)) {
+      throw new PathConversionError(`'${uri}' is invalid on 'linux'`)
+    }
+    return opaqueAbsolutePath(opaque)
   }
   if (isWindowsUri(uri)) throw new PathConversionError(`'${uri}' is invalid on 'linux'`)
-  try {
-    return absolutePath(fileURLToPath(new URL(uri)))
-  } catch (error) {
-    throw new PathConversionError(error instanceof Error ? error.message : `invalid local path: ${uri}`)
-  }
+  const bytes = Uint8Array.from(decodePercentEncodedPathBytes(url.pathname))
+  const decoded = strictUtf8(bytes)
+  if (decoded === undefined) return opaqueAbsolutePath(bytes)
+  return absolutePath(decoded)
 }
 
 /** LegacyAppPathString::from(PathUri) using the URI-inferred convention. */
 export function inferredNativePathString(uri: PathUri): string {
   const url = new URL(uri)
+  const opaque = opaqueFallbackBytes(url)
+  if (opaque !== undefined) {
+    if (opaque[0] === 0x2f) return new TextDecoder('utf-8', { fatal: false }).decode(opaque)
+    if (opaque.length % 2 === 0) {
+      const text = new TextDecoder('utf-16le', { fatal: false }).decode(opaque)
+      if (/^[A-Za-z]:[\\/]/u.test(text) || /^[\\/]{2}/u.test(text)) return text
+    }
+    return uri
+  }
   const decoded = decodedPathnameLossy(uri)
   if (url.hostname.length > 0) return `\\\\${url.hostname}${decoded.replaceAll('/', '\\')}`
   const drive = decoded.match(/^\/([A-Za-z]:)(?:\/(.*))?$/u)
@@ -131,20 +165,16 @@ export function inferredNativePathString(uri: PathUri): string {
 }
 
 /** Stable string stand-in for PathUri's Windows ASCII-case-folded Eq/Hash. */
-export function pathUriCacheIdentity(uri: PathUri): PathUri {
+export function pathUriCacheIdentity(uri: PathUri): string {
   if (!isWindowsUri(uri)) return uri
   const url = new URL(uri)
   if (isCanonicalOpaqueFallback(url) || url.pathname.split('/').some(segment => {
     const bytes = decodePercentEncodedPathBytes(segment)
     return bytes.includes(0x2f) || bytes.includes(0x5c)
   })) return uri
-  try {
-    const decoded = decodeURIComponent(url.pathname)
-    url.pathname = [...decoded].map(character => /[A-Z]/u.test(character) ? character.toLowerCase() : character).join('')
-  } catch {
-    url.pathname = url.pathname.replace(/[A-Z]/gu, character => character.toLowerCase())
-  }
-  return url.href as PathUri
+  const folded = Uint8Array.from(decodePercentEncodedPathBytes(url.pathname), byte =>
+    byte >= 0x41 && byte <= 0x5a ? byte + 0x20 : byte)
+  return `windows:${url.hostname}:${Buffer.from(folded).toString('base64url')}`
 }
 
 /** Raw permission seams require LegacyAppPathString -> PathUri lossless roundtrip. */
