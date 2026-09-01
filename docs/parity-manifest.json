@@ -75,7 +75,7 @@
         {"fqn": "command differential :: matches Linux recursive file_stem and case-sensitive shell detection", "sourcePath": "tests/codex-parity-upstream.spec.ts", "sourceBlob": "54ff53b9496f750c90b680e066657f417f3001b3", "status": "passed"},
         {"fqn": "Rust oracle :: matches real codex-core command canonicalization for corpus and wrapper boundaries", "sourcePath": "tests/codex-parity-oracle.spec.ts", "sourceBlob": "efbc55a90aa773d689381a9a74e525c4f4f76a4e", "status": "passed"}
       ],
-      "initialReview": {"decision": "pass", "agent": "/root/review_issue022a_commit", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "7cc376f85b8e0ca5a24f101f9189ad673cc5b781"},
+      "initialReview": {"decision": "pass", "agent": "/root/review_issue022a_commit", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "48d4a83bf7283c3ae0e2cea6487ab43c433a5189"},
       "remediationCommits": [
         "4245331f9e530bf3c7f67aa79ec52ad1ed9731ab",
         "a54493c431bef21e608229ba1fc26419f08d67cd",
@@ -84,7 +84,7 @@
         "4b9da8abaea756b98543df68811699e90929304d"
       ],
       "noRemediationProof": null,
-      "reReview": {"decision": "pass", "agent": "/root/review_issue022a_final", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "7cc376f85b8e0ca5a24f101f9189ad673cc5b781"},
+      "reReview": {"decision": "pass", "agent": "/root/review_issue022a_final", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "48d4a83bf7283c3ae0e2cea6487ab43c433a5189"},
       "status": "complete",
       "naProof": null
     },
@@ -129,7 +129,7 @@
         {"fqn": "Guardian formatting :: recursively truncates UTF-8 string fields with upstream XML marker", "sourcePath": "tests/codex-parity-upstream.spec.ts", "sourceBlob": "54ff53b9496f750c90b680e066657f417f3001b3", "status": "passed"},
         {"fqn": "Guardian oracle :: matches real fixed-commit private Guardian implementation", "sourcePath": "tests/codex-parity-oracle.spec.ts", "sourceBlob": "efbc55a90aa773d689381a9a74e525c4f4f76a4e", "status": "passed"}
       ],
-      "initialReview": {"decision": "pass", "agent": "/root/review_issue022a_commit", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "7cc376f85b8e0ca5a24f101f9189ad673cc5b781"},
+      "initialReview": {"decision": "pass", "agent": "/root/review_issue022a_commit", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "48d4a83bf7283c3ae0e2cea6487ab43c433a5189"},
       "remediationCommits": [
         "4245331f9e530bf3c7f67aa79ec52ad1ed9731ab",
         "a54493c431bef21e608229ba1fc26419f08d67cd",
@@ -138,7 +138,7 @@
         "4b9da8abaea756b98543df68811699e90929304d"
       ],
       "noRemediationProof": null,
-      "reReview": {"decision": "pass", "agent": "/root/review_issue022a_final", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "7cc376f85b8e0ca5a24f101f9189ad673cc5b781"},
+      "reReview": {"decision": "pass", "agent": "/root/review_issue022a_final", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "48d4a83bf7283c3ae0e2cea6487ab43c433a5189"},
       "status": "complete",
       "naProof": null
     },

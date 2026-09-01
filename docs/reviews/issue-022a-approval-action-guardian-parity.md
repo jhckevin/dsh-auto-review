@@ -39,7 +39,7 @@
 4. `04caaec32650ec754dd7eb152c9d78467da7ff57`
    - 以通用 Rust Path 词法递归替代样例特判，并扩展 84 项路径语法 corpus。
 5. `4b9da8abaea756b98543df68811699e90929304d`
-   - Bash 使用 `-lc`、PowerShell 使用 `-Command`/`-c` 产生可观察 canonical signal。
+   - Bash 使用 `-lc`、PowerShell 使用 `-Command` 产生可观察 canonical signal。
    - oracle 直接调用固定上游 `detect_shell_type`；TS 逐项差分并硬断言信号与检测分区计数。
 
 ## 最终实现映射
