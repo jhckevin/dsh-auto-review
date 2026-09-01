@@ -52,7 +52,41 @@
         {"path": "codex-rs/core/src/tools/approvals.rs", "symbol": "enum ApprovalCacheKey"},
         {"path": "codex-rs/core/src/command_canonicalization.rs", "symbol": "fn canonicalize_command_for_approval("}
       ],
-      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "in_progress", "naProof": null
+      "portPaths": [
+        "src/codex-parity/types.ts",
+        "src/codex-parity/approval-action.ts",
+        "src/codex-parity/command-canonicalization.ts",
+        "src/codex-parity/path.ts",
+        "src/codex-parity/permission-profile.ts",
+        "src/codex-parity/validation.ts"
+      ],
+      "portSymbols": [
+        {"path": "src/codex-parity/types.ts", "symbol": "export type ApprovalAction"},
+        {"path": "src/codex-parity/types.ts", "symbol": "export type ApprovalCacheKey"},
+        {"path": "src/codex-parity/approval-action.ts", "symbol": "export function approvalCacheKeys("},
+        {"path": "src/codex-parity/approval-action.ts", "symbol": "export function permissionRequestPayload("},
+        {"path": "src/codex-parity/command-canonicalization.ts", "symbol": "export function canonicalizeCommandForApproval("},
+        {"path": "src/codex-parity/path.ts", "symbol": "export function pathUriCacheIdentity("},
+        {"path": "src/codex-parity/permission-profile.ts", "symbol": "export function serializePermissionProfile("},
+        {"path": "src/codex-parity/validation.ts", "symbol": "export function nonZeroUsize("}
+      ],
+      "tests": [
+        {"fqn": "ApprovalAction protocol goldens :: emits exact exec permission payload cache key Guardian JSON assessment", "sourcePath": "tests/codex-parity.spec.ts", "sourceBlob": "2d410437e65ae9cd7870e75484278dc8fab513b6", "status": "passed"},
+        {"fqn": "command differential :: matches Linux recursive file_stem and case-sensitive shell detection", "sourcePath": "tests/codex-parity-upstream.spec.ts", "sourceBlob": "54ff53b9496f750c90b680e066657f417f3001b3", "status": "passed"},
+        {"fqn": "Rust oracle :: matches real codex-core command canonicalization for corpus and wrapper boundaries", "sourcePath": "tests/codex-parity-oracle.spec.ts", "sourceBlob": "efbc55a90aa773d689381a9a74e525c4f4f76a4e", "status": "passed"}
+      ],
+      "initialReview": {"decision": "pass", "agent": "/root/review_issue022a_commit", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "7cc376f85b8e0ca5a24f101f9189ad673cc5b781"},
+      "remediationCommits": [
+        "4245331f9e530bf3c7f67aa79ec52ad1ed9731ab",
+        "a54493c431bef21e608229ba1fc26419f08d67cd",
+        "03f9595315a88abeef672734e451a65c51393cef",
+        "04caaec32650ec754dd7eb152c9d78467da7ff57",
+        "4b9da8abaea756b98543df68811699e90929304d"
+      ],
+      "noRemediationProof": null,
+      "reReview": {"decision": "pass", "agent": "/root/review_issue022a_final", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "7cc376f85b8e0ca5a24f101f9189ad673cc5b781"},
+      "status": "complete",
+      "naProof": null
     },
     {
       "id": "approval-protocol",
@@ -72,7 +106,41 @@
         {"path": "codex-rs/core/src/guardian/approval_request.rs", "symbol": "fn guardian_approval_request_to_json("},
         {"path": "codex-rs/core/src/guardian/approval_request.rs", "symbol": "fn guardian_assessment_action("}
       ],
-      "portPaths": [], "portSymbols": [], "tests": [], "initialReview": null, "remediationCommits": [], "noRemediationProof": null, "reReview": null, "status": "in_progress", "naProof": null
+      "portPaths": [
+        "src/codex-parity/types.ts",
+        "src/codex-parity/guardian-request.ts",
+        "src/codex-parity/path.ts",
+        "src/codex-parity/permission-profile.ts"
+      ],
+      "portSymbols": [
+        {"path": "src/codex-parity/types.ts", "symbol": "export type GuardianApprovalRequest"},
+        {"path": "src/codex-parity/types.ts", "symbol": "export interface GuardianAssessmentEvent"},
+        {"path": "src/codex-parity/guardian-request.ts", "symbol": "export function intoGuardianRequest("},
+        {"path": "src/codex-parity/guardian-request.ts", "symbol": "export function guardianApprovalRequestToJson("},
+        {"path": "src/codex-parity/guardian-request.ts", "symbol": "export function guardianTruncateText("},
+        {"path": "src/codex-parity/guardian-request.ts", "symbol": "export function formatGuardianActionPretty("},
+        {"path": "src/codex-parity/guardian-request.ts", "symbol": "export function guardianAssessmentAction("},
+        {"path": "src/codex-parity/guardian-request.ts", "symbol": "export function guardianReviewedAction("},
+        {"path": "src/codex-parity/path.ts", "symbol": "export function guardianCwd("},
+        {"path": "src/codex-parity/permission-profile.ts", "symbol": "export function serializeRuntimePermissionProfile("}
+      ],
+      "tests": [
+        {"fqn": "Guardian formatting :: sorts every object level before pretty JSON", "sourcePath": "tests/codex-parity-upstream.spec.ts", "sourceBlob": "54ff53b9496f750c90b680e066657f417f3001b3", "status": "passed"},
+        {"fqn": "Guardian formatting :: recursively truncates UTF-8 string fields with upstream XML marker", "sourcePath": "tests/codex-parity-upstream.spec.ts", "sourceBlob": "54ff53b9496f750c90b680e066657f417f3001b3", "status": "passed"},
+        {"fqn": "Guardian oracle :: matches real fixed-commit private Guardian implementation", "sourcePath": "tests/codex-parity-oracle.spec.ts", "sourceBlob": "efbc55a90aa773d689381a9a74e525c4f4f76a4e", "status": "passed"}
+      ],
+      "initialReview": {"decision": "pass", "agent": "/root/review_issue022a_commit", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "7cc376f85b8e0ca5a24f101f9189ad673cc5b781"},
+      "remediationCommits": [
+        "4245331f9e530bf3c7f67aa79ec52ad1ed9731ab",
+        "a54493c431bef21e608229ba1fc26419f08d67cd",
+        "03f9595315a88abeef672734e451a65c51393cef",
+        "04caaec32650ec754dd7eb152c9d78467da7ff57",
+        "4b9da8abaea756b98543df68811699e90929304d"
+      ],
+      "noRemediationProof": null,
+      "reReview": {"decision": "pass", "agent": "/root/review_issue022a_final", "commit": "4b9da8abaea756b98543df68811699e90929304d", "evidencePath": "docs/reviews/issue-022a-approval-action-guardian-parity.md", "evidenceBlob": "7cc376f85b8e0ca5a24f101f9189ad673cc5b781"},
+      "status": "complete",
+      "naProof": null
     },
     {
       "id": "guardian-prompt",
