@@ -51,12 +51,23 @@ try {
   if (JSON.stringify(parityRuntime.canonicalizeCommandForApproval(['bash', '-lc', 'echo hi;'])) !== '[\"echo\",\"hi\"]') {
     throw new Error('packed Codex parity runtime failed to load native tree-sitter parser')
   }
+  if (JSON.stringify(parityRuntime.canonicalizeCommandForApproval(['/bin/bash/', '-lc', 'echo hi'])) !== '[\"echo\",\"hi\"]'
+    || JSON.stringify(parityRuntime.canonicalizeCommandForApproval(['bash/', '-lc', 'echo hi'])) !== '[\"bash/\",\"-lc\",\"echo hi\"]') {
+    throw new Error('packed recursive shell file_stem boundary mismatch')
+  }
   if (parityRuntime.pathUri('file:///d%3a/work') !== 'file:///D%3a/work') throw new Error('packed PathUri drive normalization mismatch')
   const packedOpaquePath = parityRuntime.pathUriToAbsolutePath(parityRuntime.pathUri('file:///tmp/non-utf8-%FF'))
   if (!parityRuntime.isPosixAbsolutePathBytes(packedOpaquePath) || parityRuntime.absolutePathToLossyString(packedOpaquePath) !== '/tmp/non-utf8-�') {
     throw new Error('packed non-UTF-8 PathUri byte preservation mismatch')
   }
   try { parityRuntime.serializeAbsolutePath(packedOpaquePath); throw new Error('packed non-UTF-8 path serialized lossily') } catch (error) {
+    if (!(error instanceof parityRuntime.PathConversionError)) throw error
+  }
+  const packedDriveOpaque = parityRuntime.pathUriToAbsolutePath(parityRuntime.pathUri('file:///%00/bad/path/L0M6L3dvcmtzcGFjZQ'))
+  if (!parityRuntime.isPosixAbsolutePathBytes(packedDriveOpaque) || parityRuntime.serializeAbsolutePath(packedDriveOpaque) !== '/C:/workspace') {
+    throw new Error('packed opaque POSIX drive-shaped roundtrip mismatch')
+  }
+  try { parityRuntime.pathUriToAbsolutePath(parityRuntime.pathUri('file:///%00/bad/path/L3RtcC__')); throw new Error('packed forged opaque URI accepted') } catch (error) {
     if (!(error instanceof parityRuntime.PathConversionError)) throw error
   }
   try { parityRuntime.pathUri('file:///work?query=yes'); throw new Error('packed PathUri accepted query') } catch (error) {
@@ -71,7 +82,15 @@ try {
   if (packedJson.tool !== 'exec_command' || packedJson.cwd !== '/work' || packedJson.tty !== false) {
     throw new Error('packed Guardian request serialization mismatch')
   }
+  const packedFallbackJson = parityRuntime.guardianApprovalRequestToJson(parityRuntime.intoGuardianRequest({
+    ...packedAction,id:'packed-opaque-fallback',cwd:parityRuntime.pathUri('file:///%00/bad/path/L3RtcC__'),
+  }))
+  if (packedFallbackJson.cwd !== '/\0/bad/path/L3RtcC__') {
+    throw new Error('packed Guardian local opaque fallback mismatch')
+  }
   if (parityRuntime.approvalCacheKeys(packedAction)[0]?.cwd !== 'file:///work') throw new Error('packed cache-key path mismatch')
+  const packedMcp = { type: 'mcp_tool_call', id: 'packed-mcp', server: 'srv', toolName: 'tool', arguments: null, hookToolName: 'mcp__srv__tool', approvalPolicy: 'on-request', reviewer: 'auto_review', approvalMode: 'prompt', allowSessionRemember: false, allowPersistentApproval: false }
+  if (parityRuntime.permissionRequestPayload(packedMcp).toolInput !== null) throw new Error('packed MCP explicit null arguments were defaulted')
   if (parityRuntime.shlexJoin(['printf', 'a\0b']) !== '<command included NUL byte>') throw new Error('packed shlex NUL mismatch')
   if (!parityRuntime.guardianTruncateText('🙂'.repeat(100), 8).truncated) throw new Error('packed UTF-8 truncation mismatch')
   for (const file of ['guardian-policy-template.md', 'guardian-policy.md']) {

@@ -46,6 +46,16 @@ interface GuardianOracle {
     ordinaryNonUtf8: { uri: string; recoveredBytesBase64: string; lossy: string }
     guardianCwdSerialization: { writeStdin: JsonObject; network: JsonObject }
     validUtf8OpaqueError: string
+    opaqueRoundtrip: {
+      validPosixDrive: { uri: string; recoveredBytesBase64: string }
+      forgedNonUtf8: { uri: string; error: string }
+    }
+    permissionLossless: { validPosixDrive: JsonObject; forgedNonUtf8Error: string }
+    guardianOpaqueCwd: {
+      validPosixDrive: JsonObject
+      forgedNonUtf8LocalFallback: JsonObject
+      validUtf8LocalFallback: JsonObject
+    }
   }
   conversionErrors: Array<{ name: string; error: string }>
 }
@@ -96,6 +106,7 @@ function guardianAction(name: string): ApprovalAction {
     case 'apply_patch/options': return { type:'apply_patch',id:'4',environmentId:'local',cwd:pathUri('file:///work'),files:[pathUri('file:///work/a.ts'),pathUri('file:///tmp/b.ts')],patch:'*** Begin Patch\n*** Update File: /work/a.ts\n*** End Patch',changes:{},permissionsPreapproved:false }
     case 'mcp/minimal': return { type:'mcp_tool_call',id:'5',server:'srv',toolName:'read',hookToolName:'mcp__srv__read',approvalPolicy:'on-request',reviewer:'auto_review',approvalMode:'prompt',allowSessionRemember:false,allowPersistentApproval:false }
     case 'mcp/options': return { type:'mcp_tool_call',id:'5',server:'srv',toolName:'write',arguments:{z:1,a:'x'},connectorId:'cid',connectorName:'conn',connectorDescription:'desc',connectedAccountEmail:'a@example.test',toolTitle:'Write',toolDescription:'writes',annotations:{destructive_hint:true,open_world_hint:false,read_only_hint:false},hookToolName:'mcp__srv__write',approvalPolicy:'on-request',reviewer:'auto_review',approvalMode:'prompt',allowSessionRemember:false,allowPersistentApproval:false }
+    case 'mcp/null_arguments': return { type:'mcp_tool_call',id:'5',server:'srv',toolName:'nullable',arguments:null,hookToolName:'mcp__srv__nullable',approvalPolicy:'on-request',reviewer:'auto_review',approvalMode:'prompt',allowSessionRemember:false,allowPersistentApproval:false }
     case 'network/minimal': return { type:'network_access',id:'net-min',turnId:'turn-min',environmentId:'local',target:'example.test:443',host:'example.test',protocol:'https',port:u16(443),hookCommand:'curl https://example.test',hookRunId:'hook-min',command:['curl','https://example.test'],cwd:absolutePath('/work') }
     case 'network/options': return { type:'network_access',id:'net-opt',turnId:'turn-opt',environmentId:'local',target:'example.test:443',host:'example.test',protocol:'https',port:u16(443),trigger:{callId:'call',toolName:'exec_command',command:['curl','https://example.test'],cwd:pathUri('file:///work'),sandboxPermissions:'with_additional_permissions',additionalPermissions:additional,justification:'fetch',tty:false},hookCommand:'curl https://example.test',hookRunId:'hook-opt',command:['curl','https://example.test'],cwd:absolutePath('/work') }
     case 'request_permissions/minimal': return { type:'request_permissions',id:'7',turnId:'turn-min',permissions:{} }
@@ -134,7 +145,7 @@ describe('machine-generated Codex 9f97cb79 Rust oracle', () => {
 
   it('matches real codex-core command canonicalization for the corpus and wrapper boundaries', () => {
     expect(guardianOracle.canonicalization.shellCorpus).toHaveLength(54)
-    expect(guardianOracle.canonicalization.wrapperBoundaries).toHaveLength(4)
+    expect(guardianOracle.canonicalization.wrapperBoundaries).toHaveLength(6)
     for (const fixture of [
       ...guardianOracle.canonicalization.shellCorpus,
       ...guardianOracle.canonicalization.wrapperBoundaries,
@@ -161,7 +172,7 @@ describe('machine-generated Codex 9f97cb79 Rust oracle', () => {
   it('matches the real fixed-commit private Guardian implementation', () => {
     expect(guardianOracle.generator).toBe('codex-core::guardian::oracle_export')
     expect(guardianOracle.sourceCommit).toBe('9f97cb79eb15b38d24c552c56fe24e211ff9cf3a')
-    expect(guardianOracle.guardian).toHaveLength(14)
+    expect(guardianOracle.guardian).toHaveLength(15)
     for (const fixture of guardianOracle.guardian) {
       const action = guardianAction(fixture.name)
       expect(serializedPermissionRequestPayload(action), `${fixture.name}: permission payload`).toEqual(fixture.permissionRequestPayload)
@@ -234,6 +245,26 @@ describe('machine-generated Codex 9f97cb79 Rust oracle', () => {
     expect(pathUriToAbsolutePath(pathUri(ordinary.uri))).toEqual({ kind:'posix_absolute_path_bytes',bytesBase64:ordinary.recoveredBytesBase64 })
     expect(inferredNativePathString(pathUri(ordinary.uri))).toBe(ordinary.lossy)
     expect(() => pathUriToAbsolutePath(pathUri('file:///%00/bad/path/L3RtcC9h'))).toThrow(guardianOracle.pathUri.validUtf8OpaqueError)
+    const opaqueRoundtrip = guardianOracle.pathUri.opaqueRoundtrip
+    expect(pathUriToAbsolutePath(pathUri(opaqueRoundtrip.validPosixDrive.uri))).toEqual({
+      kind:'posix_absolute_path_bytes',bytesBase64:opaqueRoundtrip.validPosixDrive.recoveredBytesBase64,
+    })
+    expect(() => pathUriToAbsolutePath(pathUri(opaqueRoundtrip.forgedNonUtf8.uri))).toThrow(opaqueRoundtrip.forgedNonUtf8.error)
+    expect(serializePermissionProfile({ file_system:{ entries:[{
+      path:{ type:'path',path:pathUri(opaqueRoundtrip.validPosixDrive.uri) },access:'read',
+    }] } })).toEqual(guardianOracle.pathUri.permissionLossless.validPosixDrive)
+    expect(() => serializePermissionProfile({ file_system:{ entries:[{
+      path:{ type:'path',path:pathUri(opaqueRoundtrip.forgedNonUtf8.uri) },access:'read',
+    }] } })).toThrow(guardianOracle.pathUri.permissionLossless.forgedNonUtf8Error)
+
+    const opaqueCwdAction: ApprovalAction = { type:'exec_command',id:'opaque-cwd',environmentId:'local',command:['pwd'],hookCommand:'pwd',cwd:pathUri(opaqueRoundtrip.validPosixDrive.uri),sandboxPermissions:'use_default',tty:false }
+    expect(guardianApprovalRequestToJson(intoGuardianRequest(opaqueCwdAction))).toEqual(guardianOracle.pathUri.guardianOpaqueCwd.validPosixDrive)
+    expect(guardianApprovalRequestToJson(intoGuardianRequest({
+      ...opaqueCwdAction,id:'opaque-forged-cwd',cwd:pathUri(opaqueRoundtrip.forgedNonUtf8.uri),
+    }))).toEqual(guardianOracle.pathUri.guardianOpaqueCwd.forgedNonUtf8LocalFallback)
+    expect(guardianApprovalRequestToJson(intoGuardianRequest({
+      ...opaqueCwdAction,id:'opaque-valid-utf8-cwd',cwd:pathUri('file:///%00/bad/path/L3RtcC9h'),
+    }))).toEqual(guardianOracle.pathUri.guardianOpaqueCwd.validUtf8LocalFallback)
 
     const writeAction: ApprovalAction = { type:'write_stdin',id:'path-write',approvalId:'path-approval',environmentId:'local',processId:i32(9),input:'',cwd:pathUri(ordinary.uri),tty:false,sandboxPermissions:'use_default' }
     expect(guardianApprovalRequestToJson(intoGuardianRequest(writeAction))).toEqual(guardianOracle.pathUri.guardianCwdSerialization.writeStdin)

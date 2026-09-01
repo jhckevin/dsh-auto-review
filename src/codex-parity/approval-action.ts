@@ -34,7 +34,7 @@ export function permissionRequestPayload(action: ApprovalAction): PermissionRequ
     case 'apply_patch':
       return { toolName: 'apply_patch', toolInput: { command: action.patch } }
     case 'mcp_tool_call':
-      return { toolName: action.hookToolName, toolInput: action.arguments ?? {} }
+      return { toolName: action.hookToolName, toolInput: action.arguments === undefined ? {} : action.arguments }
     case 'network_access':
       return {
         toolName: 'Bash',

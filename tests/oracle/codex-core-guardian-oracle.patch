@@ -13,10 +13,10 @@ index 2e8b136f5d..f8a410f44b 100644
  mod prompt;
 diff --git a/codex-rs/core/src/guardian/oracle_export.rs b/codex-rs/core/src/guardian/oracle_export.rs
 new file mode 100644
-index 0000000000..462ae3dcb9
+index 0000000000..1921840fb0
 --- /dev/null
 +++ b/codex-rs/core/src/guardian/oracle_export.rs
-@@ -0,0 +1,388 @@
+@@ -0,0 +1,465 @@
 +use super::approval_request::GuardianApprovalRequest;
 +use super::approval_request::GuardianMcpAnnotations;
 +use super::approval_request::GuardianNetworkAccessTrigger;
@@ -150,6 +150,16 @@ index 0000000000..462ae3dcb9
 +            reviewer: ApprovalsReviewer::AutoReview, approval_mode: AppToolApproval::Prompt,
 +            allow_session_remember: true, allow_persistent_approval: true,
 +        }),
++        ("mcp/null_arguments", ApprovalAction::McpToolCall {
++            id: "mcp-null".into(), server: "srv".into(), tool_name: "nullable".into(),
++            arguments: Some(Value::Null), connector_id: None, connector_name: None,
++            connector_description: None, connected_account_email: None, tool_title: None,
++            tool_description: None, annotations: None,
++            hook_tool_name: HookToolName::new("mcp__srv__nullable"),
++            approval_policy: AskForApproval::OnRequest, reviewer: ApprovalsReviewer::AutoReview,
++            approval_mode: AppToolApproval::Prompt, allow_session_remember: false,
++            allow_persistent_approval: false,
++        }),
 +        ("network/minimal", ApprovalAction::NetworkAccess {
 +            id: "net-min".into(), turn_id: "turn-min".into(), environment_id: "local".into(), target: "example.test:443".into(),
 +            host: "example.test".into(), protocol: NetworkApprovalProtocol::Https, port: 443, trigger: None,
@@ -244,6 +254,8 @@ index 0000000000..462ae3dcb9
 +        vec!["PowerShell.EXE", "-Command", "Write-Host hi"],
 +        vec![r"C:\Windows\pwsh.exe", "-Command", "Write-Host hi"],
 +        vec!["/bin/bash.foo.bar", "-lc", "echo hi"],
++        vec!["/bin/bash/", "-lc", "echo hi"],
++        vec!["bash/", "-lc", "echo hi"],
 +    ];
 +    let wrapper_boundaries = wrapper_inputs.into_iter().map(|argv| {
 +        let input = argv.into_iter().map(str::to_string).collect::<Vec<_>>();
@@ -323,6 +335,52 @@ index 0000000000..462ae3dcb9
 +    let ordinary_non_utf = PathUri::parse("file:///tmp/non-utf8-%FF").unwrap();
 +    let recovered_ordinary = ordinary_non_utf.to_abs_path().unwrap();
 +    let valid_utf8_fallback = PathUri::parse("file:///%00/bad/path/L3RtcC9h").unwrap();
++    let valid_posix_drive_fallback = PathUri::parse("file:///%00/bad/path/L0M6L3dvcmtzcGFjZQ").unwrap();
++    let recovered_posix_drive = valid_posix_drive_fallback.to_abs_path().unwrap();
++    let forged_non_utf_fallback = PathUri::parse("file:///%00/bad/path/L3RtcC__").unwrap();
++    let valid_permission_profile = AdditionalPermissionProfile {
++        network: None,
++        file_system: Some(FileSystemPermissions {
++            entries: vec![FileSystemSandboxEntry {
++                path: FileSystemPath::Path { path: valid_posix_drive_fallback.clone() },
++                access: FileSystemAccessMode::Read,
++                missing_path_behavior: None,
++            }],
++            glob_scan_max_depth: None,
++        }),
++    };
++    let forged_permission_profile = AdditionalPermissionProfile {
++        network: None,
++        file_system: Some(FileSystemPermissions {
++            entries: vec![FileSystemSandboxEntry {
++                path: FileSystemPath::Path { path: forged_non_utf_fallback.clone() },
++                access: FileSystemAccessMode::Read,
++                missing_path_behavior: None,
++            }],
++            glob_scan_max_depth: None,
++        }),
++    };
++    let valid_opaque_cwd = ApprovalAction::ExecCommand {
++        id: "opaque-valid-cwd".into(), environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.into(),
++        command: vec!["pwd".into()], hook_command: "pwd".into(), cwd: valid_posix_drive_fallback.clone(),
++        sandbox_permissions: SandboxPermissions::UseDefault, additional_permissions: None,
++        justification: None, tty: false, proposed_execpolicy_amendment: None,
++    };
++    let forged_opaque_cwd = ApprovalAction::ExecCommand {
++        id: "opaque-forged-cwd".into(), environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.into(),
++        command: vec!["pwd".into()], hook_command: "pwd".into(), cwd: forged_non_utf_fallback.clone(),
++        sandbox_permissions: SandboxPermissions::UseDefault, additional_permissions: None,
++        justification: None, tty: false, proposed_execpolicy_amendment: None,
++    };
++    let valid_utf8_fallback_cwd = ApprovalAction::ExecCommand {
++        id: "opaque-valid-utf8-cwd".into(), environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.into(),
++        command: vec!["pwd".into()], hook_command: "pwd".into(), cwd: valid_utf8_fallback.clone(),
++        sandbox_permissions: SandboxPermissions::UseDefault, additional_permissions: None,
++        justification: None, tty: false, proposed_execpolicy_amendment: None,
++    };
++    let valid_opaque_cwd_json = guardian_approval_request_to_json(&valid_opaque_cwd.into_guardian_request().unwrap()).unwrap();
++    let forged_opaque_cwd_json = guardian_approval_request_to_json(&forged_opaque_cwd.into_guardian_request().unwrap()).unwrap();
++    let valid_utf8_fallback_cwd_json = guardian_approval_request_to_json(&valid_utf8_fallback_cwd.into_guardian_request().unwrap()).unwrap();
 +    let write_stdin = GuardianApprovalRequest::WriteStdin {
 +        id: "path-write".into(), approval_id: "path-approval".into(), environment_id: "local".into(),
 +        process_id: 9, input: String::new(), cwd: ordinary_non_utf.clone(), tty: false,
@@ -359,7 +417,26 @@ index 0000000000..462ae3dcb9
 +            "writeStdin": guardian_approval_request_to_json(&write_stdin).unwrap(),
 +            "network": guardian_approval_request_to_json(&network).unwrap()
 +        },
-+        "validUtf8OpaqueError": valid_utf8_fallback.to_abs_path().unwrap_err().to_string()
++        "validUtf8OpaqueError": valid_utf8_fallback.to_abs_path().unwrap_err().to_string(),
++        "opaqueRoundtrip": {
++            "validPosixDrive": {
++                "uri": valid_posix_drive_fallback,
++                "recoveredBytesBase64": base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(recovered_posix_drive.as_path().as_os_str().as_bytes())
++            },
++            "forgedNonUtf8": {
++                "uri": forged_non_utf_fallback,
++                "error": forged_non_utf_fallback.to_abs_path().unwrap_err().to_string()
++            }
++        },
++        "permissionLossless": {
++            "validPosixDrive": serde_json::to_value(valid_permission_profile).unwrap(),
++            "forgedNonUtf8Error": serde_json::to_value(forged_permission_profile).unwrap_err().to_string()
++        },
++        "guardianOpaqueCwd": {
++            "validPosixDrive": valid_opaque_cwd_json,
++            "forgedNonUtf8LocalFallback": forged_opaque_cwd_json,
++            "validUtf8LocalFallback": valid_utf8_fallback_cwd_json
++        }
 +    })
 +}
 +

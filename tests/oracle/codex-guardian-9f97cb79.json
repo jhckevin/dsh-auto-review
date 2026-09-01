@@ -697,6 +697,29 @@
           "-lc",
           "echo hi"
         ]
+      },
+      {
+        "canonical": [
+          "echo",
+          "hi"
+        ],
+        "input": [
+          "/bin/bash/",
+          "-lc",
+          "echo hi"
+        ]
+      },
+      {
+        "canonical": [
+          "bash/",
+          "-lc",
+          "echo hi"
+        ],
+        "input": [
+          "bash/",
+          "-lc",
+          "echo hi"
+        ]
       }
     ]
   },
@@ -1171,6 +1194,40 @@
     },
     {
       "assessment": {
+        "connector_id": null,
+        "connector_name": null,
+        "server": "srv",
+        "tool_name": "nullable",
+        "tool_title": null,
+        "type": "mcp_tool_call"
+      },
+      "cacheKeys": [],
+      "formatted": {
+        "text": "{\n  \"arguments\": null,\n  \"server\": \"srv\",\n  \"tool\": \"mcp_tool_call\",\n  \"tool_name\": \"nullable\"\n}",
+        "truncated": false
+      },
+      "json": {
+        "arguments": null,
+        "server": "srv",
+        "tool": "mcp_tool_call",
+        "tool_name": "nullable"
+      },
+      "name": "mcp/null_arguments",
+      "permissionRequestPayload": {
+        "tool_input": null,
+        "tool_name": "mcp__srv__nullable"
+      },
+      "reviewed": {
+        "connector_id": null,
+        "connector_name": null,
+        "server": "srv",
+        "tool_name": "nullable",
+        "tool_title": null,
+        "type": "mcp_tool_call"
+      }
+    },
+    {
+      "assessment": {
         "host": "example.test",
         "port": 443,
         "protocol": "https",
@@ -1583,16 +1640,66 @@
         "tty": false
       }
     },
+    "guardianOpaqueCwd": {
+      "forgedNonUtf8LocalFallback": {
+        "command": [
+          "pwd"
+        ],
+        "cwd": "/\u0000/bad/path/L3RtcC__",
+        "sandbox_permissions": "use_default",
+        "tool": "exec_command",
+        "tty": false
+      },
+      "validPosixDrive": {
+        "command": [
+          "pwd"
+        ],
+        "cwd": "/C:/workspace",
+        "sandbox_permissions": "use_default",
+        "tool": "exec_command",
+        "tty": false
+      },
+      "validUtf8LocalFallback": {
+        "command": [
+          "pwd"
+        ],
+        "cwd": "/\u0000/bad/path/L3RtcC9h",
+        "sandbox_permissions": "use_default",
+        "tool": "exec_command",
+        "tty": false
+      }
+    },
     "opaquePosix": {
       "bytesBase64": "L3RtcC__AHg",
       "lossy": "/tmp/�\u0000x",
       "recoveredBytesBase64": "L3RtcC__AHg",
       "uri": "file:///%00/bad/path/L3RtcC__AHg"
     },
+    "opaqueRoundtrip": {
+      "forgedNonUtf8": {
+        "error": "'file:///%00/bad/path/L3RtcC__' is invalid on 'linux'",
+        "uri": "file:///%00/bad/path/L3RtcC__"
+      },
+      "validPosixDrive": {
+        "recoveredBytesBase64": "L0M6L3dvcmtzcGFjZQ",
+        "uri": "file:///%00/bad/path/L0M6L3dvcmtzcGFjZQ"
+      }
+    },
     "ordinaryNonUtf8": {
       "lossy": "/tmp/non-utf8-�",
       "recoveredBytesBase64": "L3RtcC9ub24tdXRmOC3_",
       "uri": "file:///tmp/non-utf8-%FF"
+    },
+    "permissionLossless": {
+      "forgedNonUtf8Error": "permission path cannot be represented losslessly",
+      "validPosixDrive": {
+        "file_system": {
+          "read": [
+            "/C:/workspace"
+          ]
+        },
+        "network": null
+      }
     },
     "validUtf8OpaqueError": "'file:///%00/bad/path/L3RtcC9h' is invalid on 'linux'",
     "windowsEquality": [

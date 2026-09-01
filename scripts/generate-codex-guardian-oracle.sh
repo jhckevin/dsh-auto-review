@@ -6,6 +6,18 @@ source_root=${CODEX_ORACLE_ROOT:?set CODEX_ORACLE_ROOT to a Codex checkout conta
 expected=9f97cb79eb15b38d24c552c56fe24e211ff9cf3a
 output=${CODEX_GUARDIAN_ORACLE_OUTPUT:-$repo/tests/oracle/codex-guardian-9f97cb79.json}
 cargo_bin=${CARGO_BIN:-cargo}
+cargo_path=$(command -v "$cargo_bin" 2>/dev/null || true)
+if test -z "$cargo_path" || test ! -x "$cargo_path"; then
+  echo "cargo executable not found or not executable: $cargo_bin" >&2
+  exit 127
+fi
+cargo_bin=$cargo_path
+cargo_bin_dir=$(CDPATH= cd -- "$(dirname "$cargo_bin")" && pwd)
+rustc_bin=${RUSTC_BIN:-$cargo_bin_dir/rustc}
+if test ! -x "$rustc_bin"; then
+  echo "rustc executable not found or not executable: $rustc_bin (set RUSTC_BIN explicitly)" >&2
+  exit 127
+fi
 cargo_home=${CARGO_HOME:?set CARGO_HOME}
 rustup_home=${RUSTUP_HOME:?set RUSTUP_HOME}
 toolchain=${RUSTUP_TOOLCHAIN:-1.96.0-x86_64-unknown-linux-gnu}
@@ -35,7 +47,8 @@ check_blob codex-rs/shell-command/src/bash.rs ddd5807bfce5d1a54796e7a557b77d589b
 check_blob codex-rs/shell-command/src/powershell.rs 0b668eb4943ea3110a5c269a4e7fcea7cd0cb82c
 check_blob codex-rs/shell-command/src/lib.rs 898965e93729618d49d59861b1f0ad62a72fbf59
 check_blob codex-rs/analytics/src/events.rs dcfed40304833781ea0b2db0424108a02b76263f
-command -v "$cargo_bin" >/dev/null 2>&1
+"$cargo_bin" --version >/dev/null
+"$rustc_bin" --version >/dev/null
 
 scratch=${CODEX_ORACLE_SCRATCH:-$target_dir-worktree}
 checkout=$scratch/codex
@@ -95,6 +108,8 @@ git -C "$checkout" apply "$repo/tests/oracle/codex-core-guardian-oracle.patch"
 (
   cd "$checkout/codex-rs"
   env \
+    PATH="$cargo_bin_dir:${PATH:-/usr/bin:/bin}" \
+    RUSTC="$rustc_bin" \
     CARGO_HOME="$cargo_home" \
     RUSTUP_HOME="$rustup_home" \
     RUSTUP_TOOLCHAIN="$toolchain" \

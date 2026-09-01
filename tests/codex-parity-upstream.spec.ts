@@ -3,7 +3,7 @@ import {
   absolutePath, approvalCacheKeys, canonicalizeCommandForApproval, formatGuardianActionPretty,
   guardianApprovalRequestToJson, guardianCwd, guardianReviewedAction, guardianTruncateText, i32,
   inferredNativePathString, intoGuardianRequest, nonZeroUsize, pathUri, pathUriCacheIdentity, pathUriToAbsolutePath,
-  parseShellLcPlainCommands, serializeAbsolutePath, serializePermissionProfile, serializeRuntimePermissionProfile, shlexJoin, u16,
+  parseShellLcPlainCommands, permissionRequestPayload, serializeAbsolutePath, serializePermissionProfile, serializeRuntimePermissionProfile, shlexJoin, u16,
   type ApprovalAction,
 } from '../src/codex-parity/index.ts'
 
@@ -47,6 +47,8 @@ describe('Codex shell-command corpus differential boundaries', () => {
     expect(canonicalizeCommandForApproval(['PowerShell.EXE','-Command','Write-Host hi'])).toEqual(['PowerShell.EXE','-Command','Write-Host hi'])
     expect(canonicalizeCommandForApproval(['C:\\Windows\\pwsh.exe','-Command','Write-Host hi'])).toEqual(['C:\\Windows\\pwsh.exe','-Command','Write-Host hi'])
     expect(canonicalizeCommandForApproval(['/bin/bash.foo.bar','-lc','echo hi'])).toEqual(['echo','hi'])
+    expect(canonicalizeCommandForApproval(['/bin/bash/','-lc','echo hi'])).toEqual(['echo','hi'])
+    expect(canonicalizeCommandForApproval(['bash/','-lc','echo hi'])).toEqual(['bash/','-lc','echo hi'])
   })
 })
 
@@ -94,16 +96,22 @@ describe('Codex Linux PathUri and absolute-path boundaries', () => {
     expect(() => pathUri('file:///work#fragment')).toThrow(/fragment/)
     expect(() => pathUri('file:///work/%00/plain')).toThrow(/NUL/)
     expect(pathUri('file:///%00/bad/path/L3RtcC9h')).toBe('file:///%00/bad/path/L3RtcC9h')
+    expect(pathUriToAbsolutePath(pathUri('file:///%00/bad/path/L0M6L3dvcmtzcGFjZQ'))).toEqual({
+      kind:'posix_absolute_path_bytes',bytesBase64:'L0M6L3dvcmtzcGFjZQ',
+    })
+    expect(() => pathUriToAbsolutePath(pathUri('file:///%00/bad/path/L3RtcC__'))).toThrow(/invalid on 'linux'/)
     const opaqueRequest = intoGuardianRequest({
       type:'apply_patch',id:'opaque',environmentId:'local',cwd:pathUri('file:///work'),
-      files:[pathUri('file:///%00/bad/path/L3RtcC__')],patch:'',changes:{},permissionsPreapproved:false,
+      files:[pathUri('file:///%00/bad/path/L0M6L3dvcmtzcGFjZQ')],patch:'',changes:{},permissionsPreapproved:false,
     })
     if (opaqueRequest.type !== 'apply_patch') throw new Error('expected apply_patch')
-    expect(opaqueRequest.files[0]).toEqual({ kind:'posix_absolute_path_bytes',bytesBase64:'L3RtcC__' })
-    expect(() => serializeAbsolutePath(opaqueRequest.files[0]!)).toThrow(/invalid UTF-8/)
-    expect(() => guardianApprovalRequestToJson(opaqueRequest)).toThrow(/invalid UTF-8/)
+    expect(opaqueRequest.files[0]).toEqual({ kind:'posix_absolute_path_bytes',bytesBase64:'L0M6L3dvcmtzcGFjZQ' })
+    expect(serializeAbsolutePath(opaqueRequest.files[0]!)).toBe('/C:/workspace')
+    expect(guardianApprovalRequestToJson(opaqueRequest).files).toEqual(['/C:/workspace'])
     expect(inferredNativePathString(pathUri('file:///%00/bad/path/L3RtcC__'))).toBe('/tmp/�')
-    expect(() => guardianCwd('local',pathUri('file:///%00/bad/path/L3RtcC9h'))).toThrow(/not a host-native path/)
+    expect(guardianCwd('local',pathUri('file:///%00/bad/path/L3RtcC9h'))).toEqual({
+      kind:'posix_absolute_path_bytes',bytesBase64:'LwAvYmFkL3BhdGgvTDNSdGNDOWg',
+    })
     expect(pathUri('file://localhost/work')).toBe('file:///work')
     expect(pathUri('file:///c:/work')).toBe('file:///C:/work')
     expect(pathUri('file:///d%3a/work')).toBe('file:///D%3a/work')
@@ -117,6 +125,12 @@ describe('Codex Linux PathUri and absolute-path boundaries', () => {
     const encodedCwd = pathUri('file:///C:/Repo/%41%FF')
     const cacheAction: ApprovalAction = { type:'exec_command',id:'cache-uri',environmentId:'remote',command:['pwd'],hookCommand:'pwd',cwd:encodedCwd,sandboxPermissions:'use_default',tty:false }
     expect(approvalCacheKeys(cacheAction)[0]).toMatchObject({ cwd: encodedCwd })
+  })
+
+  it('preserves explicit MCP null arguments while defaulting only an absent Option to an object', () => {
+    const base = { type:'mcp_tool_call',id:'mcp-null',server:'srv',toolName:'tool',hookToolName:'mcp__srv__tool',approvalPolicy:'on-request',reviewer:'auto_review',approvalMode:'prompt',allowSessionRemember:false,allowPersistentApproval:false } as const
+    expect(permissionRequestPayload({ ...base,arguments:null }).toolInput).toBeNull()
+    expect(permissionRequestPayload(base).toolInput).toEqual({})
   })
 
   it('serializes permission profiles through the upstream legacy/canonical boundary', () => {

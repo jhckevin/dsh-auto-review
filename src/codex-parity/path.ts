@@ -1,4 +1,3 @@
-import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { AbsolutePath, PathUri, PosixAbsolutePathBytes } from './types.ts'
 
 export const LOCAL_ENVIRONMENT_ID = 'local'
@@ -81,6 +80,31 @@ function opaqueAbsolutePath(bytes: Uint8Array): PosixAbsolutePathBytes {
   return { kind: 'posix_absolute_path_bytes', bytesBase64: Buffer.from(bytes).toString('base64url') }
 }
 
+function opaqueFallbackUri(bytes: Uint8Array): PathUri {
+  return pathUri(`file:///%00/bad/path/${Buffer.from(bytes).toString('base64url')}`)
+}
+
+function percentEncodePosixPath(bytes: Uint8Array): string {
+  let encoded = ''
+  for (const byte of bytes) {
+    const character = String.fromCharCode(byte)
+    encoded += byte === 0x2f || /[!$&'()*+,\-.:;=@_~0-9A-Za-z]/u.test(character)
+      ? character
+      : `%${byte.toString(16).toUpperCase().padStart(2, '0')}`
+  }
+  return encoded
+}
+
+/** Mirrors fixed Codex PathUri::from_abs_path for absolute POSIX bytes. */
+function pathUriFromPosixAbsoluteBytes(bytes: Uint8Array): PathUri {
+  if (bytes[0] !== 0x2f) throw new PathConversionError('path is not absolute')
+  if (!bytes.includes(0)) {
+    const ordinary = pathUri(`file://${percentEncodePosixPath(bytes)}`)
+    if (!isWindowsUri(ordinary)) return ordinary
+  }
+  return opaqueFallbackUri(bytes)
+}
+
 export function isPosixAbsolutePathBytes(path: AbsolutePath): path is PosixAbsolutePathBytes {
   return typeof path !== 'string'
 }
@@ -120,9 +144,20 @@ export function guardianCwd(environmentId: string, cwd: PathUri): AbsolutePath {
   try { return pathUriToAbsolutePath(cwd) } catch (error) {
     if (environmentId !== LOCAL_ENVIRONMENT_ID) throw error
   }
-  try { return absolutePath(fileURLToPath(url)) } catch {
+  // url::Url::to_file_path on Unix decodes the URL path as raw POSIX bytes.
+  // Unlike node:fileURLToPath it accepts %00; Codex then wraps those bytes in
+  // AbsolutePathBuf without re-running the PathUri canonicality check.
+  if (url.hostname.length > 0) {
     throw new PathConversionError(`local cwd URI ${cwd} is not a host-native path`)
   }
+  const bytes = Uint8Array.from(decodePercentEncodedPathBytes(url.pathname))
+  if (bytes[0] !== 0x2f) {
+    throw new PathConversionError(`local cwd URI ${cwd} is not a host-native path`)
+  }
+  const decoded = strictUtf8(bytes)
+  return decoded !== undefined && !decoded.includes('\0')
+    ? absolutePath(decoded)
+    : opaqueAbsolutePath(bytes)
 }
 
 /** PathUri::to_abs_path: unlike guardianCwd this never uses the local-environment fallback. */
@@ -131,9 +166,9 @@ export function pathUriToAbsolutePath(uri: PathUri): AbsolutePath {
   const opaque = opaqueFallbackBytes(url)
   if (opaque !== undefined) {
     if (opaque[0] !== 0x2f) throw new PathConversionError(`'${uri}' is invalid on 'linux'`)
-    // A canonical fallback only round-trips through PathUri::from_abs_path when
-    // the native bytes cannot use an ordinary URI spelling (non-UTF-8 or NUL).
-    if (strictUtf8(opaque) !== undefined && !opaque.includes(0)) {
+    // Codex accepts an opaque fallback only when restoring the native bytes and
+    // running PathUri::from_abs_path produces this exact URI again.
+    if (pathUriFromPosixAbsoluteBytes(opaque) !== uri) {
       throw new PathConversionError(`'${uri}' is invalid on 'linux'`)
     }
     return opaqueAbsolutePath(opaque)
@@ -188,7 +223,7 @@ export function losslessLegacyAppPathString(uri: PathUri): string {
     else if (drive !== null) roundTrip = pathUri(`file:///${drive[1]}:/${drive[2]!.replaceAll('\\', '/')}`)
     else throw new PathConversionError('permission path cannot be represented losslessly')
   } else {
-    roundTrip = pathUri(pathToFileURL(raw).href)
+    roundTrip = pathUriFromPosixAbsoluteBytes(Buffer.from(raw, 'utf8'))
   }
   if (pathUriCacheIdentity(roundTrip) !== pathUriCacheIdentity(uri)) {
     throw new PathConversionError('permission path cannot be represented losslessly')

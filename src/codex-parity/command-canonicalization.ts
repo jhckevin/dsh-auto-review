@@ -13,15 +13,25 @@ parser.setLanguage(Bash)
 
 type ShellType = 'zsh' | 'bash' | 'powershell' | 'sh' | 'cmd'
 
+function rustPathEqualitySpelling(path: string): string {
+  if (path === '/') return path
+  return path.replace(/\/+$/u, '')
+}
+
 /** Fixed Codex Linux shell_detect.rs:39-57 PathBuf/file_stem recursion. */
 function detectShellType(shellPath: string): ShellType | undefined {
   if (shellPath === 'zsh' || shellPath === 'bash' || shellPath === 'sh' || shellPath === 'cmd') return shellPath
   if (shellPath === 'pwsh' || shellPath === 'powershell') return 'powershell'
   const slash = shellPath.lastIndexOf('/')
   const name = shellPath.slice(slash + 1)
-  const dot = name.lastIndexOf('.')
-  const stem = dot > 0 ? name.slice(0, dot) : name
-  return stem !== shellPath ? detectShellType(stem) : undefined
+  const effectiveName = name.length === 0
+    ? rustPathEqualitySpelling(shellPath).slice(rustPathEqualitySpelling(shellPath).lastIndexOf('/') + 1)
+    : name
+  const dot = effectiveName.lastIndexOf('.')
+  const stem = dot > 0 ? effectiveName.slice(0, dot) : effectiveName
+  return rustPathEqualitySpelling(stem) !== rustPathEqualitySpelling(shellPath)
+    ? detectShellType(stem)
+    : undefined
 }
 
 function extractBashCommand(command: readonly string[]): { mode: string; script: string } | undefined {
