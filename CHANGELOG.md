@@ -8,7 +8,7 @@
 
 - 锁定默认 latest 发布版本，保留此版本原生 Session、CallId、client-runtime 接口。
 - 修复 assistant/tool 审查证据读取并补充真实 Session/fork 回归；更新命令 images 参数。
-- 全部测试纳入严格类型检查；183 项测试、构建和离线打包通过。
+- 全部测试纳入严格类型检查；185 项测试、构建和离线打包通过。
 
 ## 0.5.5-rc.1 - 2026-09-02
 

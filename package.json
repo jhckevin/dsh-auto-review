@@ -59,7 +59,10 @@
     "README.md",
     "CHANGELOG.md",
     "THIRD_PARTY_NOTICES.md",
-    "LICENSE"
+    "LICENSE",
+    "patches/**/*.patch",
+    "docs/ISSUE-025-DSH-COMPAT.md",
+    "docs/ISSUE-025-UI-OWNER-PATCHES.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json && tsdown --config tsdown.client.config.ts",

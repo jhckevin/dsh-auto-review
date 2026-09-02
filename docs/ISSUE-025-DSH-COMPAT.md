@@ -4,7 +4,7 @@
 
 ## 改动与验证
 
-保留该版本的 CallId、Session.events 与 client-runtime 接口；更新 commands.execute 的 images 参数；修正 assistant/tool 历史证据读取为 data.message.content。新增四个真实 Session 证据测试，包括 fork 继承及信任标签。183/183 测试、构建、类型检查、policy 来源校验与离线打包导入通过，58 个锁定 DSH 包均为 0.1.1-rc.2。
+保留该版本的 CallId、Session.events 与 client-runtime 接口；更新 commands.execute 的 images 参数；修正 assistant/tool 历史证据读取为 data.message.content。新增四个真实 Session 证据测试，包括 fork 继承及信任标签。185/185 测试、构建、类型检查、policy 来源校验与离线打包导入通过，58 个锁定 DSH 包均为 0.1.1-rc.2。
 
 ## 版本与发布边界
 
