@@ -10,6 +10,7 @@ describe('Auto Review WebUI settings contract', () => {
     expect(DEFAULT_AUTO_REVIEW_UI_SETTINGS).toMatchObject({
       enabled: true,
       sandboxDefaultAllow: true,
+      reviewFullAccess: true,
       reviewerModel: 'flash',
       modelStrategy: 'single',
       primaryModel: 'deepseek-v4-flash',
@@ -43,6 +44,7 @@ describe('Auto Review WebUI settings contract', () => {
     )).toEqual({
       enabled: true,
       sandboxDefaultAllow: false,
+      reviewFullAccess: true,
       reviewerModel: 'pro',
       modelStrategy: 'risk-tiered',
       primaryProvider: 'deepseek-official',

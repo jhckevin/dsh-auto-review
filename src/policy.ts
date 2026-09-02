@@ -90,7 +90,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
   const autoReviewActive = (exec: Readonly<ToolExecution>): boolean => (
     ctx.actionReview.config.mode !== 'disabled'
     && !ctx.actionReview.isReviewerSession(exec.agent?.session)
-    && sandboxFor(exec).mode !== 'danger-full-access'
+    && (sandboxFor(exec).mode !== 'danger-full-access' || ctx.actionReview.config.reviewFullAccess)
   )
 
   const route = (exec: Readonly<ToolExecution>): PendingReview => {
@@ -166,7 +166,9 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
 
   ctx.on('approval/request', async (request: ApprovalRequest, next: () => Promise<ApprovalOutcome>) => {
     if (ctx.actionReview.config.mode === 'disabled') return next()
-    if (ctx.sandboxPolicy.resolve({ session: request.agent.session }).mode === 'danger-full-access') return next()
+    if (ctx.actionReview.isReviewerSession(request.agent.session)) return next()
+    if (ctx.sandboxPolicy.resolve({ session: request.agent.session }).mode === 'danger-full-access'
+      && !ctx.actionReview.config.reviewFullAccess) return next()
     if (request.callId === undefined) return next()
     const key = callKey(request.agent.session.id, request.callId)
     const pending = escalationByCall.get(key)
@@ -235,13 +237,13 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
           case 'manual':
             pending.approvalPath = 'native-manual'
             ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'native-manual' })
-            return action.actionKind === 'sandbox-escalation'
+            return action.actionKind === 'sandbox-escalation' && action.sandbox.mode !== 'danger-full-access'
               ? next()
               : { kind: 'ask', reason: `Auto Review requires manual approval: ${decision.rationale}` }
           case 'unavailable':
             pending.approvalPath = 'native-manual'
             ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'native-manual' })
-            return action.actionKind === 'sandbox-escalation'
+            return action.actionKind === 'sandbox-escalation' && action.sandbox.mode !== 'danger-full-access'
               ? next()
               : { kind: 'ask', reason: `Auto Review failed closed and requires manual approval: ${decision.rationale}` }
           default: {

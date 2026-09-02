@@ -28,6 +28,23 @@ const action: ActionEnvelope = Object.freeze({
 })
 
 describe('ActionReviewRuntime', () => {
+  it.each(['manual', 'unavailable'] as const)('shadow does not promote %s to approval', async (outcome) => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime, { mode: 'shadow' })
+    ctx.actionReview.registerReviewer({ id: 'fixture', review: async () => ({
+      schemaVersion: 1, outcome, riskLevel: 'high', rationale: 'Missing reliable evidence', policyRuleIds: ['TEST'], uncertainty: '',
+    }) })
+    expect((await ctx.actionReview.review(action, undefined, new AbortController().signal)).outcome).toBe(outcome)
+  })
+
+  it('shadow keeps absent or throwing providers unavailable', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime, { mode: 'shadow' })
+    expect((await ctx.actionReview.review(action, undefined, new AbortController().signal)).outcome).toBe('unavailable')
+    ctx.actionReview.registerReviewer({ id: 'broken', review: async () => { throw new Error('native-protocol unavailable') } })
+    expect((await ctx.actionReview.review(action, undefined, new AbortController().signal)).outcome).toBe('unavailable')
+  })
+
   it('fails closed when no reviewer is mounted', async () => {
     const ctx = new Context()
     await ctx.plugin(ActionReviewRuntime)

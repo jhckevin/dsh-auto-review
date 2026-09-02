@@ -330,6 +330,18 @@ export interface AutoReviewMetricsSnapshot {
 }
 
 export interface AutoReviewAuditPayloadMap {
+  readonly 'native-protocol': {
+    readonly status: 'preflight' | 'validated' | 'error'
+    readonly method: 'parse_core_review_decision'
+    readonly reviewerSessionId: string
+    readonly protocol: 'codex-core-review-decision'
+    readonly upstreamCommit: string
+    readonly outcome?: 'approved' | 'denied'
+    readonly wireSha256?: string
+    readonly resultSha256?: string
+    readonly failureKind?: string
+    readonly at: number
+  }
   readonly routed: AutoReviewRouteRecord
   readonly decision: AutoReviewAuditRecord
   readonly result: AutoReviewResultRecord
@@ -366,6 +378,8 @@ export interface JsonlAuditConfig {
 export interface AutoReviewConfig {
   readonly mode?: AutoReviewMode
   readonly sandboxDefaultAllow?: boolean
+  /** Product extension: review unconfined Full Access actions when enabled. */
+  readonly reviewFullAccess?: boolean
   readonly failureThreshold?: number
   readonly breakerCooldownMs?: number
   readonly auditMemoryLimit?: number
@@ -379,6 +393,7 @@ export interface AutoReviewConfig {
 export interface ResolvedAutoReviewConfig {
   readonly mode: AutoReviewMode
   readonly sandboxDefaultAllow: boolean
+  readonly reviewFullAccess: boolean
   readonly failureThreshold: number
   readonly breakerCooldownMs: number
   readonly auditMemoryLimit: number
@@ -408,6 +423,7 @@ export interface ResolvedRouterConfig {
 }
 
 export interface LlmReviewerConfig {
+  readonly approvalProtocol?: 'codex-native' | 'legacy-js'
   readonly provider: string
   readonly model: string
   readonly reasoningEffort?: string
@@ -435,6 +451,8 @@ export interface AutoReviewUiSettings {
   readonly enabled: boolean
   /** Let actions already confined by the native sandbox bypass model review. */
   readonly sandboxDefaultAllow: boolean
+  /** Independent opt-out for unconfined Full Access; ignored when disabled. */
+  readonly reviewFullAccess: boolean
   /** Reviewer model tier. Flash is the low-latency default. */
   readonly reviewerModel: AutoReviewReviewerModel
   /** Select one model for all reviews or a configurable primary/strong split. */

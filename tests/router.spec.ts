@@ -103,10 +103,13 @@ describe('ActionRouter', () => {
     })
   })
 
-  it('does not invent an Auto Review boundary under native danger-full-access', () => {
+  it('adds product review, not a sandbox boundary, under native danger-full-access', () => {
     expect(new ActionRouter().route(exec('bash', { command: 'printf ok' }), {
       mode: 'danger-full-access', workspaceRoot: '/workspace',
-    })).toMatchObject({ disposition: 'inside-boundary' })
+    })).toMatchObject({ disposition: 'review' })
+    expect(new ActionRouter().route(exec('extension', {}), {
+      mode: 'danger-full-access', workspaceRoot: '/workspace',
+    }, { resolverId: 'registered', classification: { actionKind: 'workspace-read', disposition: 'inside-boundary', reason: 'registered read' } })).toMatchObject({ disposition: 'review' })
   })
 
   it('does not confuse sensitive .ssh paths with the ssh network command', () => {

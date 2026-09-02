@@ -86,6 +86,7 @@ export class ActionReviewRuntime extends Service {
   static Config: z<AutoReviewConfig> = z.object({
     mode: z.union(['disabled', 'shadow', 'enforcing'] as const).default('enforcing'),
     sandboxDefaultAllow: z.boolean().default(true),
+    reviewFullAccess: z.boolean().default(true),
     failureThreshold: z.number().step(1).min(1).default(3),
     breakerCooldownMs: z.number().step(1).min(1).default(60000),
     auditMemoryLimit: z.number().step(1).min(1).max(100000).default(4096),
@@ -131,6 +132,7 @@ export class ActionReviewRuntime extends Service {
     this.deployedConfig = Object.freeze({
       mode: config.mode ?? 'enforcing',
       sandboxDefaultAllow: config.sandboxDefaultAllow ?? true,
+      reviewFullAccess: config.reviewFullAccess ?? true,
       failureThreshold: config.failureThreshold ?? 3,
       breakerCooldownMs: config.breakerCooldownMs ?? 60000,
       auditMemoryLimit: config.auditMemoryLimit ?? 4096,
@@ -190,6 +192,7 @@ export class ActionReviewRuntime extends Service {
       ...this.deployedConfig,
       mode: settings.enabled ? (deployedMode === 'disabled' ? 'enforcing' : deployedMode) : 'disabled',
       sandboxDefaultAllow: settings.sandboxDefaultAllow,
+      reviewFullAccess: settings.reviewFullAccess,
       failureThreshold: settings.failureThreshold,
       breakerCooldownMs: settings.breakerCooldownMs,
     })
@@ -710,7 +713,9 @@ export class ActionReviewRuntime extends Service {
         this.recordFailure(session)
       }
     }
-    const effective = this.config.mode === 'shadow' && decision.outcome !== 'approved'
+    // Observation mode may override a completed denial, never missing evidence
+    // or an explicit request for human review (including bridge failures).
+    const effective = this.config.mode === 'shadow' && decision.outcome === 'denied'
       ? Object.freeze({
         schemaVersion: 1 as const,
         outcome: 'approved' as const,
@@ -817,6 +822,9 @@ export class ActionReviewRuntime extends Service {
         state.totalActions += 1
         if (data.disposition === 'inside-boundary') state.insideBoundary += 1
         if (data.disposition === 'hard-deny') state.hardDenied += 1
+        // Router-manual and reviewer-manual are mutually exclusive paths.
+        // Count the referral, not a simulated/actual human approval outcome.
+        if (data.disposition === 'manual') state.manual += 1
         state.byActionKind.set(data.actionKind, (state.byActionKind.get(data.actionKind) ?? 0) + 1)
         break
       }

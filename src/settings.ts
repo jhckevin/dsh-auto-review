@@ -17,6 +17,7 @@ const ACTION_KINDS: readonly ActionKind[] = Object.freeze([
 export const DEFAULT_AUTO_REVIEW_UI_SETTINGS: AutoReviewUiSettings = Object.freeze({
   enabled: true,
   sandboxDefaultAllow: true,
+  reviewFullAccess: true,
   reviewerModel: 'flash',
   modelStrategy: 'single',
   primaryProvider: 'deepseek-official',
@@ -41,6 +42,7 @@ export const DEFAULT_AUTO_REVIEW_UI_SETTINGS: AutoReviewUiSettings = Object.free
 export const AutoReviewUiSettingsSchema: z<AutoReviewUiSettings> = z.object({
   enabled: z.boolean().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.enabled),
   sandboxDefaultAllow: z.boolean().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.sandboxDefaultAllow),
+  reviewFullAccess: z.boolean().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.reviewFullAccess),
   reviewerModel: z.union(['flash', 'pro'] as const).default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.reviewerModel),
   modelStrategy: z.union(['single', 'risk-tiered'] as const).default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.modelStrategy),
   primaryProvider: z.string().required().default(DEFAULT_AUTO_REVIEW_UI_SETTINGS.primaryProvider),
@@ -75,6 +77,7 @@ export function autoReviewSettingsBase(
   return {
     enabled: runtime.mode !== 'disabled',
     sandboxDefaultAllow: runtime.sandboxDefaultAllow ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.sandboxDefaultAllow,
+    reviewFullAccess: runtime.reviewFullAccess ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.reviewFullAccess,
     reviewerModel: model,
     modelStrategy: reviewer?.modelStrategy ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.modelStrategy,
     primaryProvider,

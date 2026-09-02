@@ -46,14 +46,14 @@ type ReviewFixture = ReviewOutcome | {
 
 async function harness(
   reviewFixture: ReviewFixture = 'approved',
-  options: { mode?: 'disabled' | 'shadow' | 'enforcing'; sandboxMode?: 'read-only' | 'workspace-write' | 'danger-full-access'; sandboxDefaultAllow?: boolean } = {},
+  options: { mode?: 'disabled' | 'shadow' | 'enforcing'; sandboxMode?: 'read-only' | 'workspace-write' | 'danger-full-access'; sandboxDefaultAllow?: boolean; reviewFullAccess?: boolean } = {},
 ) {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt)
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(SandboxPolicyService, { mode: options.sandboxMode ?? 'workspace-write', workspaceRoot: '/workspace' })
   await ctx.plugin(ApprovalService)
-  await ctx.plugin(ActionReviewRuntime, { mode: options.mode ?? 'enforcing', sandboxDefaultAllow: options.sandboxDefaultAllow ?? true })
+  await ctx.plugin(ActionReviewRuntime, { mode: options.mode ?? 'enforcing', sandboxDefaultAllow: options.sandboxDefaultAllow ?? true, reviewFullAccess: options.reviewFullAccess ?? true })
   await ctx.plugin({ inject: policyInject, apply: applyPolicy }, { hardDenyToolNames: ['root_destroy'] })
   const reviewed: Array<{
     authority: {
@@ -95,7 +95,7 @@ async function harness(
     },
     async execute(args, exec) {
       const values = args as Record<string, unknown>
-      if (typeof values.sandbox_permissions === 'string') {
+      if (typeof values.sandbox_permissions === 'string' && options.sandboxMode !== 'danger-full-access') {
         if (exec.agent === undefined) throw new Error('agent required')
         const outcome = await ctx.approval.request({
           agent: exec.agent,
@@ -154,10 +154,11 @@ describe('native tools pipeline composition', () => {
     expect(reviewed).toHaveLength(expectedReviews)
   })
 
-  it('is a true no-op when disabled and under danger-full-access', async () => {
+  it('is a true no-op when disabled or Full Access review is explicitly off', async () => {
     for (const options of [
       { mode: 'disabled' as const, sandboxMode: 'workspace-write' as const },
-      { mode: 'enforcing' as const, sandboxMode: 'danger-full-access' as const },
+      { mode: 'disabled' as const, sandboxMode: 'danger-full-access' as const },
+      { mode: 'enforcing' as const, sandboxMode: 'danger-full-access' as const, reviewFullAccess: false },
     ]) {
       const { ctx, executions, reviewed } = await harness('denied', options)
       await expect(ctx.tools.execute({
@@ -166,6 +167,51 @@ describe('native tools pipeline composition', () => {
       expect(executions()).toBe(1)
       expect(reviewed).toHaveLength(0)
     }
+  })
+
+  it.each([true, false])('reviews Full Access regardless of sandboxDefaultAllow=%s', async (sandboxDefaultAllow) => {
+    const { ctx, executions, reviewed } = await harness('denied', { sandboxMode: 'danger-full-access', sandboxDefaultAllow })
+    for (const name of ['bash', 'read_file', 'extension_magic']) {
+      const result = await ctx.tools.execute({ callId: CallId(`full-${name}`), name, arguments: { command: 'echo ok', path: '/workspace/a' }, signal })
+      expect(result.isError).toBe(true)
+    }
+    expect(reviewed).toHaveLength(3)
+    expect(executions()).toBe(0)
+    expect(ctx.actionReview.metrics()).toMatchObject({ totalActions: 3, autoReviewed: 3, denied: 3 })
+  })
+
+  it.each(['manual', 'unavailable'] as const)('Full Access escalation %s must ask before the tool body', async (outcome) => {
+    const { ctx, reviewed, executions } = await harness(outcome, { sandboxMode: 'danger-full-access', mode: 'shadow' })
+    const { agent } = fakeAgent('full-unavailable')
+    let asks = 0
+    ctx.on('approval/request', () => { asks += 1; return Promise.resolve('rejected' as const) })
+    const result = await ctx.tools.execute({ callId: CallId('full-escalation'), name: 'bash', arguments: {
+      command: 'echo ok', sandbox_permissions: 'require_escalated', justification: 'test unavailable',
+    }, agent, signal })
+    expect(result.isError).toBe(true)
+    expect(asks).toBe(1)
+    expect(reviewed).toHaveLength(1)
+    expect(executions()).toBe(0)
+  })
+
+  it('does not recurse into the exact reviewer session in Full Access', async () => {
+    const { ctx, reviewed, executions } = await harness('denied', { sandboxMode: 'danger-full-access' })
+    const { agent } = fakeAgent('reviewer')
+    const revoke = ctx.actionReview.registerReviewerSession(agent.session)
+    expect((await ctx.tools.execute({ callId: CallId('reviewer-private'), name: 'read_file', arguments: { path: '/workspace/a' }, agent, signal })).isError).toBe(false)
+    expect(reviewed).toHaveLength(0)
+    revoke()
+    expect((await ctx.tools.execute({ callId: CallId('reviewer-revoked'), name: 'read_file', arguments: { path: '/workspace/a' }, agent, signal })).isError).toBe(true)
+    expect(reviewed).toHaveLength(1)
+    expect(executions()).toBe(1)
+  })
+
+  it('allows an approved Full Access call but preserves hard denials', async () => {
+    const { ctx, executions, reviewed } = await harness('approved', { sandboxMode: 'danger-full-access' })
+    expect((await ctx.tools.execute({ callId: CallId('full-approved'), name: 'bash', arguments: { command: 'echo ok' }, signal })).isError).toBe(false)
+    expect((await ctx.tools.execute({ callId: CallId('full-hard'), name: 'root_destroy', arguments: {}, signal })).isError).toBe(true)
+    expect(reviewed).toHaveLength(1)
+    expect(executions()).toBe(1)
   })
 
   it('keeps hard denial monotonic and unknown extensions fail closed to manual', async () => {
@@ -182,6 +228,7 @@ describe('native tools pipeline composition', () => {
     expect(unknown).toMatchObject({ isError: true })
     expect(unknown.content[0]?.type === 'text' ? unknown.content[0].text : '').toContain('approval')
     expect(executions()).toBe(0)
+    expect(ctx.actionReview.metrics()).toMatchObject({ totalActions: 2, autoReviewed: 0, manual: 1, hardDenied: 1 })
   })
 
   it('bridges one approved review into exactly one native sandbox grant and closes the audit chain', async () => {
@@ -248,6 +295,7 @@ describe('native tools pipeline composition', () => {
       reviewOutcome: 'manual',
       finalOutcome: 'success',
     })
+    expect(ctx.actionReview.metrics('session-auto-review')).toMatchObject({ autoReviewed: 1, manual: 1 })
   })
 
   it('denies an escalation before the tool body and records the final failure', async () => {

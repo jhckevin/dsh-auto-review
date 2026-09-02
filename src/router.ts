@@ -401,7 +401,11 @@ export class ActionRouter {
           reason: selectedContribution.classification.reason,
         }
       : this.classify(exec.name, exec.arguments, paths, sandbox, escalation, sandboxDefaultAllow)
-    const classification: Classification = !sandboxDefaultAllow && describedClassification.disposition === 'inside-boundary'
+    // Product policy, not an upstream Codex sandbox boundary: Full Access has
+    // no confinement, so even contributed/manual actions require review.
+    const classification: Classification = sandbox.mode === 'danger-full-access' && describedClassification.disposition !== 'hard-deny'
+      ? { ...describedClassification, disposition: 'review', reason: `${describedClassification.reason} Full Access requires review because no native sandbox confines execution.` }
+      : !sandboxDefaultAllow && describedClassification.disposition === 'inside-boundary'
       ? { ...describedClassification, disposition: 'review', reason: `${describedClassification.reason} Native sandbox default-allow is disabled.` }
       : describedClassification
     const resolverId = selectedContribution?.resolverId ?? 'builtin'
@@ -473,9 +477,6 @@ export class ActionRouter {
     }
     if (escalation !== undefined) {
       return { kind: 'sandbox-escalation', disposition: 'review', reason: 'Action asks to widen the native sandbox for this call.' }
-    }
-    if (sandbox.mode === 'danger-full-access') {
-      return { kind: 'process', disposition: 'inside-boundary', reason: 'Danger full access has no native sandbox approval boundary; Auto Review does not intercept this mode.' }
     }
     if (CONTROL_TOOLS.has(toolName)) {
       return { kind: 'process', disposition: 'inside-boundary', reason: 'Built-in conversation control action has no external side effect.' }

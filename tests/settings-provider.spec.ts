@@ -11,6 +11,19 @@ class MemorySettings extends SettingsProvider {
 }
 
 describe('explicit settings provider', () => {
+  it('persists independent Full Access opt-out and restores safe default', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings)
+    await ctx.plugin(ActionReviewRuntime)
+    await ctx.plugin(AutoReviewSettingsBridge)
+    expect(ctx.actionReview.config.reviewFullAccess).toBe(true)
+    const updated = await ctx.actionReviewSettings.update({ patch: { reviewFullAccess: false }, expectedRevision: 0 })
+    expect(updated.value.reviewFullAccess).toBe(false)
+    expect(ctx.actionReview.config.reviewFullAccess).toBe(false)
+    await ctx.actionReviewSettings.reset({ expectedRevision: updated.revision })
+    expect(ctx.actionReview.config.reviewFullAccess).toBe(true)
+  })
+
   it('publishes generic provider defaults when the reviewer config is bound first', async () => {
     const ctx = new Context()
     await ctx.plugin(MemorySettings)

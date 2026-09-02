@@ -14,7 +14,8 @@ const STYLE_ID = '@jhckevin/dsh-auto-review/webui'
 const zh = {
   nav: '自动审批审查', title: 'Auto Review', subtitle: '依据权限模式、原生沙盒边界与当前策略，将需要审查的动作交给独立模型。',
   enabled: '启用 Auto Review', enabledHint: '关闭后完全回到 Harness 原生审批链，扩展不再路由、批准或拒绝动作。',
-  sandboxDefaultAllow: '原生沙盒内默认通过', sandboxDefaultAllowHint: '默认开启。read-only / workspace-write 中已由原生文件沙盒约束的动作不调用模型；关闭后沙盒内动作也进入 reviewer。Full Access 没有沙盒边界，始终不进入 Auto Review。',
+  sandboxDefaultAllow: '原生沙盒内默认通过', sandboxDefaultAllowHint: '默认开启。只影响 read-only / workspace-write；关闭后沙盒内动作也进入 reviewer，不会解除原生沙盒约束。Full Access 由下面独立开关控制。',
+  reviewFullAccess: '审查 Full Access 动作', reviewFullAccessHint: '默认开启。Full Access 没有沙盒：除硬禁行为直接拒绝外，所有动作送审，不受沙盒内默认通过影响。关闭后该档位完全使用原生流程。本选项是产品扩展，并非 Codex 原生规则。',
   model: '审查模型', flash: 'Flash（默认）', flashHint: '低延迟，适合动作关键路径。', pro: 'Pro', proHint: '更高审查能力，延迟与成本更高。',
   modelStrategy: '模型策略', single: '单模型', riskTiered: '风险分级', primaryProfile: '常规模型', strongProfile: '高风险模型',
   modelStrategyHint: '单模型始终使用常规模型；风险分级会让指定高风险类型直接使用高风险模型，并可在结论不确定时升级一次。',
@@ -33,12 +34,13 @@ const zh = {
   reviewing: 'Auto Review 正在审查此工具调用', denied: 'Auto Review 已拒绝此工具调用',
   funnel: '运行态动作漏斗', totalActions: '全部动作', insideBoundary: '原生沙盒内', autoReviewed: '进入审查', approved: '自动批准', deniedCount: '拒绝', manual: '人工处理',
   policyLookups: '策略检索调用', policyBytes: '策略返回字节',
-  behavior: '当前权限组合行为', behaviorDisabled: 'Auto Review 已关闭：所有权限档位均完全使用 Harness 原生审批链。', behaviorDefault: '只读/工作区写入：沙盒内普通动作直接通过；越界、敏感和网络动作进入 Reviewer。', behaviorStrict: '只读/工作区写入：沙盒内动作也进入 Reviewer，但实际执行仍受原生沙盒约束。', fullAccessNative: 'Full Access：没有原生沙盒边界，因此不进入 Auto Review。',
+  behavior: '当前权限组合行为', behaviorDisabled: 'Auto Review 已关闭：所有权限档位均完全使用 Harness 原生审批链。', behaviorDefault: '只读/工作区写入：沙盒内普通动作直接通过；越界、敏感和网络动作进入 Reviewer。', behaviorStrict: '只读/工作区写入：沙盒内动作也进入 Reviewer，但实际执行仍受原生沙盒约束。',
 }
 const en = {
   nav: 'Auto Review', title: 'Auto Review', subtitle: 'Route actions to an isolated reviewer according to the permission mode, native sandbox boundary, and active policy.',
   enabled: 'Enable Auto Review', enabledHint: 'When disabled, the extension leaves routing, approval, and denial entirely to the native Harness chain.',
-  sandboxDefaultAllow: 'Allow native-sandbox actions by default', sandboxDefaultAllowHint: 'On by default. Actions confined by read-only/workspace-write bypass the model; when off, sandboxed actions are reviewed too. Full Access has no sandbox boundary and never enters Auto Review.',
+  sandboxDefaultAllow: 'Allow native-sandbox actions by default', sandboxDefaultAllowHint: 'Applies only to read-only/workspace-write. Turning it off adds review without removing native confinement. Full Access uses the independent switch below.',
+  reviewFullAccess: 'Review Full Access actions', reviewFullAccessHint: 'On by default. With no sandbox, all actions are reviewed except direct hard denials, regardless of sandbox default-allow. Turn off to leave this tier entirely native. This is a product extension, not an upstream Codex rule.',
   model: 'Reviewer model', flash: 'Flash (default)', flashHint: 'Low latency for the action critical path.', pro: 'Pro', proHint: 'Higher review capability with greater latency and cost.',
   modelStrategy: 'Model strategy', single: 'Single model', riskTiered: 'Risk tiered', primaryProfile: 'Primary reviewer', strongProfile: 'High-risk reviewer',
   modelStrategyHint: 'Single always uses the primary reviewer. Risk tiering routes selected action kinds directly to the strong reviewer and can escalate one uncertain result.',
@@ -57,7 +59,7 @@ const en = {
   reviewing: 'Auto Review is checking this tool call', denied: 'Auto Review denied this tool call',
   funnel: 'Live action funnel', totalActions: 'All actions', insideBoundary: 'Inside sandbox', autoReviewed: 'Auto-reviewed', approved: 'Approved', deniedCount: 'Denied', manual: 'Manual',
   policyLookups: 'Policy retrieval calls', policyBytes: 'Policy result bytes',
-  behavior: 'Current permission behavior', behaviorDisabled: 'Auto Review is off: every permission tier uses the native Harness approval chain only.', behaviorDefault: 'Read-only / Workspace Write: ordinary confined actions pass; boundary-crossing, sensitive, and network actions enter the reviewer.', behaviorStrict: 'Read-only / Workspace Write: confined actions are reviewed too, while execution remains restricted by the native sandbox.', fullAccessNative: 'Full Access: there is no native sandbox boundary, so actions do not enter Auto Review.',
+  behavior: 'Current permission behavior', behaviorDisabled: 'Auto Review is off: every permission tier uses the native Harness approval chain only.', behaviorDefault: 'Read-only / Workspace Write: ordinary confined actions pass; boundary-crossing, sensitive, and network actions enter the reviewer.', behaviorStrict: 'Read-only / Workspace Write: confined actions are reviewed too, while execution remains restricted by the native sandbox.',
 }
 
 type LocaleKey = keyof typeof en
@@ -283,10 +285,14 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics
         <div><strong>{t('enabled')}</strong><p>{t('enabledHint')}</p></div>
         <button className="ar-switch" type="button" role="switch" aria-checked={draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, enabled: !draft.enabled }) }}><span /></button>
       </div>
-      <div className="ar-card ar-behavior"><h3>{t('behavior')}</h3><p>{t(!draft.enabled ? 'behaviorDisabled' : draft.sandboxDefaultAllow ? 'behaviorDefault' : 'behaviorStrict')}</p>{draft.enabled ? <p>{t('fullAccessNative')}</p> : null}</div>
+      <div className="ar-card ar-behavior"><h3>{t('behavior')}</h3><p>{t(!draft.enabled ? 'behaviorDisabled' : draft.sandboxDefaultAllow ? 'behaviorDefault' : 'behaviorStrict')}</p>{draft.enabled ? <p>{t('reviewFullAccessHint')}</p> : null}</div>
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('sandboxDefaultAllow')}</strong><p>{t('sandboxDefaultAllowHint')}</p></div>
         <button className="ar-switch" type="button" role="switch" aria-checked={draft.sandboxDefaultAllow} disabled={!draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, sandboxDefaultAllow: !draft.sandboxDefaultAllow }) }}><span /></button>
+      </div>
+      <div className="ar-card ar-toggle-row">
+        <div><strong>{t('reviewFullAccess')}</strong><p>{t('reviewFullAccessHint')}</p></div>
+        <button className="ar-switch" type="button" role="switch" aria-label={t('reviewFullAccess')} aria-checked={draft.reviewFullAccess} disabled={!draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, reviewFullAccess: !draft.reviewFullAccess }) }}><span /></button>
       </div>
       <div className="ar-card">
         <h3>{t('model')}</h3>
