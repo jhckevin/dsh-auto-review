@@ -9,7 +9,7 @@ import ToolRuntime, { defineTool } from '@deepseek-ai/dsh-tools'
 import ApprovalService from '@deepseek-ai/dsh-user-approval'
 import ActionReviewRuntime from '../src/service.ts'
 import { apply as applyPolicy, inject as policyInject } from '../src/policy.ts'
-import type { ReviewDecision, ReviewOutcome } from '../src/types.ts'
+import type { AutoReviewAuditEnvelope, ReviewDecision, ReviewOutcome } from '../src/types.ts'
 
 const signal = new AbortController().signal
 
@@ -270,7 +270,7 @@ describe('native tools pipeline composition', () => {
 
   it('delegates an uncertain escalation to the native human answerer once', async () => {
     const { ctx, executions } = await harness('manual')
-    const { agent, appended } = fakeAgent()
+    const { agent } = fakeAgent()
     let manualAnswers = 0
     ctx.on('approval/request', () => {
       manualAnswers += 1
@@ -300,7 +300,7 @@ describe('native tools pipeline composition', () => {
 
   it('denies an escalation before the tool body and records the final failure', async () => {
     const { ctx, executions } = await harness('denied')
-    const { agent, appended } = fakeAgent()
+    const { agent } = fakeAgent()
     let manualAnswers = 0
     ctx.on('approval/request', () => {
       manualAnswers += 1
@@ -388,7 +388,7 @@ describe('native tools pipeline composition', () => {
     expect(executions()).toBe(0)
 
     const decision = ctx.actionReview.auditRecords('session-stop-after-denial')
-      .find(record => record.kind === 'decision')
+      .find((record): record is AutoReviewAuditEnvelope<'decision'> => record.kind === 'decision')
     if (decision?.kind !== 'decision') throw new Error('missing denial decision')
     ctx.actionReview.observeTurnEnd('session-stop-after-denial', decision.data.turn)
     expect(ctx.actionReview.auditRecords('session-stop-after-denial')
@@ -407,7 +407,7 @@ describe('native tools pipeline composition', () => {
       callId: CallId('denied-first'), name: 'bash', arguments: arguments_, agent, signal,
     })
     const routed = ctx.actionReview.auditRecords('session-rereview')
-      .find(record => record.kind === 'routed')
+      .find((record): record is AutoReviewAuditEnvelope<'routed'> => record.kind === 'routed')
     if (routed?.kind !== 'routed') throw new Error('missing routed record')
     ctx.actionReview.armDeniedOverride('session-rereview', routed.data.actionDigest)
 

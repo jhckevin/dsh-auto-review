@@ -55,7 +55,7 @@ describe('Linux x86 native sandbox composition', () => {
       description: 'sandboxed shell',
       parameters: { command: { type: 'string', required: true } },
       output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: value }] },
-      execute(args) {
+      async execute(args) {
         const command = (args as { command: string }).command
         const confined = ctx?.sandbox.confine(['bash', '-c', command], { mode: 'workspace-write', workspaceRoot: workspace })
         if (confined === undefined) throw new Error('sandbox unavailable')
