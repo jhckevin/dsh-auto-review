@@ -10,6 +10,7 @@ import {
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { guardianBootstrapPrompt } from './policy-corpus.ts'
 import { parseReviewDecision, ReviewProtocolError } from './protocol.ts'
+import { validateNativeApprovalDecision } from './native-approval-protocol.ts'
 import { redactJson } from './redaction.ts'
 import { installReviewerPolicyTools } from './reviewer-policy-tools.ts'
 import { STRONG_REVIEW_KINDS } from './settings.ts'
@@ -27,6 +28,7 @@ export const name = 'auto-review-llm-provider'
 export const inject = ['actionReview', 'agents', 'systemPrompt', 'tools']
 
 export const Config: z<LlmReviewerConfig> = z.object({
+  approvalProtocol: z.union(['codex-native', 'legacy-js'] as const).default('codex-native'),
   provider: z.string().required(),
   model: z.string().required(),
   reasoningEffort: z.string(),
@@ -51,6 +53,7 @@ export const Config: z<LlmReviewerConfig> = z.object({
 const SYSTEM = guardianBootstrapPrompt()
 
 interface ValidatedReviewerConfig {
+  approvalProtocol: 'codex-native' | 'legacy-js'
   provider: string
   model: string
   reasoningEffort?: string
@@ -83,6 +86,7 @@ function validateConfig(config: LlmReviewerConfig): ValidatedReviewerConfig {
   const strongReasoningEffort = normalizedEffort(config.strongReasoningEffort ?? config.reasoningEffort)
   const resolved = {
     ...base,
+    approvalProtocol: config.approvalProtocol ?? 'codex-native',
     ...(reasoningEffort === undefined ? {} : { reasoningEffort }),
     modelStrategy: config.modelStrategy ?? 'single',
     strongProvider: config.strongProvider?.trim() || config.provider,
@@ -104,6 +108,9 @@ function validateConfig(config: LlmReviewerConfig): ValidatedReviewerConfig {
     throw new TypeError('auto-review: retryDelayMs must be a non-negative safe integer')
   }
   if (resolved.maxAttempts > 3) throw new TypeError('auto-review: maxAttempts cannot exceed 3')
+  if (!['codex-native', 'legacy-js'].includes(resolved.approvalProtocol)) {
+    throw new TypeError('auto-review: unknown approvalProtocol')
+  }
   if (resolved.strongProvider.length === 0 || resolved.strongModel.length === 0) {
     throw new TypeError('auto-review: strong provider and model must be non-empty')
   }
@@ -221,6 +228,7 @@ interface PolicyRetrievalStats {
 }
 
 interface ReviewerAttempt {
+  readonly reviewerSessionId?: string
   readonly decision: ReviewDecision
   readonly policyRetrieval: PolicyRetrievalStats
   readonly attempts: number
@@ -356,6 +364,7 @@ async function runAttempt(
     try {
       return Object.freeze({
         decision: decisionFromSession(handle.agent.session.events),
+        reviewerSessionId: handle.agent.session.id,
         policyRetrieval,
         attempts: 1,
         failureCategories: Object.freeze([]),
@@ -527,6 +536,8 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
       const first = await reviewWithProfile(
         ctx, firstConfig, payload, request.action.sandbox.workspaceRoot, request.signal, timeoutSignal,
       )
+      let selected: ReviewDecision
+      let reviewerSessionId = first.reviewerSessionId
       if (
         config.modelStrategy === 'risk-tiered'
         && firstTier === 'primary'
@@ -537,16 +548,27 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
         const decision = await reviewWithProfile(
           ctx, strong, payload, request.action.sandbox.workspaceRoot, request.signal, timeoutSignal,
         )
-        return withReviewerExecution(
+        selected = withReviewerExecution(
           decision.decision, strong, 'strong', firstConfig,
           combinePolicyRetrieval(first.policyRetrieval, decision.policyRetrieval),
           first.attempts + decision.attempts,
           [...first.failureCategories, ...decision.failureCategories],
         )
+        reviewerSessionId = decision.reviewerSessionId
+      } else {
+        selected = withReviewerExecution(
+          first.decision, firstConfig, firstTier, undefined, first.policyRetrieval,
+          first.attempts, first.failureCategories,
+        )
       }
-      return withReviewerExecution(
-        first.decision, firstConfig, firstTier, undefined, first.policyRetrieval,
-        first.attempts, first.failureCategories,
+      if (config.approvalProtocol === 'legacy-js') return selected
+      // Outside both model retries and tier escalation. A native transport,
+      // artifact or validation failure cannot cause another model attempt or
+      // fall back to the former JS-only approval path.
+      return validateNativeApprovalDecision(
+        ctx, selected, reviewerSessionId ?? 'no-authoritative-reviewer',
+        request.action.authority.sessionId,
+        AbortSignal.any([request.signal, timeoutSignal]),
       )
     },
   }

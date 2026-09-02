@@ -12,6 +12,7 @@
     - id: auto-review-llm
       name: '@jhckevin/dsh-auto-review/llm-provider'
       config:
+        approvalProtocol: codex-native
         provider: deepseek-official
         model: deepseek-v4-flash
         reasoningEffort: off

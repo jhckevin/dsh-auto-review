@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
@@ -12,7 +12,8 @@ import ApprovalService from '@deepseek-ai/dsh-user-approval'
 import ActionReviewRuntime from '../src/service.ts'
 import { apply as applyPolicy, inject as policyInject } from '../src/policy.ts'
 
-const root = '/work/.sandbox-e2e'
+// Only remove a unique directory created by this test inside its workspace.
+const root = mkdtempSync(join(process.cwd(), '.sandbox-e2e-'))
 const workspace = join(root, 'workspace')
 const outside = join(root, 'outside')
 let ctx: Context | undefined
@@ -24,7 +25,6 @@ afterEach(async () => {
 })
 
 function prepare(): void {
-  rmSync(root, { recursive: true, force: true })
   mkdirSync(workspace, { recursive: true })
   mkdirSync(outside, { recursive: true })
   writeFileSync(join(outside, 'sentinel.txt'), 'unchanged')
@@ -40,7 +40,6 @@ describe('Linux x86 native sandbox composition', () => {
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(LocalSandboxProvider, {})
-    ;(ctx.sandbox as LocalSandboxProvider).internals = { probeBwrap: () => false }
     await ctx.plugin(SandboxPolicyService, { mode: 'workspace-write', workspaceRoot: workspace })
     await ctx.plugin(ApprovalService)
     await ctx.plugin(ActionReviewRuntime, { sandboxDefaultAllow: false })

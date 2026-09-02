@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import AgentRegistry, { type Agent, type AgentFactory, type AgentHandle } from '@deepseek-ai/dsh-agent'
+import AgentRegistry, { type Agent, type AgentFactory } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import LlmRuntime, {
   CallId,
@@ -10,17 +10,19 @@ import LlmRuntime, {
   type LlmResolvedModelInfo,
   type StreamChunk,
 } from '@deepseek-ai/dsh-llm'
-import SessionStore, { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
+import SessionStore, { type SessionEvent } from '@deepseek-ai/dsh-session'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { apply as applyProvider } from '../src/llm-provider.ts'
+import * as NativeProtocol from '../src/native-approval-protocol.ts'
 import ActionReviewRuntime from '../src/service.ts'
 import type { ActionEnvelope, LlmReviewerConfig } from '../src/types.ts'
 
-const action: ActionEnvelope = Object.freeze({
+const action = Object.freeze({
   schemaVersion: 1,
   actionId: 'call:deadbeef',
   actionDigest: 'd'.repeat(64),
+  effectDigest: 'd'.repeat(64),
   policyDigest: 'e'.repeat(64),
   boundaryDigest: 'f'.repeat(64),
   callId: CallId('call'),
@@ -42,7 +44,7 @@ const action: ActionEnvelope = Object.freeze({
     currentUserRequest: 'Run the diagnostic.',
     transcript: [{ role: 'user', trust: 'trusted-user-intent', text: 'Run the diagnostic.' }],
   },
-})
+} satisfies ActionEnvelope)
 
 const approved = JSON.stringify({
   schemaVersion: 1,
@@ -131,20 +133,22 @@ async function fixture(outputs: string[], fixtureOptions: {
   hang?: boolean
   timeoutMs?: number
   reviewerConfig?: Partial<LlmReviewerConfig>
+  runtimeMode?: 'enforcing' | 'shadow'
   createError?: unknown
 } = {}) {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt, {})
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(AgentRegistry)
-  await ctx.plugin(ActionReviewRuntime)
+  await ctx.plugin(ActionReviewRuntime, { mode: fixtureOptions.runtimeMode ?? 'enforcing' })
   let creates = 0
   let disposes = 0
   let setupCalls = 0
   const prompts: string[] = []
-  const models: Array<{ provider?: string; model?: string }> = []
+  const models: Array<{ provider: string | undefined; model: string | undefined }> = []
   const factory: AgentFactory = {
-    async createAgent(ownerCtx, options): Promise<AgentHandle> {
+    async resume() { throw new Error('not used') },
+    async createAgent(_ownerCtx, options) {
       const output = outputs[Math.min(creates, outputs.length - 1)] ?? approved
       creates += 1
       if (fixtureOptions.createError !== undefined) throw fixtureOptions.createError
@@ -167,12 +171,10 @@ async function fixture(outputs: string[], fixtureOptions: {
         dispose: async () => { disposes += 1 },
       }
     },
-    async resumeAgent(): Promise<AgentHandle> {
-      throw new Error('not used')
-    },
   }
   ctx.agents.setFactory(factory)
   applyProvider(ctx, {
+    approvalProtocol: 'legacy-js', // These pre-existing tests isolate model/session behavior.
     provider: 'fixture-provider',
     model: 'fixture-reviewer',
     reasoningEffort: 'low',
@@ -187,6 +189,19 @@ async function fixture(outputs: string[], fixtureOptions: {
 }
 
 describe('isolated reviewer agent provider', () => {
+  it.each(['enforcing', 'shadow'] as const)('does not retry, upgrade or approve a failed native gate in %s mode', async mode => {
+    const gate = vi.spyOn(NativeProtocol, 'validateNativeApprovalDecision')
+      .mockRejectedValue(new NativeProtocol.NativeApprovalProtocolError('artifact'))
+    try {
+      const { ctx, stats } = await fixture([approved], { runtimeMode: mode, reviewerConfig: {
+        approvalProtocol: 'codex-native', modelStrategy: 'risk-tiered', maxAttempts: 3,
+      } })
+      const decision = await ctx.actionReview.review(action, undefined, new AbortController().signal)
+      expect(decision.outcome).toBe('unavailable')
+      expect(stats().creates).toBe(1)
+      expect(gate).toHaveBeenCalledTimes(1)
+    } finally { gate.mockRestore() }
+  })
   it('creates and disposes a dedicated policy-tool-only Agent/Session for one review', async () => {
     const { ctx, stats } = await fixture([approved])
     const decision = await ctx.actionReview.review(action, undefined, new AbortController().signal)
@@ -324,6 +339,7 @@ describe('isolated reviewer agent provider', () => {
     const adapter = new ReviewAdapter()
     ctx.llm.registerAdapter(['fixture-provider'], adapter)
     applyProvider(ctx, {
+      approvalProtocol: 'legacy-js',
       provider: 'fixture-provider',
       model: 'fixture-reviewer',
       reasoningEffort: 'low',
@@ -363,6 +379,7 @@ describe('isolated reviewer agent provider', () => {
     const adapter = new ReviewAdapter(true)
     ctx.llm.registerAdapter(['fixture-provider'], adapter)
     applyProvider(ctx, {
+      approvalProtocol: 'legacy-js',
       provider: 'fixture-provider', model: 'fixture-reviewer', reasoningEffort: 'low',
       maxInputBytes: 65536, maxOutputTokens: 512, timeoutMs: 5000, maxAttempts: 1, retryDelayMs: 0,
     })
@@ -390,6 +407,7 @@ describe('isolated reviewer agent provider', () => {
     const adapter = new ReviewAdapter(true, 'not-json')
     ctx.llm.registerAdapter(['fixture-provider'], adapter)
     applyProvider(ctx, {
+      approvalProtocol: 'legacy-js',
       provider: 'fixture-provider', model: 'fixture-reviewer', reasoningEffort: 'low',
       maxInputBytes: 65536, maxOutputTokens: 512, timeoutMs: 5000, maxAttempts: 1, retryDelayMs: 0,
     })

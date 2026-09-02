@@ -1,6 +1,6 @@
 {
   "name": "@jhckevin/dsh-auto-review",
-  "version": "0.5.4",
+  "version": "0.5.5-rc.1",
   "description": "Native Auto Review capability, reviewer provider and tool policy for DeepSeek Harness",
   "type": "module",
   "license": "MIT",
@@ -18,6 +18,10 @@
     "./llm-provider": {
       "types": "./lib/llm-provider.d.ts",
       "default": "./lib/llm-provider.js"
+    },
+    "./native-approval-protocol": {
+      "types": "./lib/native-approval-protocol.d.ts",
+      "default": "./lib/native-approval-protocol.js"
     },
     "./settings-provider": {
       "types": "./lib/settings-provider.d.ts",
@@ -83,6 +87,7 @@
     }
   },
   "peerDependencies": {
+    "@dsh/codex-approval-bridge-host": "0.0.0-prototype.5",
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-agent": "0.1.0-rc.6",
     "@deepseek-ai/dsh-commands": "0.1.0-rc.6",
@@ -101,6 +106,9 @@
     "@deepseek-ai/dsh-client-ui-settings": "0.1.0-rc.6",
     "@deepseek-ai/dsh-client-ui-slots": "0.1.0-rc.6",
     "react": "^18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@dsh/codex-approval-bridge-host": { "optional": true }
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.1",

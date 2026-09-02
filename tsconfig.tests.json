@@ -5,6 +5,6 @@
     "rootDir": ".",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*.ts", "tests/codex-parity*.spec.ts"],
+  "include": ["src/**/*.ts", "tests/codex-parity*.spec.ts", "tests/native-approval-protocol.spec.ts", "tests/llm-provider.spec.ts"],
   "exclude": ["lib", "node_modules"]
 }
