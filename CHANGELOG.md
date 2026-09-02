@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.5.5-rc.1 - 2026-09-02
+
+- 修复 Full Access 开启 Auto Review 后仍跳过审批；新增默认开启的独立 reviewFullAccess 设置，明确它是产品扩展而非 Codex 原生沙盒语义。
+- 修复 Full Access escalation 在审批不可用时可能跳过询问的分支；shadow 不再将 manual/unavailable 改成自动批准。
+- 修复未知扩展转人工未计入 manual；真实人工转交与测试模拟回复分开解释。
+- 在最终 reviewer 决定和执行票据之间接入 prototype.5 的真实 Core ReviewDecision Rust serde 门禁；桥接失败不重试模型、不回退 JS 批准。
+- 新增原生决定不匹配、取消、释放失败和 provider fail-closed 回归；扩大测试类型检查，原生沙盒测试使用工作区唯一目录且不伪造平台探针。
+- 179/179 单元、8/8 SSE helper、构建、政策来源与离线打包检查通过。真实 Flash 单轮18请求，原9场景全通过，新增拒绝后询问通过，安全替代例直接避险而未触发拒绝分支。
+- 保持 RC：不宣称完整 Guardian 迁移、完整沙盒隔离、长期稳定性或生产上线；Linux Landlock 仍为 partial。
+
 ## 0.5.4 - 2026-09-01
 
 - 扩展拒绝后生命周期测试，区分采用实质更安全的动作、无替代时停止询问、原动作重试与等效效果绕过。
