@@ -4,7 +4,7 @@ import { CallId } from '@deepseek-ai/dsh-llm'
 import ActionReviewRuntime from '../src/service.ts'
 import type { ActionEnvelope, ActionReviewer } from '../src/types.ts'
 
-const action: ActionEnvelope = Object.freeze({
+const action = Object.freeze<ActionEnvelope>({
   schemaVersion: 1,
   actionId: 'call:deadbeef',
   actionDigest: 'd'.repeat(64),
@@ -20,7 +20,7 @@ const action: ActionEnvelope = Object.freeze({
   reason: 'process',
   resolverId: 'builtin',
   effects: [{ type: 'process.exec', commandDigest: 'a'.repeat(64) }],
-  policy: { mode: 'enforcing', resolverId: 'builtin', disposition: 'review', ruleIds: ['TEST'] },
+  policy: { mode: 'enforcing', sandboxDefaultAllow: true, resolverId: 'builtin', disposition: 'review', ruleIds: ['TEST'] },
   boundary: { sandboxMode: 'workspace-write', workspaceRoot: '/workspace', realpathVerified: false },
   sandbox: { mode: 'workspace-write', workspaceRoot: '/workspace' },
   paths: [],
@@ -232,7 +232,7 @@ describe('ActionReviewRuntime', () => {
     })
     expect(ctx.actionReview.consumeTicket(token, action)).toBeUndefined()
     expect(ctx.actionReview.consumeTicket(token, action)).toMatch(/no execution ticket/)
-    expect(ctx.actionReview.auditRecords().filter(record => record.kind === 'ticket').map(record => record.data.state))
+    expect(ctx.actionReview.auditRecords().filter(record => record.kind === 'ticket').map(record => 'state' in record.data ? record.data.state : undefined))
       .toEqual(['issued', 'consumed'])
   })
 

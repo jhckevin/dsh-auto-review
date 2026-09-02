@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.5.6-rc.1 - 2026-09-03
+
+目标 DSH：0.1.1-rc.2；独立兼容分支，未部署线上，未发布 npm。
+
+- 锁定默认 latest 发布版本，保留此版本原生 Session、CallId、client-runtime 接口。
+- 修复 assistant/tool 审查证据读取并补充真实 Session/fork 回归；更新命令 images 参数。
+- 全部测试纳入严格类型检查；183 项测试、构建和离线打包通过。
+
 ## 0.5.5-rc.1 - 2026-09-02
 
 - 修复 Full Access 开启 Auto Review 后仍跳过审批；新增默认开启的独立 reviewFullAccess 设置，明确它是产品扩展而非 Codex 原生沙盒语义。
