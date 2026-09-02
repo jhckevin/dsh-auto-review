@@ -12,6 +12,7 @@ const LOCALE_NAMESPACE = 'settings.autoReview'
 const STYLE_ID = '@jhckevin/dsh-auto-review/webui'
 
 const zh = {
+  badgeCompatibility: '兼容性提示：命令右侧审查/拒绝图标和设置选项卡 SVG 需要配套的 tool.call.badges 与 settings.section.icon 所有者补丁。官方 rc.2 未提供这两处插槽；未安装补丁时保留原生显示。',
   nav: '自动审批审查', title: 'Auto Review', subtitle: '依据权限模式、原生沙盒边界与当前策略，将需要审查的动作交给独立模型。',
   enabled: '启用 Auto Review', enabledHint: '关闭后完全回到 Harness 原生审批链，扩展不再路由、批准或拒绝动作。',
   sandboxDefaultAllow: '原生沙盒内默认通过', sandboxDefaultAllowHint: '默认开启。只影响 read-only / workspace-write；关闭后沙盒内动作也进入 reviewer，不会解除原生沙盒约束。Full Access 由下面独立开关控制。',
@@ -37,6 +38,7 @@ const zh = {
   behavior: '当前权限组合行为', behaviorDisabled: 'Auto Review 已关闭：所有权限档位均完全使用 Harness 原生审批链。', behaviorDefault: '只读/工作区写入：沙盒内普通动作直接通过；越界、敏感和网络动作进入 Reviewer。', behaviorStrict: '只读/工作区写入：沙盒内动作也进入 Reviewer，但实际执行仍受原生沙盒约束。',
 }
 const en = {
+  badgeCompatibility: 'Compatibility: command reviewing/denied glyphs and the settings-tab SVG require the accompanying tool.call.badges and settings.section.icon owner patches. Official rc.2 does not expose these slots; native display is retained without the patches.',
   nav: 'Auto Review', title: 'Auto Review', subtitle: 'Route actions to an isolated reviewer according to the permission mode, native sandbox boundary, and active policy.',
   enabled: 'Enable Auto Review', enabledHint: 'When disabled, the extension leaves routing, approval, and denial entirely to the native Harness chain.',
   sandboxDefaultAllow: 'Allow native-sandbox actions by default', sandboxDefaultAllowHint: 'Applies only to read-only/workspace-write. Turning it off adds review without removing native confinement. Full Access uses the independent switch below.',
@@ -98,6 +100,11 @@ interface AutoReviewBadgeSlots {
     },
     component: (props: BadgeProps) => ReactNode,
   ): unknown
+}
+
+interface AutoReviewNavSlots {
+  inject(name: 'settings.section.icon', register: () => unknown): unknown
+  register(options: {name: 'settings.section.icon'; key: string}, component: () => ReactNode): unknown
 }
 
 interface PageSnapshot {
@@ -280,6 +287,7 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics
   return (
     <section className="ar-page">
       <header className="ar-header"><div className="ar-header-title"><AutoReviewLogo /><div><h2>{t('title')}</h2><p>{t('subtitle')}</p></div></div><span className="ar-live">LIVE</span></header>
+      <p className="ar-help" data-auto-review-badge-compatibility="requires-owner-slot">{t('badgeCompatibility')}</p>
       {snapshot.metrics === undefined ? null : <AutoReviewFunnel metrics={snapshot.metrics} t={t} />}
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('enabled')}</strong><p>{t('enabledHint')}</p></div>
@@ -356,13 +364,16 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => () => { reviewStatus.dispose() }, 'auto-review webui: review status client')
   const t = ctx.locale.bind(LOCALE_NAMESPACE)
   const sectionRegistration = {
-    name: 'settings.section', id: 'auto-review', order: 17, label: () => t('nav'), icon: <AutoReviewNavIcon />, locale: LOCALE_NAMESPACE,
+    name: 'settings.section', id: 'auto-review', order: 17, label: () => t('nav'), locale: LOCALE_NAMESPACE,
     inject: (): AutoReviewSettingsInjected => api,
   } as const
   ctx.slots.inject('settings.section', () => ctx.slots.register(sectionRegistration, AutoReviewSettingsSection))
-  // The badge slot is introduced by the paired Harness core change and is not
-  // present in the published rc.6 type catalog, so keep this compatibility
-  // adapter local instead of globally augmenting SlotMap with a duplicate owner.
+  const navSlots = ctx.slots as unknown as AutoReviewNavSlots
+  navSlots.inject('settings.section.icon', () => navSlots.register({
+    name: 'settings.section.icon', key: 'auto-review',
+  }, AutoReviewNavIcon))
+  // Both child slots require the paired upstream-owner patches. Keep the
+  // unpublished contract local instead of overriding the framework SlotMap.
   const badgeSlots = ctx.slots as unknown as AutoReviewBadgeSlots
   badgeSlots.inject('tool.call.badges', () => badgeSlots.register({
     name: 'tool.call.badges', id: 'auto-review', order: 20, locale: LOCALE_NAMESPACE,

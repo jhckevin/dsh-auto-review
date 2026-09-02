@@ -1,0 +1,72 @@
+diff --git a/packages/client/ui-tool/src/client/apply.ts b/packages/client/ui-tool/src/client/apply.ts
+index 1324e8cb..64f96ac1 100644
+--- a/packages/client/ui-tool/src/client/apply.ts
++++ b/packages/client/ui-tool/src/client/apply.ts
+@@ -38,2 +38,3 @@ export function apply(ctx: ClientContext): void {
+       'tool.call.toolview': { kind: 'keyed', scope: 'session' },
++      'tool.call.badges': { kind: 'list', scope: 'session' },
+     },
+diff --git a/packages/client/ui-tool/src/client/contract/slots.ts b/packages/client/ui-tool/src/client/contract/slots.ts
+index 703e102a..3d749be4 100644
+--- a/packages/client/ui-tool/src/client/contract/slots.ts
++++ b/packages/client/ui-tool/src/client/contract/slots.ts
+@@ -26,2 +26,4 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
+     'tool.call.toolview': { kind: 'keyed'; scope: 'session'; owner: ToolCallOwnerProps }
++    /** Additive per-call status indicators; never replace the keyed Tool view. */
++    'tool.call.badges': { kind: 'list'; scope: 'session'; owner: Pick<ToolCallOwnerProps, 'callId' | 'toolName'> }
+   }
+@@ -65,3 +67,3 @@ export type ToolHostInfoInjected = {
+ export type ToolTreeProps = PropsRuntime<'conversation.chat.node', 'tool-call'>
+-  & PropsRenderSlots<'tool.call.toolview'>
++  & PropsRenderSlots<'tool.call.toolview' | 'tool.call.badges'>
+   & PropsLocale<'conversation'>
+diff --git a/packages/client/ui-tool/src/client/tool/ToolCallTree.module.css b/packages/client/ui-tool/src/client/tool/ToolCallTree.module.css
+index ed3e1cc9..ef1000be 100644
+--- a/packages/client/ui-tool/src/client/tool/ToolCallTree.module.css
++++ b/packages/client/ui-tool/src/client/tool/ToolCallTree.module.css
+@@ -4,2 +4,23 @@
+ 
++.callLine {
++  display: flex;
++  align-items: flex-start;
++}
++
++.callContent {
++  flex: 1;
++  min-width: 0;
++}
++
++.badges {
++  display: flex;
++  align-items: center;
++  gap: 4px;
++  flex: none;
++}
++
++.badges:empty {
++  display: none;
++}
++
+ .subCalls {
+diff --git a/packages/client/ui-tool/src/client/tool/ToolCallTree.tsx b/packages/client/ui-tool/src/client/tool/ToolCallTree.tsx
+index 2a119480..608a2205 100644
+--- a/packages/client/ui-tool/src/client/tool/ToolCallTree.tsx
++++ b/packages/client/ui-tool/src/client/tool/ToolCallTree.tsx
+@@ -39,6 +39,13 @@ const ToolCall = memo(function ToolCall({
+     >
+-      {renderSlot('tool.call.toolview', owner, {
+-        entryKey: toolName,
+-        fallback: <GenericToolCard {...owner} t={t} />,
+-      })}
++      <div className={css.callLine}>
++        <div className={css.callContent}>
++          {renderSlot('tool.call.toolview', owner, {
++            entryKey: toolName,
++            fallback: <GenericToolCard {...owner} t={t} />,
++          })}
++        </div>
++        <div className={css.badges}>
++          {renderSlot('tool.call.badges', { callId, toolName })}
++        </div>
++      </div>
+       {children}
