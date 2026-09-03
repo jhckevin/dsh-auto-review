@@ -27,7 +27,7 @@ npm install --prefix /opt/dsh-auto-review-native/0.1.0-rc.1 --offline --ignore-s
 export DSH_AUTO_REVIEW_NATIVE_RUNTIME=/opt/dsh-auto-review-native/0.1.0-rc.1/node_modules/@jhckevin/dsh-auto-review-bridge-linux-x64-gnu
 ```
 
-DSH profile 使用原生 `dsh plugin --profile web add` 入口安装候选制品（未发布前必须同时提供 host/platform 的本地 tgz，不能让包管理器请求不存在的 registry 版本）。公开发布后才改成版本化包名。配套宿主补丁在 `patches/dsh-rc2-web-live-bundle-discovery.patch`，针对固定 DSH rc.2 基线；首次应用宿主补丁本身需要构建和重启，之后才有新增 bundle 的 live discovery。不能声称一个尚未加载的插件能自行更新宿主的包发现器。
+DSH profile 使用原生 `dsh plugin --profile web add` 入口安装候选制品（未发布前必须同时提供 host/platform 的本地 tgz，不能让包管理器请求不存在的 registry 版本）。公开发布后才改成版本化包名。配套宿主补丁针对固定 DSH rc.2 基线，顺序应用 `patches/dsh-rc2-web-live-bundle-discovery.patch`、`patches/dsh-rc2-web-live-bundle-tail-events.patch`，最后应用测试可移植性修补 `patches/dsh-rc2-web-live-bundle-test-portability.patch`。首次应用宿主补丁本身需要构建和重启，之后才有新增 bundle 的 live discovery。不能声称一个尚未加载的插件能自行更新宿主的包发现器。
 
 ## 热操作的承诺范围
 
@@ -50,7 +50,11 @@ DSH profile 使用原生 `dsh plugin --profile web add` 入口安装候选制品
 - 第二轮已对最终公开命名 tgz 安装镜像重复同一原生生命周期测试：33 子进程/8 取消/0 迟到批准均通过，退出 0、OOM=false、ports={}。桥接镜像 `daf3cf41d5efc316c60942aea34dfb86a3309d268d88f258c30473c69d68c9b1`，适配器测试镜像 `feae074d9cf6c2f3d9f04ef7691c23763719fd3fa57bf3842f3e3bb84831e50b`。可复用 `scripts/e2e-native-lifecycle.mjs`，在构建后的插件目录、受保护平台且非 root 的环境运行。
 - 桥接独立审查对同一制品镜像重跑 25 项 owner + 12 项安装/篡改/保护目录测试全部通过；DSH `7026a9fd` 的 3 项文件 watcher smoke 也经独立复跑通过。
 - DSH live-discovery 的源码测试不能代替实际 `dsh plugin add` + 浏览器端到端测试。
+- 已增加真实编译 CLI + pnpm 离线安装小 bundle 的测试：localhost HTTP 200、同一 Web 进程热发现并激活、10 轮无额外 sleep 的 disable/enable 通过；独立审查再次跑通。它不是完整 Auto Review bundle/浏览器到达验收。
+- 真实测试先发现快速写入的最终配置丢失，原失败 `cli-live-48sZJF` 保留；根因为固定 chokidar 4.0.3 的 50ms leading throttle 丢尾。DSH `a664be4543f72a07cfbf6cf4189cf1758501518c` 只对组合 watcher 延后 60ms 再读并检查停用，修复后 4/4 watcher smoke 通过，包括延迟中 dispose。此修复不承诺跨版本/跨平台的一切文件事件丢失都能恢复。
 - 本轮未调用付费模型 API；不以生命周期 fixture 声称真实 Flash 风险判断验收。
+- 实际 Auto Review tgz 已通过正在运行的 CLI 离线安装：六个 Loader 配置行注册，settings namespace 挂载，设置 RPC 写入并由运行时读取；测试使用受控 rc.2 peer graph，不是公共 registry 安装证明，也不代表六个组件所有行为都已执行。
+- 首次真实浏览器热到达验收 **FAIL**，证据 `real-auto-review-Eawiaf/browser-outcome.json` 保留。同一已打开页面在安装后、关闭重开设置后均没有新选项卡；明确刷新页面后才出现。刷新后保存成功且磁盘配置吻合，只证明刷新路径可用，不能覆盖热到达失败。根因是普通客户端只在 bootstrap 接纳 module graph，尚无新增 graph 的消费通道；开发 HMR 也不能代替生产路径。
 - npm/GitHub 尚未发布。公开 registry 可解析、最新 DSH 兼容、完整浏览器安装体验仍须分别验收，不能仅凭 `private:false` 声称公众已能安装。
 
 最终打包测试支持 `DSH_BRIDGE_ARTIFACTS`（JSON 数组，列出精确 staged host/platform tgz 路径）执行离线安装。它验证本地制品，不伪造 registry 发布结果。公开后应以实际 registry 制品和独立用户环境再次执行洁净安装。
