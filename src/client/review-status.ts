@@ -1,4 +1,5 @@
 import type { AutoReviewIndicator, AutoReviewIndicatorSnapshot } from '../types.ts'
+import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
 
 const EMPTY_SNAPSHOT: AutoReviewIndicatorSnapshot = Object.freeze({
   revision: 0,
@@ -10,6 +11,7 @@ export interface ReviewStatusRemote {
 }
 
 interface SessionReviewState {
+  readonly source: HostObservable<AutoReviewIndicatorSnapshot>
   readonly listeners: Set<() => void>
   snapshot: AutoReviewIndicatorSnapshot
   timer: ReturnType<typeof globalThis.setInterval> | undefined
@@ -48,6 +50,14 @@ export class ReviewStatusClient {
     return this.sessions.get(sessionId)?.snapshot ?? EMPTY_SNAPSHOT
   }
 
+  /** Bare observable bound to a framework-created useReviewStatus hook.
+   * @param sessionId - selected session identity.
+   * @returns stable source shared by visible badges in the session.
+   */
+  source(sessionId: string): HostObservable<AutoReviewIndicatorSnapshot> {
+    return this.state(sessionId).source
+  }
+
   indicator(sessionId: string, callId: string): AutoReviewIndicator | undefined {
     return this.snapshot(sessionId).indicators.find(indicator => indicator.callId === callId)
   }
@@ -60,10 +70,12 @@ export class ReviewStatusClient {
   }
 
   private state(sessionId: string): SessionReviewState {
+    if (this.disposed) throw new Error('auto-review: status client is disposed')
     if (sessionId.trim().length === 0) throw new TypeError('auto-review: session id must be non-empty')
     let state = this.sessions.get(sessionId)
     if (state === undefined) {
-      state = { listeners: new Set(), snapshot: EMPTY_SNAPSHOT, timer: undefined, request: undefined }
+      state = { listeners: new Set(), snapshot: EMPTY_SNAPSHOT, timer: undefined, request: undefined,
+        source: { getSnapshot: () => this.snapshot(sessionId), subscribe: listener => this.subscribe(sessionId, listener) } }
       this.sessions.set(sessionId, state)
     }
     return state

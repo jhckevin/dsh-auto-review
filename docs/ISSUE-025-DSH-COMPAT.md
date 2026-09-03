@@ -1,10 +1,10 @@
-# ISSUE-025：DSH 0.1.1-rc.2 插件适配
+# ISSUE-025：DSH 0.1.2-alpha.5 插件适配
 
-版本：0.5.6-rc.1。目标上游 tag dsh-v0.1.1-rc.2，commit b150a551b8d465e31e418e1b2eaf5e79bbb7d28e。
+版本：0.5.7-alpha.1。目标上游 tag dsh-v0.1.2-alpha.5，commit db6bdc3576c2d4e7c965e8e3ed0c2a731eed87f5。
 
 ## 改动与验证
 
-保留该版本的 CallId、Session.events 与 client-runtime 接口；更新 commands.execute 的 images 参数；修正 assistant/tool 历史证据读取为 data.message.content。新增四个真实 Session 证据测试，包括 fork 继承及信任标签。185/185 测试、构建、类型检查、policy 来源校验与离线打包导入通过，58 个锁定 DSH 包均为 0.1.1-rc.2。
+改用 ToolCallId、dsh-util-values、Session.seq/eventAt/snapshotEvents、字符串 settings namespace 与 Cordis Context。真实装配补齐 sessionProjections，明确检查 policy fiber ACTIVE。保留 fork 继承证据，修复 data.message.content 读取。新增 never 模式零执行/零人工询问回归，全部测试文件纳入类型检查。compat:check 验证实际安装包及真实服务，不以 lockfile 或 await ctx.plugin 代替激活证据。WebUI 设置与两处 SVG 展示适配参见配套 UI 补丁说明。
 
 ## 版本与发布边界
 

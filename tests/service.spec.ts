@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import ActionReviewRuntime from '../src/service.ts'
 import type { ActionEnvelope, ActionReviewer } from '../src/types.ts'
 
@@ -11,8 +11,8 @@ const action = Object.freeze<ActionEnvelope>({
   effectDigest: 'c'.repeat(64),
   policyDigest: 'e'.repeat(64),
   boundaryDigest: 'f'.repeat(64),
-  callId: CallId('call'),
-  rootCallId: CallId('call'),
+  callId: ToolCallId('call'),
+  rootCallId: ToolCallId('call'),
   toolName: 'bash',
   arguments: { command: 'echo ok' },
   actionKind: 'process',

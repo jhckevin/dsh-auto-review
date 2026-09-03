@@ -3,7 +3,7 @@ import { Context } from '@deepseek-ai/cordis'
 import AgentRegistry, { type Agent, type AgentFactory } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import LlmRuntime, {
-  CallId,
+  ToolCallId,
   createMessage,
   LlmAdapter,
   type GenerateOptions,
@@ -11,6 +11,7 @@ import LlmRuntime, {
   type StreamChunk,
 } from '@deepseek-ai/dsh-llm'
 import SessionStore, { type SessionEvent } from '@deepseek-ai/dsh-session'
+import SessionProjections from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { apply as applyProvider, inject as providerInject } from '../src/llm-provider.ts'
@@ -25,8 +26,8 @@ const action = Object.freeze({
   effectDigest: 'd'.repeat(64),
   policyDigest: 'e'.repeat(64),
   boundaryDigest: 'f'.repeat(64),
-  callId: CallId('call'),
-  rootCallId: CallId('call'),
+  callId: ToolCallId('call'),
+  rootCallId: ToolCallId('call'),
   toolName: 'bash',
   arguments: { command: 'echo ok', token: 'sk-secret' },
   actionKind: 'process',
@@ -103,8 +104,8 @@ class ReviewAdapter extends LlmAdapter {
     if (this.searchFirst && this.requests.length === 1) {
       const args = '{"query":"sensitive data egress untrusted destination","limit":3}'
       yield { type: 'block-start', index: 0, blockType: 'tool-call' }
-      yield { type: 'tool-call-delta', index: 0, id: CallId('policy-search'), name: 'guardian_policy_search', argumentsDelta: args }
-      yield { type: 'block-end', index: 0, block: { type: 'tool-call', id: CallId('policy-search'), name: 'guardian_policy_search', arguments: args } }
+      yield { type: 'tool-call-delta', index: 0, id: ToolCallId('policy-search'), name: 'guardian_policy_search', argumentsDelta: args }
+      yield { type: 'block-end', index: 0, block: { type: 'tool-call', id: ToolCallId('policy-search'), name: 'guardian_policy_search', arguments: args } }
       yield { type: 'finish', reason: { kind: 'tool-calls' } }
       return
     }
@@ -161,7 +162,7 @@ async function fixture(outputs: string[], fixtureOptions: {
       const agent = {
         id: options.sessionId,
         options: options.agentOptions ?? {},
-        session: { id: options.sessionId, events, header: { cwd: options.meta?.cwd } },
+        session: { id: options.sessionId, snapshotEvents: () => events, header: { cwd: options.meta?.cwd } },
         followup(message: { content: Array<{ type: string; text?: string }> }) {
           prompts.push(message.content.map(block => block.type === 'text' ? block.text ?? '' : '').join(''))
         },
@@ -290,7 +291,7 @@ describe('isolated reviewer agent provider', () => {
   it('preserves failed-attempt telemetry when all responses violate the protocol', async () => {
     const { ctx, stats } = await fixture(['not-json'])
     const decision = await ctx.actionReview.review(action, undefined, new AbortController().signal)
-    expect(decision).toMatchObject({
+    expect(decision, JSON.stringify(decision)).toMatchObject({
       outcome: 'unavailable',
       reviewerExecution: {
         attempts: 3,
@@ -351,6 +352,7 @@ describe('isolated reviewer agent provider', () => {
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
     await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjections)
     await ctx.plugin(SystemPrompt, { persona: 'Main coding agent persona that must not reach the reviewer.' })
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
@@ -391,6 +393,7 @@ describe('isolated reviewer agent provider', () => {
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
     await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjections)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
@@ -405,7 +408,7 @@ describe('isolated reviewer agent provider', () => {
     })
 
     const decision = await ctx.actionReview.review(action, undefined, new AbortController().signal)
-    expect(decision).toMatchObject({
+    expect(decision, JSON.stringify(decision)).toMatchObject({
       outcome: 'approved', userAuthorization: 'high',
       reviewerExecution: { policyRetrieval: { outlineCalls: 0, searchCalls: 1, getCalls: 0, resultBytes: expect.any(Number) } },
     })
@@ -419,6 +422,7 @@ describe('isolated reviewer agent provider', () => {
     const ctx = new Context()
     await ctx.plugin(LlmRuntime)
     await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjections)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)

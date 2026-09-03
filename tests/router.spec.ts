@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
 import { ActionRouter } from '../src/router.ts'
 
@@ -7,8 +7,8 @@ const signal = new AbortController().signal
 
 function exec(name: string, args: unknown, callId = 'call-1'): ToolExecution {
   return {
-    callId: CallId(callId),
-    rootCallId: CallId(callId),
+    callId: ToolCallId(callId),
+    rootCallId: ToolCallId(callId),
     name,
     arguments: args,
     signal,

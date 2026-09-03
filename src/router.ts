@@ -1,6 +1,7 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 import type { SandboxExecutionPolicy } from '@deepseek-ai/dsh-sandbox'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import { SessionSeq } from '@deepseek-ai/dsh-session'
 import { sha256Json, toJsonValue } from './canonical.ts'
 import type {
   ActionEffect,
@@ -125,8 +126,10 @@ function transcriptOf(exec: Readonly<ToolExecution>): ActionEnvelope['authority'
   let currentUserRequest: string | undefined
   let turn: number | undefined
   const transcript: Array<ActionEnvelope['authority']['transcript'][number]> = []
-  for (let index = session.events.length - 1; index >= 0; index -= 1) {
-    const event = session.events[index]
+  // eventAt includes the immutable fork prefix; ownEvents would lose inherited
+  // user constraints. Capture the log bound without copying the complete log.
+  for (let index = session.seq - 1; index >= 0; index -= 1) {
+    const event = session.eventAt(SessionSeq(index))
     if (event?.type === 'turn/start' && turn === undefined) {
       const candidate = (event.data as { turn?: unknown }).turn
       if (typeof candidate === 'number' && Number.isSafeInteger(candidate)) turn = candidate

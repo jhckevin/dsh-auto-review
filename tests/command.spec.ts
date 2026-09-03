@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import AgentRegistry, { Inbox, type Agent, type AgentStatus } from '@deepseek-ai/dsh-agent'
 import CommandRuntime from '@deepseek-ai/dsh-commands'
-import { CallId } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import { apply as applyCommand } from '../src/command.ts'
 import ActionReviewRuntime from '../src/service.ts'
@@ -34,8 +34,8 @@ function action(sessionId: string): ActionEnvelope {
     effectDigest: 'd'.repeat(64),
     policyDigest: 'e'.repeat(64),
     boundaryDigest: 'f'.repeat(64),
-    callId: CallId('call'),
-    rootCallId: CallId('call'),
+    callId: ToolCallId('call'),
+    rootCallId: ToolCallId('call'),
     toolName: 'bash',
     arguments: { command: 'echo ok' },
     actionKind: 'process',
@@ -91,8 +91,8 @@ describe('/approve exact-action command', () => {
       source: 'human-command',
     })
     expect(ctx.actionReview.consumeExactOverride(deniedAction)).toBeUndefined()
-    expect(agent.session.events.map(event => event.type)).toContain('command/run')
-    expect(agent.session.events.map(event => event.type)).toContain('command/done')
+    expect(agent.session.snapshotEvents().map(event => event.type)).toContain('command/run')
+    expect(agent.session.snapshotEvents().map(event => event.type)).toContain('command/done')
   })
 
   it('rejects missing history and a digest that differs from the latest denial', async () => {

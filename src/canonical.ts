@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { JsonValue } from '@deepseek-ai/dsh-session'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 function canonicalValue(value: JsonValue): string {
   if (value === null) return 'null'

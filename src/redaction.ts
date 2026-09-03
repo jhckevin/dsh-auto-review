@@ -1,4 +1,4 @@
-import type { JsonValue } from '@deepseek-ai/dsh-session'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 
 const SECRET_KEY = /(?:api[_-]?key|token|secret|password|passwd|authorization|cookie|credential|private[_-]?key)/i
 const SECRET_TEXT = [

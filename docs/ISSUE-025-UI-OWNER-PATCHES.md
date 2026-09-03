@@ -34,9 +34,6 @@ ReviewStatusClient 旧 unsubscribe 反复执行会删除同 session 的新状态
 
 ## 本轮实际证据
 
-rc.2 插件另行实现 settings.section.icon 原生注册，移除无效 sectionRegistration.icon，保留其 useSyncExternalStore 与 ClientContext API；session 范围由 rc.2 PropsRuntime 标准 sessionId 注入，badge 的 inject 不读取参数（仅提供共享服务）。
-release 自身 apply 注册、RPC 轮询、拒绝 SVG SSR 与清理回归为 2/2，连同既有徽章/状态测试共 9/9；全 tests TypeScript 通过。这使用受控 ctx fixture，不冒充完整 SlotRenderer/Loader 验收。
-
 - 插件徽章 SVG / bare observable / 生命周期：10/10。
 - alpha.5 实际 patched ToolCallTree SSR：2/2；实际 SettingsRoot jsdom 打开、导航 SVG、fallback、Escape 关闭：1/1。
 - rc.2 实际 patched 同名源码，使用隔离展示层 fixture：同 3/3。

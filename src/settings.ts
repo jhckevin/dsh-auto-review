@@ -71,11 +71,8 @@ export function autoReviewSettingsBase(
   const model = reviewer?.model.toLocaleLowerCase().includes('pro') ? 'pro' : 'flash'
   const primaryProvider = reviewer?.provider ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.primaryProvider
   const primaryModel = reviewer?.model ?? DEFAULT_AUTO_REVIEW_UI_SETTINGS.primaryModel
-  const strongProvider = reviewer?.strongProvider ?? primaryProvider
-  // Model ids from custom providers are opaque, including ids containing flash.
-  const inferredStrongModel = primaryProvider === 'deepseek-official'
-    && primaryModel === 'deepseek-v4-flash' && strongProvider === 'deepseek-official'
-    ? 'deepseek-v4-pro'
+  const inferredStrongModel = primaryModel.toLocaleLowerCase().includes('flash')
+    ? primaryModel.replace(/flash/ig, 'pro')
     : primaryModel
   return {
     enabled: runtime.mode !== 'disabled',
@@ -86,7 +83,7 @@ export function autoReviewSettingsBase(
     primaryProvider,
     primaryModel,
     primaryReasoningEffort: reviewer?.reasoningEffort ?? '',
-    strongProvider,
+    strongProvider: reviewer?.strongProvider ?? primaryProvider,
     strongModel: reviewer?.strongModel ?? inferredStrongModel,
     strongReasoningEffort: reviewer?.strongReasoningEffort ?? reviewer?.reasoningEffort ?? '',
     strongReviewKinds: [...(reviewer?.strongReviewKinds ?? STRONG_REVIEW_KINDS)],
