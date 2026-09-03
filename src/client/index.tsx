@@ -291,12 +291,12 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics
       {snapshot.metrics === undefined ? null : <AutoReviewFunnel metrics={snapshot.metrics} t={t} />}
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('enabled')}</strong><p>{t('enabledHint')}</p></div>
-        <button className="ar-switch" type="button" role="switch" aria-checked={draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, enabled: !draft.enabled }) }}><span /></button>
+        <button className="ar-switch" type="button" role="switch" aria-label={t('enabled')} aria-checked={draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, enabled: !draft.enabled }) }}><span /></button>
       </div>
       <div className="ar-card ar-behavior"><h3>{t('behavior')}</h3><p>{t(!draft.enabled ? 'behaviorDisabled' : draft.sandboxDefaultAllow ? 'behaviorDefault' : 'behaviorStrict')}</p>{draft.enabled ? <p>{t('reviewFullAccessHint')}</p> : null}</div>
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('sandboxDefaultAllow')}</strong><p>{t('sandboxDefaultAllowHint')}</p></div>
-        <button className="ar-switch" type="button" role="switch" aria-checked={draft.sandboxDefaultAllow} disabled={!draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, sandboxDefaultAllow: !draft.sandboxDefaultAllow }) }}><span /></button>
+        <button className="ar-switch" type="button" role="switch" aria-label={t('sandboxDefaultAllow')} aria-checked={draft.sandboxDefaultAllow} disabled={!draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, sandboxDefaultAllow: !draft.sandboxDefaultAllow }) }}><span /></button>
       </div>
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('reviewFullAccess')}</strong><p>{t('reviewFullAccessHint')}</p></div>
