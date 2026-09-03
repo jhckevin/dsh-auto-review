@@ -60,12 +60,27 @@ fallback is authorized by this documentation.
 
 ## Codex Desktop Auto Review shield-terminal glyph
 
-The shield-terminal SVG path used by the Auto Review Tool-call badge was
-extracted from the locally installed OpenAI Codex Desktop application at the
-user's explicit request. Copyright and all other rights in that glyph remain
-with OpenAI and its licensors. The glyph is not licensed under this repository's
-MIT License. Redistributors are responsible for obtaining any permission their
-use requires.
+The shield-terminal SVG paths currently used by the Auto Review tool-call badge
+and settings navigation were extracted from the locally installed OpenAI Codex
+Desktop application at the user's explicit request. They are not independently
+created artwork. This source attribution does not establish copyright ownership,
+copyright eligibility, public-domain status, or a redistribution license.
+
+On 2026-09-03 the maintainer reported that the glyph is widely used and believed
+it to be free of copyright, and requested that its source be acknowledged. No
+specific license text or public-domain declaration supporting that assessment
+was supplied in this review. We record it as a maintainer-reported assessment,
+not as a verified legal conclusion or a permission grant from the source owner.
+
+The project's MIT License does not purport to license this glyph. Rewriting SVG
+paths to reproduce the same appearance would not, by itself, verify the rights
+status. This notice is attribution, not proof of permission. No OpenAI endorsement
+is implied; any applicable third-party rights and terms are reserved.
+
+中文说明：当前图标参考并提取自 Codex Desktop，非本项目独立原创；用于自动
+审查命令标识和设置选项卡。维护者表示经调查认为该图标不受版权保护，但本次
+未提供可核验的许可或公共领域声明。因此这里只标明来源，不宣称“已确认无版权”，
+也不将图标纳入项目自有代码的 MIT 授权范围。此说明本身不构成再分发许可。
 
 Source application observed during implementation:
 `OpenAI.Codex_26.810.7004.0_x64`, resources
