@@ -2,14 +2,14 @@
 
 受 [Codex-style Auto Review](https://alignment.openai.com/auto-review/) 启发的独立 DSH 插件项目。本项目不是 OpenAI、Codex 或 DeepSeek 的官方产品，也不声称与完整 Codex Guardian 实现等价。
 
-自有代码采用 MIT；引用与移植的第三方内容保留原许可证，见 [NOTICE](NOTICE)、[第三方说明](THIRD_PARTY_NOTICES.md) 和 [许可证目录](licenses/)。当前处于开源前验收阶段，发布阻塞见 [ISSUE-026](docs/ISSUE-026-OPEN-SOURCE.md)。原生桥接已改为独立可打包候选并验证离线安装，但尚未公开发布 npm；热生命周期和保护目录安装方案见 [ISSUE-027](docs/ISSUE-027-HOTPLUG.md)。
+由 [jhckevin](https://github.com/jhckevin) 维护。自有代码采用 MIT；引用与移植的第三方内容保留原许可证，见 [NOTICE](NOTICE)、[第三方说明](THIRD_PARTY_NOTICES.md) 和 [许可证目录](licenses/)。此版本作为 GitHub **工程预发布**提供，不是稳定生产认证，也尚未发布 npm。完整安装路径、制品范围及已知限制见 [GitHub 预发布说明](docs/GITHUB-PREVIEW.md)。历史审查记录见 [ISSUE-026](docs/ISSUE-026-OPEN-SOURCE.md)；热生命周期和保护目录方案见 [ISSUE-027](docs/ISSUE-027-HOTPLUG.md)。
 
 | DSH 发布通道 | 精确 DSH 版本 | 插件候选版本 |
 |---|---|---|
-| npm latest / next（固定兼容基线） | 0.1.1-rc.2 | 0.5.6-rc.2 |
-| npm alpha | 0.1.2-alpha.5 | 0.5.7-alpha.1 |
+| 本次 GitHub 候选支持 | 0.1.1-rc.2 | 0.5.6-rc.2 |
+| 历史 alpha 适配，未随此次发布 | 0.1.2-alpha.5 | 0.5.7-alpha.1 |
 
-两个候选包不能混装，也不承诺兼容未发布 master。兼容候选版尚非生产发布版；本目录对应表格第一行。安装顺序、匹配的 UI 补丁和公开安装阻塞见 [候选安装说明](docs/INSTALL-CANDIDATE.md)。
+两个通道不能混装，也不承诺兼容未验证 master 或未来版本。本仓对应表格第一行；第二行不表示提供 alpha 下载或已同步本轮热安装改造。安装顺序、匹配的 UI 补丁和前置条件见 [候选安装说明](docs/INSTALL-CANDIDATE.md)。
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
@@ -97,4 +97,4 @@ JSONL provider 启动时验证每个历史文件的完整 digest chain，并在�
 
 ## 许可证
 
-项目自有代码采用 MIT；Codex 派生代码和策略仍适用 Apache-2.0，其他第三方内容按各自许可处理。详见 LICENSE、NOTICE、licenses/ 与 THIRD_PARTY_NOTICES.md。当前未获再分发许可的 Desktop SVG 不得随公开版发布。
+项目自有代码采用 MIT；Codex 派生代码和策略仍适用 Apache-2.0，其他第三方内容按各自许可处理。详见 LICENSE、NOTICE、licenses/ 与 THIRD_PARTY_NOTICES.md。Desktop SVG 按维护者要求保留来源说明，不纳入本项目 MIT 授权；本项目没有验证其公共领域或再分发许可状态，也不声称来源标注可以代替许可。

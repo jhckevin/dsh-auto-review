@@ -5,6 +5,9 @@
   "keywords": ["deepseek-harness", "dsh", "dsh-plugin", "cordis", "auto-review", "codex-style", "sandbox", "agent-security", "human-in-the-loop"],
   "type": "module",
   "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/jhckevin/dsh-auto-review.git" },
+  "bugs": { "url": "https://github.com/jhckevin/dsh-auto-review/issues" },
+  "homepage": "https://github.com/jhckevin/dsh-auto-review#readme",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
@@ -65,6 +68,7 @@
     "licenses/**",
     "docs/ISSUE-026-OPEN-SOURCE.md",
     "docs/INSTALL-CANDIDATE.md",
+    "docs/GITHUB-PREVIEW.md",
     "docs/ISSUE-027-HOTPLUG.md",
     "patches/**/*.patch",
     "docs/ISSUE-025-DSH-COMPAT.md",

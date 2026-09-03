@@ -1,6 +1,6 @@
 # 安装与版本匹配（未发布候选）
 
-本页不是可公开安装的发布承诺。默认 codex-native 已改用独立公开命名的 bridge 候选包，并通过 staged tgz 离线安装；GitHub/npm 尚未发布，不提供假装已经能从注册表下载的一键命令，也不静默切换 legacy-js。新增热安装范围及一次性受保护 runtime 部署见 [ISSUE-027-HOTPLUG.md](ISSUE-027-HOTPLUG.md)。
+本页描述固定环境的工程候选安装，不是生产适用性承诺。默认 codex-native 使用独立命名的 bridge 候选包，并通过 staged tgz 离线安装；GitHub 工程预发布范围见 [GITHUB-PREVIEW.md](GITHUB-PREVIEW.md)。npm 尚未发布，不提供不存在的注册表一键命令，也不静默切换 legacy-js。新增热安装范围及一次性受保护 runtime 部署见 [ISSUE-027-HOTPLUG.md](ISSUE-027-HOTPLUG.md)。
 
 ## 固定版本
 
@@ -63,6 +63,6 @@ dsh plugin --profile web add /approved-artifacts/*.tgz --offline --ignore-script
 
 ## 公开发布清单
 
-完成 SVG 权利清理、第三方许可证、native 桥接公开安装、完整沙盒验收、拒绝后安全替代真实分支覆盖后，才创建公共仓库 Release / npm 包与版本标签。
+公开源码与工程预发布不等于完整稳定版本验收。SVG 权利状态、第三方材料原始缺项、完整原生执行系统、沙盒与安全替代覆盖仍须分别报告；本次不把这些门禁改成已通过。npm 发布及稳定生产认证是后续范围。
 
-建议 GitHub Topics：deepseek-harness、dsh-plugin、cordis、auto-review、codex-style、sandbox、agent-security。package keywords 已设置；Topics 未声称已在远程仓库生效。
+GitHub Topics 计划：deepseek-harness、dsh-plugin、cordis、auto-review、codex-style、sandbox、agent-security。package keywords 已设置，实际远程 Topics 在发布时验证。

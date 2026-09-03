@@ -48,15 +48,17 @@ All upstream paths above are under `codex-rs/`. This notice covers the related
 compiled `lib/codex-parity/` output and does not change the recorded validation
 status of any module.
 
-## Optional native approval bridge
+## Native approval bridge
 
-`@dsh/codex-approval-bridge-host` and its Linux platform package are separate
-Apache-2.0 prototype artifacts, not MIT assets included by this notice. The
-main package declares an optional peer, but its default `codex-native` profile
-still requires a separately installed, trusted matching artifact. See
-`docs/ISSUE-026-OPEN-SOURCE.md` for the publication blockers. There is no claim
-that the default profile works from public npm alone, and no silent legacy
-fallback is authorized by this documentation.
+`@jhckevin/dsh-auto-review-bridge-host` and
+`@jhckevin/dsh-auto-review-bridge-linux-x64-gnu`, version `0.1.0-rc.1`, are
+separate Apache-2.0 artifacts, not MIT assets relicensed by this notice. The
+main package has an exact host dependency. Source-checkout CI resolves the
+verified archives through the lockfile; installation requires a separately
+protected matching native runtime. Package-specific source, license,
+provenance and unresolved development gates must accompany distribution.
+This is bounded protocol validation, not complete Codex Guardian execution.
+There is no claim of public npm publication, and no silent legacy fallback.
 
 ## Codex Desktop Auto Review shield-terminal glyph
 
@@ -102,3 +104,11 @@ runtime dependencies, are distributed under their respective MIT licenses.
 
 Sources: https://github.com/tree-sitter/node-tree-sitter and
 https://github.com/tree-sitter/tree-sitter-bash
+
+## DeepSeek Harness host patches
+
+Files under `patches/` modify the MIT-licensed DeepSeek Harness and preserve
+the upstream project license in `licenses/DSH-LICENSE`. The rc.2 hot-install
+series starts at `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e` and ends at
+`b9d1317287dd122188210cf7775017462f45cd86`. These are downstream changes, not
+upstream endorsement or a claim that unmodified DSH already has these seams.
