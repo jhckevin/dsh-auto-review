@@ -270,7 +270,7 @@ describe('ActionReviewRuntime', () => {
       .toEqual(['issued', 'consumed'])
   })
 
-  it('pauses automatic review after three consecutive denials in one turn', async () => {
+  it('latches a hard stop on the third consecutive denial in one turn', async () => {
     const ctx = new Context()
     await ctx.plugin(ActionReviewRuntime)
     ctx.actionReview.registerReviewer({
@@ -289,13 +289,13 @@ describe('ActionReviewRuntime', () => {
     await ctx.actionReview.review(action, undefined, signal)
     await ctx.actionReview.review(action, undefined, signal)
     await expect(ctx.actionReview.review(action, undefined, signal)).resolves.toMatchObject({
-      outcome: 'manual', policyRuleIds: ['AR-DENIAL-BREAKER'],
+      outcome: 'denied', policyRuleIds: ['AR-DENIAL-BREAKER'],
     })
     expect(ctx.actionReview.auditRecords().find(record => record.kind === 'breaker')?.data)
       .toMatchObject({ state: 'opened', reason: 'denial-rate', consecutiveDenials: 3 })
   })
 
-  it('pauses after ten interleaved denials within the rolling last-fifty window', async () => {
+  it('latches a hard stop after ten interleaved denials within the rolling last-fifty window', async () => {
     const ctx = new Context()
     await ctx.plugin(ActionReviewRuntime)
     let calls = 0
@@ -318,10 +318,82 @@ describe('ActionReviewRuntime', () => {
     const signal = new AbortController().signal
     for (let index = 0; index < 19; index += 1) await ctx.actionReview.review(scoped, undefined, signal)
     await expect(ctx.actionReview.review(scoped, undefined, signal)).resolves.toMatchObject({
-      outcome: 'manual', policyRuleIds: ['AR-DENIAL-BREAKER'],
+      outcome: 'denied', policyRuleIds: ['AR-DENIAL-BREAKER'],
     })
     expect(ctx.actionReview.auditRecords().find(record => record.kind === 'breaker')?.data)
       .toMatchObject({ state: 'opened', reason: 'denial-rate', recentDenials: 10, recentWindow: 19 })
+  })
+
+
+  it.each(['approved', 'manual', 'unavailable'] as const)('a completed %s resets consecutive denials without adding a denial', async outcome => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    let next: 'denied' | typeof outcome = 'denied'
+    ctx.actionReview.registerReviewer({ id: 'counter-reset', review: async () => ({
+      schemaVersion: 1, outcome: next, riskLevel: 'high', rationale: 'fixture', policyRuleIds: [], uncertainty: '',
+    }) })
+    const signal = new AbortController().signal
+    const scoped = {...action, authority: {sessionId: 'reset', turn: 1, transcript: []}}
+    await ctx.actionReview.review(scoped, undefined, signal)
+    await ctx.actionReview.review(scoped, undefined, signal)
+    next = outcome
+    await ctx.actionReview.review(scoped, undefined, signal)
+    next = 'denied'
+    await ctx.actionReview.review(scoped, undefined, signal)
+    await ctx.actionReview.review(scoped, undefined, signal)
+    expect(ctx.actionReview.denialBreaker(scoped)).toBeUndefined()
+    await ctx.actionReview.review(scoped, undefined, signal)
+    expect(ctx.actionReview.denialBreaker(scoped)).toEqual({consecutive: 3, denied: 5, window: 6})
+    await ctx.fiber.dispose()
+  })
+
+  it('shadow denials never latch a turn interruption', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime, {mode: 'shadow'})
+    ctx.actionReview.registerReviewer({id: 'shadow', review: async () => ({
+      schemaVersion: 1, outcome: 'denied', riskLevel: 'high', rationale: 'fixture', policyRuleIds: [], uncertainty: '',
+    })})
+    for (let index = 0; index < 55; index++) {
+      expect((await ctx.actionReview.review(action, undefined, new AbortController().signal)).outcome).toBe('approved')
+    }
+    expect(ctx.actionReview.reviewPaused(action)).toBe(false)
+    expect(ctx.actionReview.auditRecords().filter(record => record.kind === 'breaker')).toHaveLength(0)
+    await ctx.fiber.dispose()
+  })
+
+  it('scopes denial thresholds to one session and turn, not the lifetime conversation', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    ctx.actionReview.registerReviewer({id: 'scoped', review: async () => ({
+      schemaVersion: 1, outcome: 'denied', riskLevel: 'high', rationale: 'fixture', policyRuleIds: [], uncertainty: '',
+    })})
+    const signal = new AbortController().signal
+    const scopes = [ ['one', 1], ['one', 2], ['two', 1] ] as const
+    const actions = scopes.map(([sessionId, turn]) => ({...action, authority:{sessionId, turn, transcript:[]}}))
+    for (const item of actions) for (let i=0; i<2; i++) await ctx.actionReview.review(item, undefined, signal)
+    for (const item of actions) expect(ctx.actionReview.reviewPaused(item)).toBe(false)
+    await ctx.actionReview.review(actions[0]!, undefined, signal)
+    expect(actions.map(item => ctx.actionReview.reviewPaused(item))).toEqual([true, false, false])
+    await ctx.fiber.dispose()
+  })
+
+  it('expires denials outside the last fifty reviews', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    let outcome: 'denied' | 'approved' = 'denied'
+    ctx.actionReview.registerReviewer({id: 'window', review: async () => ({
+      schemaVersion: 1, outcome, riskLevel: 'high', rationale: 'fixture', policyRuleIds: [], uncertainty: '',
+    })})
+    const signal = new AbortController().signal
+    for (let round=0; round<2; round++) {
+      for (let i=0; i<9; i++) {
+        outcome='denied'; await ctx.actionReview.review(action, undefined, signal)
+        outcome='approved'; await ctx.actionReview.review(action, undefined, signal)
+      }
+      expect(ctx.actionReview.reviewPaused(action)).toBe(false)
+      for (let i=0; i<50; i++) await ctx.actionReview.review(action, undefined, signal)
+    }
+    await ctx.fiber.dispose()
   })
 
   it('consumes one exact-action override and does not widen it to another digest', async () => {

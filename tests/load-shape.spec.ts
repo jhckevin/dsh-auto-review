@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import * as audit from '../src/audit-jsonl.ts'
 import * as provider from '../src/llm-provider.ts'
 import * as policy from '../src/policy.ts'
+import * as terminal from '../src/terminal.ts'
 
 describe('Cordis Loader namespace shape', () => {
   it.each([
     ['audit-jsonl', audit],
     ['llm-provider', provider],
     ['policy', policy],
+    ['terminal', terminal],
   ])('%s keeps name, inject and apply visible to unwrapExports', (_name, plugin) => {
     expect('default' in plugin).toBe(false)
     expect(plugin).toHaveProperty('name')

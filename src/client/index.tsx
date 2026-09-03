@@ -7,6 +7,33 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { ActionKind, AutoReviewMetricsSnapshot, AutoReviewUiSettings } from '../types.ts'
 import type { AutoReviewSettingsSnapshot } from '../settings-provider.ts'
 import { ReviewStatusClient } from './review-status.ts'
+import { isAutoReviewInterruption } from '../denial-breaker.ts'
+
+interface AutoReviewTurnOwner { readonly turn: { readonly end?: { readonly data: { readonly reason: unknown } } } }
+interface AutoReviewTurnSlots {
+  inject(name: 'conversation.chat.turnTail', register: () => unknown): unknown
+  register(options: { name: 'conversation.chat.turnTail'; priority: number; select: (owner: AutoReviewTurnOwner) => object | null }, component: (props: AutoReviewTurnOwner) => ReactNode): unknown
+}
+
+/** Read only the durable cancellation reason, never assistant/tool text. */
+export function autoReviewInterruptionDetail(reason: unknown): string | null {
+  return isAutoReviewInterruption(reason) ? reason.reason.reason : null
+}
+
+/** Persistent native turn-tail notice; a replay needs no live review RPC. */
+export function AutoReviewTurnInterruption({ turn }: AutoReviewTurnOwner): ReactNode {
+  const detail = autoReviewInterruptionDetail(turn.end?.data.reason)
+  if (detail === null) return null
+  return <div role="status" data-auto-review-turn-interrupted="true" title={detail}
+    style={{ display: 'flex', gap: 8, alignItems: 'flex-start', color: '#b42318', borderLeft: '3px solid currentColor', padding: '8px 12px', margin: '8px 0' }}>
+    <span aria-hidden="true" style={{ display: 'inline-flex', flex: '0 0 18px', width: 18, height: 18 }}>
+      <ReviewerShieldIcon denied width={18} height={18} />
+    </span>
+    <div><strong>本轮操作已被自动审查终止 / This turn was interrupted by Auto Review.</strong>
+      <details><summary>详情 / Details</summary><div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{detail}</div></details>
+    </div>
+  </div>
+}
 
 const LOCALE_NAMESPACE = 'settings.autoReview'
 const STYLE_ID = '@jhckevin/dsh-auto-review/webui'
@@ -385,6 +412,13 @@ export function apply(ctx: ClientContext): void {
     name: 'tool.call.badges', id: 'auto-review', order: 20, locale: LOCALE_NAMESPACE,
     inject: (): AutoReviewBadgeInjected => ({ reviewStatus }),
   }, AutoReviewCallBadge))
+  const turnSlots = ctx.slots as unknown as AutoReviewTurnSlots
+  turnSlots.inject('conversation.chat.turnTail', () => turnSlots.register({
+    name: 'conversation.chat.turnTail',
+    // Native turnTail is first-match: the safety notice precedes ordinary deliverables.
+    priority: -100,
+    select: owner => autoReviewInterruptionDetail(owner.turn.end?.data.reason) === null ? null : {},
+  }, AutoReviewTurnInterruption))
 }
 
 function createSettingsRemote(connection: ConnectionHandle): AutoReviewSettingsInjected {

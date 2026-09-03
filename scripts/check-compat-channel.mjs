@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process'
 
 const channels = [
   { channel: 'rc6', dsh: '0.1.0-rc.6', plugin: '0.5.5-rc.3', ref: 'compat/rc6-native-rc2' },
-  { channel: 'rc2', dsh: '0.1.1-rc.2', plugin: '0.5.6-rc.4', ref: 'main' },
+  { channel: 'rc2', dsh: '0.1.1-rc.2', plugin: '0.5.6-rc.5', ref: 'feat/denial-hard-stop' },
   { channel: 'alpha5', dsh: '0.1.2-alpha.5', plugin: '0.5.7-alpha.3', ref: 'compat/alpha5-native-alpha2' },
 ]
 if (process.argv[2] === '--matrix') {

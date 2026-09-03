@@ -1,0 +1,6 @@
+# Add explicitly to a terminal/headless profile; never part of the Web default.
+- insert:
+    - id: auto-review-terminal
+      name: '@jhckevin/dsh-auto-review/terminal'
+      config:
+        enabled: true
