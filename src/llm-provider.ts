@@ -39,7 +39,7 @@ export const Config: z<LlmReviewerConfig> = z.object({
   strongReviewKinds: z.array(z.union([
     'workspace-read', 'workspace-write', 'process', 'network', 'sensitive-read', 'destructive',
     'permission-change', 'production-change', 'sandbox-escalation', 'extension-unknown', 'hard-deny',
-  ] as ActionKind[])),
+  ] as ActionKind[])).default([...STRONG_REVIEW_KINDS]),
   escalateUncertainToStrong: z.boolean().default(true),
   maxInputBytes: z.number().step(1).min(1).required(),
   maxOutputTokens: z.number().step(1).min(1).required(),
@@ -84,13 +84,20 @@ function validateConfig(config: LlmReviewerConfig): ValidatedReviewerConfig {
   const { reasoningEffort: _reasoningEffort, strongReasoningEffort: _strongReasoningEffort, ...base } = config
   const reasoningEffort = normalizedEffort(config.reasoningEffort)
   const strongReasoningEffort = normalizedEffort(config.strongReasoningEffort ?? config.reasoningEffort)
+  const strongProvider = config.strongProvider?.trim() || config.provider
+  // Only the official Flash profile has a known Pro counterpart. Custom model
+  // identifiers are opaque; do not invent a model name by replacing "flash".
+  const defaultStrongModel = config.provider === 'deepseek-official'
+    && config.model === 'deepseek-v4-flash' && strongProvider === 'deepseek-official'
+    ? 'deepseek-v4-pro'
+    : config.model
   const resolved = {
     ...base,
     approvalProtocol: config.approvalProtocol ?? 'codex-native',
     ...(reasoningEffort === undefined ? {} : { reasoningEffort }),
     modelStrategy: config.modelStrategy ?? 'single',
-    strongProvider: config.strongProvider?.trim() || config.provider,
-    strongModel: config.strongModel?.trim() || config.model,
+    strongProvider,
+    strongModel: config.strongModel?.trim() || defaultStrongModel,
     ...(strongReasoningEffort === undefined ? {} : { strongReasoningEffort }),
     strongReviewKinds: [...(config.strongReviewKinds ?? STRONG_REVIEW_KINDS)],
     escalateUncertainToStrong: config.escalateUncertainToStrong ?? true,
