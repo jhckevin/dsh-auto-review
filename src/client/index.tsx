@@ -200,16 +200,22 @@ export function AutoReviewFunnel({ metrics, t }: { metrics: AutoReviewMetricsSna
 
 function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics: readMetrics, t }: Props): ReactNode {
   const [snapshot, setSnapshot] = useState<PageSnapshot>({ status: 'loading', revision: 0, writable: false })
-  const [draft, setDraft] = useState<AutoReviewUiSettings | undefined>()
+  const [draft, setDraftState] = useState<AutoReviewUiSettings | undefined>()
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState<'saved' | 'failed' | undefined>()
+  // Every user edit invalidates the previous persistence result. Server
+  // snapshots use setDraftState directly and set their own success notice.
+  const setDraft = (value: Parameters<typeof setDraftState>[0]): void => {
+    setNotice(undefined)
+    setDraftState(value)
+  }
 
   useEffect(() => {
     const abort = new AbortController()
     void read(abort.signal).then(value => {
       if (abort.signal.aborted) return
       setSnapshot({ status: 'ready', ...value })
-      setDraft(value.value)
+      setDraftState(value.value)
     }, () => {
       if (!abort.signal.aborted) setSnapshot({ status: 'unavailable', revision: 0, writable: false })
     })
@@ -262,7 +268,7 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics
     setNotice(undefined)
     void update(draft, snapshot.revision).then(next => {
       setSnapshot({ status: 'ready', ...next })
-      setDraft(next.value)
+      setDraftState(next.value)
       setNotice('saved')
     }, () => {
       setNotice('failed')
@@ -274,7 +280,7 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics
     setNotice(undefined)
     void resetSettings(snapshot.revision).then(next => {
       setSnapshot({ status: 'ready', ...next })
-      setDraft(next.value)
+      setDraftState(next.value)
       setNotice('saved')
     }, () => {
       setNotice('failed')
