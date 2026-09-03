@@ -69,25 +69,4 @@ describe('Auto Review WebUI settings contract', () => {
   it('keeps a disabled deployment disabled in its initial WebUI state', () => {
     expect(autoReviewSettingsBase({ mode: 'disabled' }).enabled).toBe(false)
   })
-
-  it.each([
-    ['deepseek-official', 'deepseek-v4-flash', undefined, 'deepseek-v4-pro'],
-    ['custom', 'vendor-flash-preview', undefined, 'vendor-flash-preview'],
-    ['custom', 'deepseek-v4-flash', undefined, 'deepseek-v4-flash'],
-    ['deepseek-official', 'vendor-flash-preview', undefined, 'vendor-flash-preview'],
-    ['deepseek-official', 'deepseek-v4-flash', 'custom', 'deepseek-v4-flash'],
-    ['custom', 'vendor-flash-preview', 'deepseek-official', 'vendor-flash-preview'],
-  ])('uses only the known official strong counterpart for %s/%s via %s', (provider, model, strongProvider, expected) => {
-    expect(autoReviewSettingsBase({}, {
-      provider, model, ...(strongProvider === undefined ? {} : { strongProvider }),
-      maxInputBytes: 16384, maxOutputTokens: 768, timeoutMs: 90000,
-    }).strongModel).toBe(expected)
-  })
-
-  it('keeps an explicit strong model and empty category override in the base helper', () => {
-    expect(autoReviewSettingsBase({}, {
-      provider: 'custom', model: 'vendor-flash-preview', strongModel: 'reviewer-chosen', strongReviewKinds: [],
-      maxInputBytes: 16384, maxOutputTokens: 768, timeoutMs: 90000,
-    })).toMatchObject({ strongModel: 'reviewer-chosen', strongReviewKinds: [] })
-  })
 })

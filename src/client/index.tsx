@@ -12,7 +12,6 @@ const LOCALE_NAMESPACE = 'settings.autoReview'
 const STYLE_ID = '@jhckevin/dsh-auto-review/webui'
 
 const zh = {
-  badgeCompatibility: '兼容性提示：命令右侧审查/拒绝图标和设置选项卡 SVG 需要配套的 tool.call.badges 与 settings.section.icon 所有者补丁。官方 rc.2 未提供这两处插槽；未安装补丁时保留原生显示。',
   nav: '自动审批审查', title: 'Auto Review', subtitle: '依据权限模式、原生沙盒边界与当前策略，将需要审查的动作交给独立模型。',
   enabled: '启用 Auto Review', enabledHint: '关闭后完全回到 Harness 原生审批链，扩展不再路由、批准或拒绝动作。',
   sandboxDefaultAllow: '原生沙盒内默认通过', sandboxDefaultAllowHint: '默认开启。只影响 read-only / workspace-write；关闭后沙盒内动作也进入 reviewer，不会解除原生沙盒约束。Full Access 由下面独立开关控制。',
@@ -28,8 +27,8 @@ const zh = {
   advanced: '高级参数', maxInputBytes: '最大证据字节', maxOutputTokens: '最大输出 token', timeoutMs: '超时（毫秒）',
   maxAttempts: '最多尝试次数', transcriptMaxEntries: '历史条目上限', transcriptMaxBytes: '历史字节上限',
   failureThreshold: '熔断失败阈值', breakerCooldownMs: '熔断冷却（毫秒）', save: '保存', reset: '恢复部署默认值',
-  advancedHint: '这些值分别限制初始证据、单次模型回复、尝试次数和总时限；策略检索会增加后续输入，不是整次审查的总 token 预算。',
-  maxInputBytesHint: '初始净化动作证据的字节上限；不包含系统提示、工具定义和后续策略检索结果，也不是总输入 token 上限。', maxOutputTokensHint: '每次模型回复的输出 token 上限；多轮检索、重试或模型升级可产生多次回复，合计输出可能超过此值。', timeoutMsHint: '单个动作的总审查时限，包含重试和风险升级。', maxAttemptsHint: '仅在调用或协议失败时创建全新 reviewer session 重试，最多 3 次。',
+  advancedHint: '这些值限制单次审查的证据、输出、重试和故障恢复开销；一般建议保留部署默认值。',
+  maxInputBytesHint: '发送给 reviewer 的净化动作证据上限，不是主 Agent 的完整上下文。', maxOutputTokensHint: '仅限制 reviewer 的结构化判定输出。', timeoutMsHint: '单个动作的总审查时限，包含重试和风险升级。', maxAttemptsHint: '仅在调用或协议失败时创建全新 reviewer session 重试，最多 3 次。',
   transcriptMaxEntriesHint: '最多携带多少条与当前动作有关的净化历史证据。', transcriptMaxBytesHint: '历史证据的总字节上限；不会扩张主 Agent 上下文。', failureThresholdHint: '连续 reviewer 故障达到此数时进入失效保护熔断。', breakerCooldownMsHint: '熔断后等待多久才允许再次探测 reviewer。',
   saved: '设置已保存并实时生效。', failed: '设置未能保存，请检查参数或连接。', inherited: '继承', overridden: '用户覆盖',
   reviewing: 'Auto Review 正在审查此工具调用', denied: 'Auto Review 已拒绝此工具调用',
@@ -38,7 +37,6 @@ const zh = {
   behavior: '当前权限组合行为', behaviorDisabled: 'Auto Review 已关闭：所有权限档位均完全使用 Harness 原生审批链。', behaviorDefault: '只读/工作区写入：沙盒内普通动作直接通过；越界、敏感和网络动作进入 Reviewer。', behaviorStrict: '只读/工作区写入：沙盒内动作也进入 Reviewer，但实际执行仍受原生沙盒约束。',
 }
 const en = {
-  badgeCompatibility: 'Compatibility: command reviewing/denied glyphs and the settings-tab SVG require the accompanying tool.call.badges and settings.section.icon owner patches. Official rc.2 does not expose these slots; native display is retained without the patches.',
   nav: 'Auto Review', title: 'Auto Review', subtitle: 'Route actions to an isolated reviewer according to the permission mode, native sandbox boundary, and active policy.',
   enabled: 'Enable Auto Review', enabledHint: 'When disabled, the extension leaves routing, approval, and denial entirely to the native Harness chain.',
   sandboxDefaultAllow: 'Allow native-sandbox actions by default', sandboxDefaultAllowHint: 'Applies only to read-only/workspace-write. Turning it off adds review without removing native confinement. Full Access uses the independent switch below.',
@@ -54,8 +52,8 @@ const en = {
   advanced: 'Advanced parameters', maxInputBytes: 'Maximum evidence bytes', maxOutputTokens: 'Maximum output tokens', timeoutMs: 'Timeout (ms)',
   maxAttempts: 'Maximum attempts', transcriptMaxEntries: 'Transcript entry limit', transcriptMaxBytes: 'Transcript byte limit',
   failureThreshold: 'Failure breaker threshold', breakerCooldownMs: 'Breaker cooldown (ms)', save: 'Save', reset: 'Restore deployment defaults',
-  advancedHint: 'These separately bound initial evidence, each model completion, attempts, and the deadline. Policy retrieval adds later input; this is not a total review token budget.',
-  maxInputBytesHint: 'Initial sanitized action evidence bytes only. Excludes system prompt, tool definitions, and later policy results; not a total input token limit.', maxOutputTokensHint: 'Output token limit per model completion. Policy turns, retries, and escalation can produce multiple completions whose total exceeds this value.', timeoutMsHint: 'Total review deadline for one action, including retries and risk escalation.', maxAttemptsHint: 'Starts a fresh reviewer session only after call or protocol failure; maximum 3.',
+  advancedHint: 'These values bound evidence, output, retries, and failure recovery for one review. Deployment defaults are recommended.',
+  maxInputBytesHint: 'Maximum sanitized action evidence sent to the reviewer, not the main agent context.', maxOutputTokensHint: 'Limits only the reviewer structured decision output.', timeoutMsHint: 'Total review deadline for one action, including retries and risk escalation.', maxAttemptsHint: 'Starts a fresh reviewer session only after call or protocol failure; maximum 3.',
   transcriptMaxEntriesHint: 'Maximum sanitized history entries relevant to the current action.', transcriptMaxBytesHint: 'Total history-evidence byte limit; it does not expand the main agent context.', failureThresholdHint: 'Consecutive reviewer failures before the fail-safe breaker opens.', breakerCooldownMsHint: 'How long the breaker waits before allowing another reviewer probe.',
   saved: 'Settings saved and applied live.', failed: 'Settings could not be saved. Check the values or connection.', inherited: 'Inherited', overridden: 'User override',
   reviewing: 'Auto Review is checking this tool call', denied: 'Auto Review denied this tool call',
@@ -100,11 +98,6 @@ interface AutoReviewBadgeSlots {
     },
     component: (props: BadgeProps) => ReactNode,
   ): unknown
-}
-
-interface AutoReviewNavSlots {
-  inject(name: 'settings.section.icon', register: () => unknown): unknown
-  register(options: {name: 'settings.section.icon'; key: string}, component: () => ReactNode): unknown
 }
 
 interface PageSnapshot {
@@ -200,22 +193,16 @@ export function AutoReviewFunnel({ metrics, t }: { metrics: AutoReviewMetricsSna
 
 function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics: readMetrics, t }: Props): ReactNode {
   const [snapshot, setSnapshot] = useState<PageSnapshot>({ status: 'loading', revision: 0, writable: false })
-  const [draft, setDraftState] = useState<AutoReviewUiSettings | undefined>()
+  const [draft, setDraft] = useState<AutoReviewUiSettings | undefined>()
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState<'saved' | 'failed' | undefined>()
-  // Every user edit invalidates the previous persistence result. Server
-  // snapshots use setDraftState directly and set their own success notice.
-  const setDraft = (value: Parameters<typeof setDraftState>[0]): void => {
-    setNotice(undefined)
-    setDraftState(value)
-  }
 
   useEffect(() => {
     const abort = new AbortController()
     void read(abort.signal).then(value => {
       if (abort.signal.aborted) return
       setSnapshot({ status: 'ready', ...value })
-      setDraftState(value.value)
+      setDraft(value.value)
     }, () => {
       if (!abort.signal.aborted) setSnapshot({ status: 'unavailable', revision: 0, writable: false })
     })
@@ -268,7 +255,7 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics
     setNotice(undefined)
     void update(draft, snapshot.revision).then(next => {
       setSnapshot({ status: 'ready', ...next })
-      setDraftState(next.value)
+      setDraft(next.value)
       setNotice('saved')
     }, () => {
       setNotice('failed')
@@ -280,7 +267,7 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics
     setNotice(undefined)
     void resetSettings(snapshot.revision).then(next => {
       setSnapshot({ status: 'ready', ...next })
-      setDraftState(next.value)
+      setDraft(next.value)
       setNotice('saved')
     }, () => {
       setNotice('failed')
@@ -293,16 +280,15 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics
   return (
     <section className="ar-page">
       <header className="ar-header"><div className="ar-header-title"><AutoReviewLogo /><div><h2>{t('title')}</h2><p>{t('subtitle')}</p></div></div><span className="ar-live">LIVE</span></header>
-      <p className="ar-help" data-auto-review-badge-compatibility="requires-owner-slot">{t('badgeCompatibility')}</p>
       {snapshot.metrics === undefined ? null : <AutoReviewFunnel metrics={snapshot.metrics} t={t} />}
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('enabled')}</strong><p>{t('enabledHint')}</p></div>
-        <button className="ar-switch" type="button" role="switch" aria-label={t('enabled')} aria-checked={draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, enabled: !draft.enabled }) }}><span /></button>
+        <button className="ar-switch" type="button" role="switch" aria-checked={draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, enabled: !draft.enabled }) }}><span /></button>
       </div>
       <div className="ar-card ar-behavior"><h3>{t('behavior')}</h3><p>{t(!draft.enabled ? 'behaviorDisabled' : draft.sandboxDefaultAllow ? 'behaviorDefault' : 'behaviorStrict')}</p>{draft.enabled ? <p>{t('reviewFullAccessHint')}</p> : null}</div>
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('sandboxDefaultAllow')}</strong><p>{t('sandboxDefaultAllowHint')}</p></div>
-        <button className="ar-switch" type="button" role="switch" aria-label={t('sandboxDefaultAllow')} aria-checked={draft.sandboxDefaultAllow} disabled={!draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, sandboxDefaultAllow: !draft.sandboxDefaultAllow }) }}><span /></button>
+        <button className="ar-switch" type="button" role="switch" aria-checked={draft.sandboxDefaultAllow} disabled={!draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, sandboxDefaultAllow: !draft.sandboxDefaultAllow }) }}><span /></button>
       </div>
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('reviewFullAccess')}</strong><p>{t('reviewFullAccessHint')}</p></div>
@@ -338,7 +324,7 @@ function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics
 const CSS = `
 .ar-header-title{display:flex;align-items:flex-start;gap:10px}.ar-product-logo{display:inline-grid;place-items:center;flex:0 0 auto;width:30px;height:30px;color:var(--dsw-alias-label-primary)}
 .ar-help{display:block!important;margin-top:5px!important;color:var(--dsw-alias-label-secondary)!important;font-size:11px!important;line-height:1.45!important;font-weight:400!important}.ar-setting-block{margin:10px 0 14px}.ar-setting-block .ar-select-row{margin-bottom:0}.ar-indented-help{margin-left:23px!important}.ar-advanced-help{margin-top:9px!important}.ar-field-grid .ar-field-source{font-size:10px}.ar-field-grid .ar-help{margin-top:0!important}
-.ar-page{max-width:760px;padding:8px 4px 36px;color:var(--dsw-alias-label-primary)}.ar-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:18px}.ar-header h2{font-size:22px;margin:0 0 6px}.ar-header p,.ar-card p{margin:0;color:var(--dsw-alias-label-secondary);line-height:1.5}.ar-live{font:600 10px/1.8 ui-monospace,monospace;color:var(--dsw-alias-state-success-primary);border:1px solid color-mix(in srgb,var(--dsw-alias-state-success-primary) 35%,transparent);border-radius:999px;padding:0 8px}.ar-card{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:18px;margin:12px 0}.ar-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:22px}.ar-toggle-row strong,.ar-card h3{display:block;margin:0 0 5px;font-size:14px}.ar-switch{width:44px;height:24px;border:0;border-radius:999px;padding:3px;background:var(--dsw-alias-border-l2);cursor:pointer}.ar-switch span{display:block;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}.ar-switch[aria-checked=true]{background:var(--dsw-alias-brand-primary)}.ar-switch[aria-checked=true] span{transform:translateX(20px)}.ar-select-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:10px 0}.ar-select-row select,.ar-profile-grid input{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;padding:8px;background:var(--dsw-alias-bg-base);color:inherit}.ar-profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ar-profile-grid fieldset{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:12px}.ar-profile-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;margin:8px 0}.ar-check{display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12px}.ar-kind-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px;font-size:12px}.ar-kind-grid label{display:flex;align-items:center;gap:5px}.ar-advanced summary{cursor:pointer;font-weight:600}.ar-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.ar-field-grid label{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px;font-size:12px}.ar-field-grid input{grid-column:1/3;width:100%;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;padding:8px;background:var(--dsw-alias-bg-base);color:inherit}.ar-field-grid small{grid-column:1/3;color:var(--dsw-alias-label-secondary)}.ar-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.ar-actions button{border-radius:8px;padding:8px 15px;cursor:pointer}.ar-secondary{background:transparent;color:inherit;border:1px solid var(--dsw-alias-border-l2)}.ar-primary{background:var(--dsw-alias-button-primary-fill);color:var(--dsw-alias-label-primary-foreground);border:1px solid var(--dsw-alias-button-primary-fill)}.ar-actions button:disabled{opacity:.45;cursor:not-allowed}.ar-notice{font-size:12px;text-align:right}.ar-saved{color:var(--dsw-alias-state-success-primary)}.ar-failed{color:var(--dsw-alias-state-error-primary)}.ar-muted{color:var(--dsw-alias-label-secondary)}@media(max-width:680px){.ar-profile-grid,.ar-field-grid{grid-template-columns:1fr}.ar-kind-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ar-page{max-width:760px;padding:8px 4px 36px;color:var(--dsw-alias-label-primary)}.ar-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:18px}.ar-header h2{font-size:22px;margin:0 0 6px}.ar-header p,.ar-card p{margin:0;color:var(--dsw-alias-label-secondary);line-height:1.5}.ar-live{font:600 10px/1.8 ui-monospace,monospace;color:var(--dsw-alias-state-success-primary);border:1px solid color-mix(in srgb,var(--dsw-alias-state-success-primary) 35%,transparent);border-radius:999px;padding:0 8px}.ar-card{background:var(--dsw-alias-bg-layer-1);border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:18px;margin:12px 0}.ar-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:22px}.ar-toggle-row strong,.ar-card h3{display:block;margin:0 0 5px;font-size:14px}.ar-switch{width:44px;height:24px;border:0;border-radius:999px;padding:3px;background:var(--dsw-alias-border-l2);cursor:pointer}.ar-switch span{display:block;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s}.ar-switch[aria-checked=true]{background:var(--dsw-alias-brand-primary)}.ar-switch[aria-checked=true] span{transform:translateX(20px)}.ar-select-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:10px 0}.ar-select-row select,.ar-profile-grid input{box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;padding:8px;background:var(--dsw-alias-bg-base);color:inherit}.ar-profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ar-profile-grid fieldset{border:1px solid var(--dsw-alias-border-l1);border-radius:9px;padding:12px}.ar-profile-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;margin:8px 0}.ar-check{display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12px}.ar-kind-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px;font-size:12px}.ar-kind-grid label{display:flex;align-items:center;gap:5px}.ar-advanced summary{cursor:pointer;font-weight:600}.ar-field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}.ar-field-grid label{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px;font-size:12px}.ar-field-grid input{grid-column:1/3;width:100%;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:7px;padding:8px;background:var(--dsw-alias-bg-base);color:inherit}.ar-field-grid small{grid-column:1/3;color:var(--dsw-alias-label-secondary)}.ar-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.ar-actions button{border-radius:8px;padding:8px 15px;cursor:pointer}.ar-secondary{background:transparent;color:inherit;border:1px solid var(--dsw-alias-border-l2)}.ar-primary{background:var(--dsw-alias-brand-primary);color:white;border:1px solid var(--dsw-alias-brand-primary)}.ar-actions button:disabled{opacity:.45;cursor:not-allowed}.ar-notice{font-size:12px;text-align:right}.ar-saved{color:var(--dsw-alias-state-success-primary)}.ar-failed{color:var(--dsw-alias-state-error-primary)}.ar-muted{color:var(--dsw-alias-label-secondary)}@media(max-width:680px){.ar-profile-grid,.ar-field-grid{grid-template-columns:1fr}.ar-kind-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .ar-funnel{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:12px}.ar-funnel div{display:flex;flex-direction:column;gap:3px;padding:10px;border-radius:8px;background:var(--dsw-alias-bg-base);text-align:center}.ar-funnel strong{font:700 18px/1.2 ui-monospace,monospace}.ar-funnel span{font-size:10px;color:var(--dsw-alias-label-secondary)}
 .ar-funnel-meta{margin-top:10px!important;font-size:11px!important}
 @media(max-width:680px){.ar-funnel{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -370,16 +356,13 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => () => { reviewStatus.dispose() }, 'auto-review webui: review status client')
   const t = ctx.locale.bind(LOCALE_NAMESPACE)
   const sectionRegistration = {
-    name: 'settings.section', id: 'auto-review', order: 17, label: () => t('nav'), locale: LOCALE_NAMESPACE,
+    name: 'settings.section', id: 'auto-review', order: 17, label: () => t('nav'), icon: <AutoReviewNavIcon />, locale: LOCALE_NAMESPACE,
     inject: (): AutoReviewSettingsInjected => api,
   } as const
   ctx.slots.inject('settings.section', () => ctx.slots.register(sectionRegistration, AutoReviewSettingsSection))
-  const navSlots = ctx.slots as unknown as AutoReviewNavSlots
-  navSlots.inject('settings.section.icon', () => navSlots.register({
-    name: 'settings.section.icon', key: 'auto-review',
-  }, AutoReviewNavIcon))
-  // Both child slots require the paired upstream-owner patches. Keep the
-  // unpublished contract local instead of overriding the framework SlotMap.
+  // The badge slot is introduced by the paired Harness core change and is not
+  // present in the published rc.6 type catalog, so keep this compatibility
+  // adapter local instead of globally augmenting SlotMap with a duplicate owner.
   const badgeSlots = ctx.slots as unknown as AutoReviewBadgeSlots
   badgeSlots.inject('tool.call.badges', () => badgeSlots.register({
     name: 'tool.call.badges', id: 'auto-review', order: 20, locale: LOCALE_NAMESPACE,

@@ -9,7 +9,7 @@ import ToolRuntime, { defineTool } from '@deepseek-ai/dsh-tools'
 import ApprovalService from '@deepseek-ai/dsh-user-approval'
 import ActionReviewRuntime from '../src/service.ts'
 import { apply as applyPolicy, inject as policyInject } from '../src/policy.ts'
-import type { AutoReviewAuditEnvelope, ReviewDecision, ReviewOutcome } from '../src/types.ts'
+import type { ReviewDecision, ReviewOutcome } from '../src/types.ts'
 
 const signal = new AbortController().signal
 
@@ -388,8 +388,8 @@ describe('native tools pipeline composition', () => {
     expect(executions()).toBe(0)
 
     const decision = ctx.actionReview.auditRecords('session-stop-after-denial')
-      .find((record): record is AutoReviewAuditEnvelope<'decision'> => record.kind === 'decision')
-    if (decision?.kind !== 'decision') throw new Error('missing denial decision')
+      .find(record => record.kind === 'decision')
+    if (decision?.kind !== 'decision' || !('turn' in decision.data)) throw new Error('missing denial decision')
     ctx.actionReview.observeTurnEnd('session-stop-after-denial', decision.data.turn)
     expect(ctx.actionReview.auditRecords('session-stop-after-denial')
       .filter(record => record.kind === 'postDenial')
@@ -407,8 +407,8 @@ describe('native tools pipeline composition', () => {
       callId: CallId('denied-first'), name: 'bash', arguments: arguments_, agent, signal,
     })
     const routed = ctx.actionReview.auditRecords('session-rereview')
-      .find((record): record is AutoReviewAuditEnvelope<'routed'> => record.kind === 'routed')
-    if (routed?.kind !== 'routed') throw new Error('missing routed record')
+      .find(record => record.kind === 'routed')
+    if (routed?.kind !== 'routed' || !('actionDigest' in routed.data)) throw new Error('missing routed record')
     ctx.actionReview.armDeniedOverride('session-rereview', routed.data.actionDigest)
 
     const retried = await ctx.tools.execute({

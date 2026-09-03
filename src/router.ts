@@ -147,12 +147,12 @@ function transcriptOf(exec: Readonly<ToolExecution>): ActionEnvelope['authority'
       continue
     }
     if (event?.type === 'assistant/message') {
-      const text = contentText(event.data.message.content).trim()
+      const text = contentText((event.data as { content?: unknown }).content).trim()
       if (text.length > 0) transcript.push(Object.freeze({ role: 'assistant', trust: 'untrusted-model', text: text.slice(-4096) }))
       continue
     }
     if (event?.type === 'tool/result') {
-      const text = contentText(event.data.message.content).trim()
+      const text = contentText((event.data as { content?: unknown }).content).trim()
       if (text.length > 0) transcript.push(Object.freeze({ role: 'tool', trust: 'untrusted-tool-output', text: text.slice(-4096) }))
     }
   }

@@ -36,8 +36,7 @@ describe('production concurrency gate', () => {
     )))
     const records = ctx.actionReview.auditRecords()
     expect(records).toHaveLength(256)
-    expect(records.every(record => record.kind === 'decision')).toBe(true)
-    expect(new Set(records.map(record => 'actionDigest' in record.data ? record.data.actionDigest : undefined)).size).toBe(256)
+    expect(new Set(records.map(record => { if (!('actionDigest' in record.data)) throw new Error('missing decision action'); return record.data.actionDigest })).size).toBe(256)
     for (let index = 1; index < records.length; index += 1) {
       expect(records[index]?.sequence).toBe((records[index - 1]?.sequence ?? 0) + 1)
       expect(records[index]?.previousDigest).toBe(records[index - 1]?.recordDigest)

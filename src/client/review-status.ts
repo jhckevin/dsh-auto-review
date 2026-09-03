@@ -19,7 +19,6 @@ interface SessionReviewState {
 /** One bounded poller per visible session, shared by every Tool-call badge. */
 export class ReviewStatusClient {
   private readonly sessions = new Map<string, SessionReviewState>()
-  private disposed = false
 
   constructor(
     private readonly remote: ReviewStatusRemote,
@@ -31,14 +30,10 @@ export class ReviewStatusClient {
   }
 
   subscribe(sessionId: string, listener: () => void): () => void {
-    if (this.disposed) return () => {}
     const state = this.state(sessionId)
     state.listeners.add(listener)
     if (state.listeners.size === 1) this.start(sessionId, state)
-    let active = true
     return () => {
-      if (!active) return
-      active = false
       state.listeners.delete(listener)
       if (state.listeners.size === 0) this.stop(sessionId, state)
     }
@@ -53,8 +48,6 @@ export class ReviewStatusClient {
   }
 
   dispose(): void {
-    if (this.disposed) return
-    this.disposed = true
     for (const [sessionId, state] of this.sessions) this.stop(sessionId, state)
     this.sessions.clear()
   }
@@ -79,7 +72,7 @@ export class ReviewStatusClient {
     state.timer = undefined
     state.request?.abort()
     state.request = undefined
-    if (state.listeners.size === 0 && this.sessions.get(sessionId) === state) this.sessions.delete(sessionId)
+    if (state.listeners.size === 0) this.sessions.delete(sessionId)
   }
 
   private async refresh(sessionId: string, state: SessionReviewState): Promise<void> {

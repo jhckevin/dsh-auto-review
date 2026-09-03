@@ -31,7 +31,7 @@ function action(sessionId: string): ActionEnvelope {
     schemaVersion: 1,
     actionId: 'call:deadbeef',
     actionDigest: 'd'.repeat(64),
-    effectDigest: 'd'.repeat(64),
+    effectDigest: 'c'.repeat(64),
     policyDigest: 'e'.repeat(64),
     boundaryDigest: 'f'.repeat(64),
     callId: CallId('call'),
@@ -42,7 +42,7 @@ function action(sessionId: string): ActionEnvelope {
     disposition: 'review',
     reason: 'process',
     resolverId: 'builtin',
-    effects: [{ type: 'process.exec', commandDigest: 'a'.repeat(64) }],
+    effects: [{ type: 'process.exec' as const, commandDigest: 'a'.repeat(64) }],
     policy: { mode: 'enforcing', sandboxDefaultAllow: true, resolverId: 'builtin', disposition: 'review', ruleIds: ['TEST'] },
     boundary: { sandboxMode: 'workspace-write', workspaceRoot: '/workspace', realpathVerified: false },
     sandbox: { mode: 'workspace-write', workspaceRoot: '/workspace' },
@@ -82,7 +82,7 @@ describe('/approve exact-action command', () => {
     const execution = await ctx.commands.execute(
       agent,
       `/approve ${deniedAction.actionDigest}`,
-      [], new AbortController().signal,
+      new AbortController().signal,
     )
     expect(execution?.result).toMatchObject({ kind: 'success' })
     expect(execution?.result.text).toContain('still passes Auto Review')
@@ -98,7 +98,7 @@ describe('/approve exact-action command', () => {
   it('rejects missing history and a digest that differs from the latest denial', async () => {
     const empty = await harness('empty-session')
     await expect(empty.ctx.commands.execute(
-      empty.agent, '/approve', [], new AbortController().signal,
+      empty.agent, '/approve', new AbortController().signal,
     )).resolves.toMatchObject({ result: { kind: 'error' } })
 
     const test = await harness('mismatch-session')
@@ -111,7 +111,7 @@ describe('/approve exact-action command', () => {
     const deniedAction = action(test.agent.session.id)
     await test.ctx.actionReview.review(deniedAction, test.agent.session, new AbortController().signal)
     await expect(test.ctx.commands.execute(
-      test.agent, `/approve ${'0'.repeat(64)}`, [], new AbortController().signal,
+      test.agent, `/approve ${'0'.repeat(64)}`, new AbortController().signal,
     )).resolves.toMatchObject({ result: { kind: 'error', text: expect.stringContaining('does not match') } })
   })
 })
@@ -142,7 +142,7 @@ describe('/auto-review metrics command', () => {
     })
     await ctx.actionReview.review(reviewedAction, agent.session, new AbortController().signal)
 
-    const execution = await ctx.commands.execute(agent, '/auto-review', [], new AbortController().signal)
+    const execution = await ctx.commands.execute(agent, '/auto-review', new AbortController().signal)
     expect(execution?.result).toMatchObject({ kind: 'success' })
     expect(execution?.result.text).toContain('1 total; 0 inside boundary; 1 reviewed')
     expect(execution?.result.text).toContain('1 approved; 0 denied')
