@@ -2,18 +2,18 @@
 
 受 [Codex-style Auto Review](https://alignment.openai.com/auto-review/) 启发的独立 DSH 插件项目。本项目不是 OpenAI、Codex 或 DeepSeek 的官方产品，也不声称与完整 Codex Guardian 实现等价。
 
-自有代码采用 MIT；引用与移植的第三方内容保留原许可证，见 [NOTICE](NOTICE)、[第三方说明](THIRD_PARTY_NOTICES.md) 和 [许可证目录](licenses/)。当前处于开源前验收阶段，发布阻塞见 [ISSUE-026](docs/ISSUE-026-OPEN-SOURCE.md)。尚未公开发布，不能将私有原生桥接包视为可从 npm 安装的依赖。
+自有代码采用 MIT；引用与移植的第三方内容保留原许可证，见 [NOTICE](NOTICE)、[第三方说明](THIRD_PARTY_NOTICES.md) 和 [许可证目录](licenses/)。当前处于开源前验收阶段，发布阻塞见 [ISSUE-026](docs/ISSUE-026-OPEN-SOURCE.md)。原生桥接已改为独立可打包候选并验证离线安装，但尚未公开发布 npm；热生命周期和保护目录安装方案见 [ISSUE-027](docs/ISSUE-027-HOTPLUG.md)。
 
 | DSH 发布通道 | 精确 DSH 版本 | 插件候选版本 |
 |---|---|---|
-| npm latest / next | 0.1.1-rc.2 | 0.5.6-rc.1 |
+| npm latest / next（固定兼容基线） | 0.1.1-rc.2 | 0.5.6-rc.2 |
 | npm alpha | 0.1.2-alpha.5 | 0.5.7-alpha.1 |
 
 两个候选包不能混装，也不承诺兼容未发布 master。兼容候选版尚非生产发布版；本目录对应表格第一行。安装顺序、匹配的 UI 补丁和公开安装阻塞见 [候选安装说明](docs/INSTALL-CANDIDATE.md)。
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
-当前候选版本：`0.5.6-rc.1`，仅匹配 DSH `0.1.1-rc.2`，Node >=24.11.0。
+当前候选版本：`0.5.6-rc.2`，仅匹配 DSH `0.1.1-rc.2`，Node >=24.11.0。表格是已锁定的兼容版本，不代表注册表通道永远不变。
 
 适配范围和未完成门禁见 [ISSUE-025](docs/ISSUE-025-DSH-COMPAT.md)。以下历史生产门禁命名不代表完整 Guardian、WebUI 或生产环境已经验收；本轮未替换线上服务。
 

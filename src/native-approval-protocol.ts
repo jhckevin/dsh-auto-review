@@ -6,7 +6,7 @@ import type { ReviewDecision } from './types.ts'
 // responsibility; this adapter must not be advertised as a Guardian engine port.
 const UPSTREAM = '9f97cb79eb15b38d24c552c56fe24e211ff9cf3a'
 const METHOD = 'parse_core_review_decision'
-const PACKAGE = '@dsh/codex-approval-bridge-host'
+const PACKAGE = '@jhckevin/dsh-auto-review-bridge-host'
 interface Host {
   readonly pid?: number
   createSession(): unknown

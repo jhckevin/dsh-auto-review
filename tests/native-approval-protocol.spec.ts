@@ -6,7 +6,7 @@ const fixture = vi.hoisted(() => ({
   request: vi.fn(), createSession: vi.fn(() => Object.freeze({})),
   closeSession: vi.fn(async () => undefined), close: vi.fn(async () => undefined),
 }))
-vi.mock('@dsh/codex-approval-bridge-host', () => ({ createCodexApprovalBridge: () => fixture }))
+vi.mock('@jhckevin/dsh-auto-review-bridge-host', () => ({ createCodexApprovalBridge: () => fixture }))
 import { NativeApprovalScope, validateNativeApprovalDecision } from '../src/native-approval-protocol.ts'
 const approved: ReviewDecision = {
   schemaVersion: 1, outcome: 'approved', riskLevel: 'low', rationale: 'allowed',

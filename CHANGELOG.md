@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.5.6-rc.2 - 2026-09-03
+
+未发布候选；匹配 DSH 0.1.1-rc.2，不覆盖既有 tag 或线上部署。
+
+- ISSUE-027：精确依赖公开命名的 bridge host 0.1.0-rc.1，去除私有原型 optional peer；受保护 native runtime 可与用户 profile 分离。
+- 每个 provider activation 独立 native owner；卸载取消在途请求并等待退出，重新启用不继承终止状态。
+- 隔离旧 generation 的迟到回复与 transport 熔断；保留保存设置，不因相同部署默认值重载覆盖用户配置。
+- 214 项测试、离线候选包导入通过。真实新包原生进程 16 对 scope/33 个子进程全部退出，8 个在途取消、0 迟到批准；无模型 API 调用。
+- 配套 DSH web live-discovery 补丁另行验收；不将 Node host 代码更新/卸载冒称无重启热替换。
+
 ## 0.5.6-rc.1 - 2026-09-03
 
 目标 DSH：0.1.1-rc.2；独立兼容分支，未部署线上，未发布 npm。

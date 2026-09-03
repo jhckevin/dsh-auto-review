@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import { NativeApprovalScope, validateNativeApprovalDecision } from '../lib/native-approval-protocol.js';
+const rows = [];
+const ctx = {actionReview: {recordAudit(kind, data) {rows.push({kind, data});}}};
+const decision = {schemaVersion: 1, outcome: 'approved', riskLevel: 'low', rationale: 'offline lifecycle fixture', policyRuleIds: [], uncertainty: ''};
+const signal = new AbortController().signal;
+const validate = (scope, id) => validateNativeApprovalDecision(ctx, decision, id, 'offline-parent', signal, scope);
+const exited = pid => {assert.equal(typeof pid, 'number'); assert.throws(() => process.kill(pid, 0), {code: 'ESRCH'});};
+const baselineListeners = process.listenerCount('exit');
+let cycles = 0;
+for (let n = 0; n < 16; n++) {
+  const a = new NativeApprovalScope(), b = new NativeApprovalScope();
+  assert.equal((await validate(a, `a-${n}`)).outcome, 'approved');
+  assert.equal((await validate(b, `b-${n}`)).outcome, 'approved');
+  const ah = await a.host(), bh = await b.host(), apid = ah.pid, bpid = bh.pid;
+  assert.notEqual(apid, bpid);
+  await Promise.all([a.dispose(), a.dispose()]);
+  exited(apid);
+  await assert.rejects(validate(a, 'stale'), {failureKind: 'shutdown'});
+  assert.equal((await validate(b, `survivor-${n}`)).outcome, 'approved');
+  assert.equal(bh.pid, bpid);
+  await b.dispose();
+  exited(bpid);
+  cycles++;
+}
+const pendingScope = new NativeApprovalScope();
+await validate(pendingScope, 'warm');
+const pid = (await pendingScope.host()).pid;
+const before = rows.filter(row => row.data.status === 'validated').length;
+const pending = Promise.allSettled(Array.from({length: 8}, (_, i) => validate(pendingScope, `cancel-${i}`)));
+await pendingScope.dispose();
+assert.equal((await pending).every(item => item.status === 'rejected'), true);
+exited(pid);
+assert.equal(rows.filter(row => row.data.status === 'validated').length, before);
+assert.equal(process.listenerCount('exit'), baselineListeners);
+console.log(JSON.stringify({status: 'PASS', scopeCycles: cycles, independentChildren: 33, rejectedPending: 8, lateApprovals: 0, exitListenersBefore: baselineListeners, exitListenersAfter: process.listenerCount('exit'), nativeValidated: before, realApi: false, entireDshWebUi: false}));

@@ -3,6 +3,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
+import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 
 const exec = promisify(execFile)
 const root = new URL('../', import.meta.url)
@@ -16,6 +18,25 @@ try {
   }
   const artifact = await pack(root)
   const dependencyArtifacts = []
+  // Before registry publication, callers supply the exact staged host/platform
+  // tarballs. This is an offline artifact test, not a public-registry claim.
+  const bridgeArtifacts = JSON.parse(process.env.DSH_BRIDGE_ARTIFACTS ?? '[]')
+  if (!Array.isArray(bridgeArtifacts) || bridgeArtifacts.some(item => typeof item !== 'string')) {
+    throw new Error('DSH_BRIDGE_ARTIFACTS must be a JSON array of staged tarball paths')
+  }
+  dependencyArtifacts.push(...bridgeArtifacts)
+  const sourceManifest = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
+  const lock = JSON.parse(await readFile(new URL('package-lock.json', root), 'utf8'))
+  for (const field of ['name', 'version', 'dependencies', 'devDependencies', 'peerDependencies', 'peerDependenciesMeta', 'engines']) {
+    assert.deepEqual(lock.packages[''][field], sourceManifest[field], `lock root ${field} mismatch`)
+  }
+  if (bridgeArtifacts.length) {
+    const integritySet = new Set(await Promise.all(bridgeArtifacts.map(async file =>
+      `sha512-${createHash('sha512').update(await readFile(file)).digest('base64')}`)))
+    for (const name of ['dsh-auto-review-bridge-host', 'dsh-auto-review-bridge-linux-x64-gnu']) {
+      assert.equal(integritySet.has(lock.packages[`node_modules/@jhckevin/${name}`].integrity), true, `staged ${name} differs from lock`)
+    }
+  }
   for (const dependency of [
     '@deepseek-ai/schemastery',
     '@deepseek-ai/cosmokit',
@@ -122,6 +143,23 @@ try {
   }
   const manifest = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8'))
   if (manifest.name !== '@jhckevin/dsh-auto-review') throw new Error('packed manifest identity mismatch')
+  const hostRoot = join(installRoot, 'node_modules/@jhckevin/dsh-auto-review-bridge-host')
+  const hostManifest = JSON.parse(await readFile(join(hostRoot, 'package.json'), 'utf8'))
+  if (hostManifest.version !== manifest.dependencies['@jhckevin/dsh-auto-review-bridge-host']) {
+    throw new Error('packed native bridge dependency is not exact')
+  }
+  const host = await import(new URL(`file://${join(hostRoot, 'index.mjs')}`))
+  if (typeof host.createCodexApprovalBridge !== 'function') throw new Error('packed bridge has no scoped lifecycle factory')
+  const lockRoot = join(temporary, 'lock-consumer')
+  await mkdir(lockRoot)
+  await writeFile(join(lockRoot, 'package.json'), JSON.stringify(sourceManifest))
+  await writeFile(join(lockRoot, 'package-lock.json'), JSON.stringify(lock))
+  // The staged install above seeds npm's integrity cache. This proves the lock
+  // graph can install offline, not that unpublished registry URLs are live.
+  await exec('npm', ['ci', '--offline', '--ignore-scripts', '--omit=dev', '--legacy-peer-deps', '--no-audit', '--no-fund'],
+    { cwd: lockRoot, maxBuffer: 10 * 1024 * 1024 })
+  const lockedHost = JSON.parse(await readFile(join(lockRoot, 'node_modules/@jhckevin/dsh-auto-review-bridge-host/package.json'), 'utf8'))
+  assert.equal(lockedHost.version, hostManifest.version)
   process.stdout.write(`Packed artifact clean offline import: OK (${manifest.version})\n`)
 } finally {
   await rm(temporary, { recursive: true, force: true })

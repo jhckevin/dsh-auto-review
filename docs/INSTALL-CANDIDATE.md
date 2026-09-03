@@ -1,14 +1,14 @@
 # 安装与版本匹配（未发布候选）
 
-本页不是可公开安装的发布承诺。当前默认 codex-native 所依赖的桥接包仍为私有原型；在其源码、许可证和 Linux x86_64 产物公开并通过洁净安装前，不提供虚构的 npm 一键安装命令，也不静默切换 legacy-js。
+本页不是可公开安装的发布承诺。默认 codex-native 已改用独立公开命名的 bridge 候选包，并通过 staged tgz 离线安装；GitHub/npm 尚未发布，不提供假装已经能从注册表下载的一键命令，也不静默切换 legacy-js。新增热安装范围及一次性受保护 runtime 部署见 [ISSUE-027-HOTPLUG.md](ISSUE-027-HOTPLUG.md)。
 
 ## 固定版本
 
-截至 2026-09-03 本轮核验：DSH 0.1.1-rc.2 对应插件 0.5.6-rc.1；DSH 0.1.2-alpha.5 对应插件 0.5.7-alpha.1。候选版本的后续提交用完整 Git commit 和 tgz SHA256 区分，不移动既有 tag；最终公开制品必须升新版本，不能覆盖同版本包。
+本轮热生命周期候选：DSH 0.1.1-rc.2 对应插件 0.5.6-rc.2。DSH 0.1.2-alpha.5 对应旧插件 0.5.7-alpha.1，尚未同步本轮热安装。使用完整 Git commit 和 tgz SHA256 区分，不移动既有 tag，不覆盖已发布同版本包。
 
 - Linux x86_64；Node >=24.11.0，本轮使用 24.20.0。
 - 锁定整套 DSH 依赖，不只锁定 CLI；alpha 不能混入 rc 的 Session/Client API。
-- native 依赖：@dsh/codex-approval-bridge-host@0.0.0-prototype.5 及其平台产物。optional peer 并不等于已安装；本轮只验证受控内部产物。
+- native 依赖：@jhckevin/dsh-auto-review-bridge-host@0.1.0-rc.1 及精确版本 Linux 平台包。源码 lock 中的镜像 URL 是未来发布位置；SHA512 来自已核验候选 tgz，不代表 URL 已可下载。发布前通过 DSH_BRIDGE_ARTIFACTS 提供匹配 tarball 验收。
 - 原生沙盒的状态必须实测；partial 不得标为 full。容器本身也不等于 DSH 每次动作拥有完整沙盒。
 
 ## 本轮实际验证的部署顺序
