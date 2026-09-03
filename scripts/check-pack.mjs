@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -9,6 +9,8 @@ import { createHash } from 'node:crypto'
 const exec = promisify(execFile)
 const root = new URL('../', import.meta.url)
 const temporary = await mkdtemp(join(tmpdir(), 'dsh-auto-review-pack-'))
+// One newly created cache for this gate only; never inherit a user's populated cache.
+const offlineEnv = { ...process.env, npm_config_cache: join(temporary, 'empty-npm-cache'), npm_config_offline: 'true', npm_config_update_notifier: 'false' }
 try {
   async function pack(cwd) {
     const { stdout } = await exec('npm', ['pack', '--json', '--pack-destination', temporary], { cwd })
@@ -55,7 +57,7 @@ try {
   await exec('npm', [
     'install', '--offline', '--ignore-scripts', '--legacy-peer-deps', '--no-audit', '--no-fund',
     artifact, ...dependencyArtifacts,
-  ], { cwd: installRoot, env: { ...process.env, npm_config_cache: join(temporary, 'empty-npm-cache') }, maxBuffer: 10 * 1024 * 1024 })
+  ], { cwd: installRoot, env: offlineEnv, maxBuffer: 10 * 1024 * 1024 })
   const packageRoot = join(installRoot, 'node_modules/@jhckevin/dsh-auto-review')
   const packedRuntime = await import(new URL(`file://${join(packageRoot, 'lib/policy-corpus.js').replaceAll('\\', '/')}`))
   if (packedRuntime.GUARDIAN_POLICY_SECTIONS.length < 10) throw new Error('packed runtime failed to load Guardian policy corpus')
@@ -151,14 +153,45 @@ try {
   }
   const host = await import(new URL(`file://${join(hostRoot, 'index.mjs')}`))
   if (typeof host.createCodexApprovalBridge !== 'function') throw new Error('packed bridge has no scoped lifecycle factory')
+  // This separate preparation is online. The following replay alone is offline.
+  const prefetchRoot = join(temporary, 'source-lock-prefetch')
   const lockRoot = join(temporary, 'lock-consumer')
-  await mkdir(lockRoot)
-  await writeFile(join(lockRoot, 'package.json'), JSON.stringify(sourceManifest))
-  await writeFile(join(lockRoot, 'package-lock.json'), JSON.stringify(lock))
-  // The staged install above seeds npm's integrity cache. This proves the lock
-  // graph can install offline, not that unpublished registry URLs are live.
-  await exec('npm', ['ci', '--offline', '--ignore-scripts', '--omit=dev', '--legacy-peer-deps', '--no-audit', '--no-fund'],
-    { cwd: lockRoot, maxBuffer: 10 * 1024 * 1024 })
+  const lockCache = join(temporary, 'source-lock-empty-cache')
+  for (const [name, row] of Object.entries(lock.packages)) {
+    if (name === '') continue
+    assert.equal(typeof row.resolved, 'string', `missing lock resolved: ${name}`)
+    assert.match(row.integrity, /^sha512-[A-Za-z0-9+/]+=*$/, `missing SHA512 integrity: ${name}`)
+    if (row.resolved.startsWith('file:')) {
+      assert(name.startsWith('node_modules/@jhckevin/dsh-auto-review-bridge-'))
+      assert(/^file:vendor\/native-bridge\/[A-Za-z0-9_.-]+\.tgz$/.test(row.resolved))
+    } else {
+      const url = new URL(row.resolved)
+      assert(url.protocol === 'https:' && url.hostname === 'registry.npmmirror.com'
+        && !url.port && !url.username && !url.password && !url.search && !url.hash,
+      `unapproved prefetch URL: ${name}`)
+    }
+  }
+  for (const destination of [prefetchRoot, lockRoot]) {
+    await mkdir(join(destination, 'vendor/native-bridge'), { recursive: true })
+    await writeFile(join(destination, 'package.json'), JSON.stringify(sourceManifest))
+    await writeFile(join(destination, 'package-lock.json'), JSON.stringify(lock))
+    for (const file of bridgeArtifacts) {
+      const integrity = `sha512-${createHash('sha512').update(await readFile(file)).digest('base64')}`
+      const row = Object.entries(lock.packages).find(([name, value]) => name.startsWith('node_modules/@jhckevin/dsh-auto-review-bridge-') && value.integrity === integrity)?.[1]
+      assert.ok(row && /^file:vendor\/native-bridge\/[A-Za-z0-9_.-]+\.tgz$/.test(row.resolved))
+      await copyFile(file, join(destination, row.resolved.slice(5)))
+    }
+  }
+  const lockEnv = { ...process.env, npm_config_cache: lockCache, npm_config_registry: 'https://registry.npmmirror.com',
+    npm_config_update_notifier: 'false', npm_config_offline: 'false', npm_config_fetch_retries: '0' }
+  process.stdout.write('Source-lock ONLINE prefetch: approved mirror, fresh cache, integrity checked by npm ci\n')
+  const prefetched = await exec('npm', ['ci', '--registry=https://registry.npmmirror.com', '--ignore-scripts', '--omit=dev', '--legacy-peer-deps', '--no-audit', '--no-fund'],
+    { cwd: prefetchRoot, env: lockEnv, timeout: 180000, maxBuffer: 10 * 1024 * 1024 })
+  process.stdout.write(prefetched.stdout); process.stderr.write(prefetched.stderr)
+  process.stdout.write('Source-lock OFFLINE replay: new consumer, same original lock, only prefetched cache\n')
+  const replayed = await exec('npm', ['ci', '--offline', '--ignore-scripts', '--omit=dev', '--legacy-peer-deps', '--no-audit', '--no-fund'],
+    { cwd: lockRoot, env: { ...lockEnv, npm_config_offline: 'true' }, timeout: 180000, maxBuffer: 10 * 1024 * 1024 })
+  process.stdout.write(replayed.stdout); process.stderr.write(replayed.stderr)
   const lockedHost = JSON.parse(await readFile(join(lockRoot, 'node_modules/@jhckevin/dsh-auto-review-bridge-host/package.json'), 'utf8'))
   assert.equal(lockedHost.version, hostManifest.version)
   process.stdout.write(`Packed artifact clean offline import: OK (${manifest.version})\n`)
