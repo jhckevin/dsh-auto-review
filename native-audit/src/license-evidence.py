@@ -111,14 +111,26 @@ def inspect(platform, verify_copies=True):
         require(len(row['files']) == len(selected_files) and {f['archiveMember'] for f in row['files']} == selected_files, 'original source coverage mismatch')
         for item in row['files']:
             data = entries[item['archiveMember']]
-            require(data == read(platform, decl+item['artifact']) and sha(data) == item['sha256'], 'original member hash mismatch')
+            original_path = prefix+'original/'+item['archiveMember'][len(prefix):]
+            require(item['artifact'] == original_path, 'original evidence path mismatch')
+            safe_path = decl+original_path+'.source'
+            require(sha(data) == item['sha256'], 'original member hash mismatch')
+            if verify_copies:
+                require(data == read(platform, safe_path), 'original member hash mismatch')
+            copy_bytes[safe_path] = data
             original_file_count += 1
         # Preserve ALL published members, including notices in non-Rust/non-README files.
         # The original archive is checksum-bound; no regex decides which copyright matters.
         material = {}
-        for member, data in entries.items():
+        original_mapping = []
+        for member, data in sorted(entries.items()):
             if data:
-                material['original-crate/'+member[len(prefix):]] = data
+                # Fixed, injective mapping prevents npm's .orig/.gitignore filtering.
+                # The original member name and bytes remain bound to the raw crate.
+                relative = 'original-crate/'+member[len(prefix):]+'.source'
+                material[relative] = data
+                original_mapping.append({'archiveMember':member,
+                    'materialPath':'licenses/'+ref+'/'+relative,'sha256':sha(data)})
         material['normative-'+selected+'.txt'] = texts[selected]
         recovered = ref in ('allocative@0.3.6', 'allocative_derive@0.3.6')
         if recovered:
@@ -140,7 +152,7 @@ def inspect(platform, verify_copies=True):
                 require(read(platform, path) == data, 'distributed license/source material mismatch: '+path)
             copy_bytes[path] = data
             materials.append({'path':path,'sha256':sha(data)})
-        output[ref] = {'materials':materials,
+        output[ref] = {'materials':materials,'originalCrateFiles':original_mapping,
             'sourceType':'exact-upstream-license-and-published-declaration' if recovered else 'published-spdx-declaration-and-normative-text',
             'upstreamLicenseFileRecovered':recovered,'selectedLicense':selected,
             'originalAuthors':package.get('authors',[]),

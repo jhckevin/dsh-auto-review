@@ -4,6 +4,8 @@ import { mkdirSync, writeFileSync, readFileSync, realpathSync, lstatSync, openSy
 import { join, resolve, isAbsolute, delimiter, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { UPSTREAM, CRATE, REQUIRED, PLAN, BASE_FILES, MAX_LOG, sha, safeRead, implementationHashes } from './development-evidence.mjs';
+import { prepareMirrors, verifyMirrorEvidence, assertNoUserBazelrc, canonicalDirectory } from './development-mirrors.mjs';
+import { inspectCargoConfigs, resolveRustTools, assertRustToolsUnchanged } from './development-rust-tools.mjs';
 
 export function cleanEnvironment(output, provided = process.env) {
   const env = { PATH: provided.PATH ?? '/usr/bin:/bin', HOME: join(output, 'home'), TMPDIR: join(output, 'tmp'), LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8', CARGO_BUILD_JOBS: '1', CARGO_INCREMENTAL: '0', CARGO_PROFILE_DEV_DEBUG: '0', CARGO_PROFILE_TEST_DEBUG: '0', CARGO_NET_OFFLINE: 'true', GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' };
@@ -16,10 +18,8 @@ export function cleanEnvironment(output, provided = process.env) {
       env[key] = realpathSync(provided[key]);
     }
   }
-  if (provided.RUSTUP_TOOLCHAIN !== undefined) {
-    assert.equal(provided.RUSTUP_TOOLCHAIN, '1.96.0', 'only frozen artifact toolchain override is supported');
-    env.RUSTUP_TOOLCHAIN = provided.RUSTUP_TOOLCHAIN;
-  }
+  assert.equal(provided.RUSTUP_TOOLCHAIN, undefined, 'RUSTUP_TOOLCHAIN overrides forbidden; use fixed source rust-toolchain.toml');
+  for (const key of ['UV_CACHE_DIR', 'DOTSLASH_CACHE']) if (provided[key] !== undefined) env[key] = canonicalDirectory(provided[key]);
   env.CARGO_TARGET_DIR ??= join(output, 'target');
   return env;
 }
@@ -44,6 +44,7 @@ export function locateTool(name, env) {
 }
 
 export function sourceSnapshot(source, env) {
+  assertNoUserBazelrc(source);
   const git = args => execFileSync('git', ['--no-optional-locks', ...args], { cwd: source, env, maxBuffer: 16 * 1024 * 1024 });
   assert.equal(git(['rev-parse', 'HEAD']).toString().trim(), UPSTREAM, 'source HEAD must be fixed upstream');
   assert.equal(git(['ls-files', '--others', '--exclude-standard']).length, 0, 'untracked source must be staged before execution');
@@ -119,6 +120,15 @@ export async function runDevelopment({ source, output, patchFile }) {
     // This compile-time field comes only from the supplied frozen patch bytes,
     // never an inherited user value. sourceSnapshot below must match the bytes.
     const env = bindPatchEnvironment(cleanEnvironment(output), sha(readFileSync(patchFile)));
+    result.cargoConfiguration = inspectCargoConfigs(source,output,env);
+    result.rustToolchain = resolveRustTools(locateTool('rustup',env),env,source);
+    env.PATH = result.rustToolchain.bin + delimiter + env.PATH;
+    const bazel = locateTool('bazel', env);
+    result.tools.bazelUnderlying = bazel;
+    const cache = process.env.DSH_DEVELOPMENT_REPOSITORY_CACHE ?? join(output, 'repository-cache');
+    if (process.env.DSH_DEVELOPMENT_REPOSITORY_CACHE === undefined) mkdirSync(cache, { mode: 0o700 });
+    result.transport = prepareMirrors({ source, output, cache, bazel: bazel.path });
+    env.PATH = join(output, 'bazel', 'bin') + delimiter + env.PATH;
     const environment = JSON.stringify(env, null, 2) + '\n';
     writeFileSync(join(output, 'environment.json'), environment, { flag: 'wx', mode: 0o600 });
     result.environmentSha256 = sha(environment);
@@ -141,12 +151,20 @@ export async function runDevelopment({ source, output, patchFile }) {
     for (let i = 0; i < PLAN.length; i++) {
       const spec = PLAN[i];
       const sourceBefore = sourceSnapshot(source, env).state;
+      assert.deepEqual(inspectCargoConfigs(source,output,env),result.cargoConfiguration,'Cargo configuration changed');
+      assertRustToolsUnchanged(result.rustToolchain);
+      verifyMirrorEvidence(output, result.transport, safeRead);
+      assert.equal(sha(readFileSync(realpathSync(result.transport.bazel))), result.transport.bazelSha256, 'actual Bazel changed');
       assert.deepEqual(sourceBefore, result.sourceBefore, 'source drift before command');
       const tool = result.tools[spec.tool];
       assert.equal(sha(readFileSync(realpathSync(tool.path))), tool.sha256, 'tool changed before execution');
       const log = `logs/${String(i).padStart(2, '0')}-${spec.id}.log`;
       const step = await executeStep(tool.path, spec.args, { cwd: resolve(source, spec.cwd), env, logFile: join(output, log), id: spec.id });
       const sourceAfter = sourceSnapshot(source, env).state;
+      assert.deepEqual(inspectCargoConfigs(source,output,env),result.cargoConfiguration,'Cargo configuration changed during command');
+      assertRustToolsUnchanged(result.rustToolchain);
+      verifyMirrorEvidence(output, result.transport, safeRead);
+      assert.equal(sha(readFileSync(realpathSync(result.transport.bazel))), result.transport.bazelSha256, 'actual Bazel changed during command');
       result.steps.push({ spec, executable: tool.path, toolSha256: tool.sha256, log, sourceBefore, sourceAfter, ...step });
       result.sourceAfter = sourceAfter;
       persist();

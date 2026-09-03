@@ -51,12 +51,12 @@ status of any module.
 ## Native approval bridge
 
 `@jhckevin/dsh-auto-review-bridge-host` and
-`@jhckevin/dsh-auto-review-bridge-linux-x64-gnu`, version `0.1.0-rc.1`, are
+`@jhckevin/dsh-auto-review-bridge-linux-x64-gnu`, version `0.1.0-rc.2`, are
 separate Apache-2.0 artifacts, not MIT assets relicensed by this notice. The
 main package has an exact host dependency. Source-checkout CI resolves the
 verified archives through the lockfile; installation requires a separately
 protected matching native runtime. Package-specific source, license,
-provenance and unresolved development gates must accompany distribution.
+provenance and version-matched development execution receipts must accompany distribution.
 This is bounded protocol validation, not complete Codex Guardian execution.
 There is no claim of public npm publication, and no silent legacy fallback.
 

@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          sha512sum --check vendor/native-bridge/SHA512SUMS 2>&1 | tee artifacts/native-checksums.log
+          (cd vendor/native-bridge && sha512sum --check SHA512SUMS) 2>&1 | tee artifacts/native-checksums.log
       - name: Install exact lock without lifecycle scripts
         shell: bash
         run: |
@@ -55,7 +55,7 @@ jobs:
           npm run policy:check 2>&1 | tee artifacts/policy.log
       - name: Verify packed offline consumer
         env:
-          DSH_BRIDGE_ARTIFACTS: '["${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-host-0.1.0-rc.1.tgz","${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.1.tgz"]'
+          DSH_BRIDGE_ARTIFACTS: '["${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-host-0.1.0-rc.2.tgz","${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.2.tgz"]'
         shell: bash
         run: |
           set -o pipefail

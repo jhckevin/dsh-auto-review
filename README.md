@@ -3,7 +3,7 @@
 [![CI](https://github.com/jhckevin/dsh-auto-review/actions/workflows/ci.yml/badge.svg)](https://github.com/jhckevin/dsh-auto-review/actions/workflows/ci.yml)
 [Actions / CI 与发行](https://github.com/jhckevin/dsh-auto-review/actions) · [Release 下载](https://github.com/jhckevin/dsh-auto-review/releases) · [DSH 插件集合](https://github.com/topics/dsh-plugin)
 
-[原生桥接源码与证据门禁](native-audit/README.md)：公开 runner / verifier 源码和固定第三方材料；独立 Actions 运行源码与负面门禁测试，不冒称完整 Rust/Bazel 或二进制发行验收。
+[原生桥接源码与证据门禁](native-audit/README.md)：公开 runner / verifier 源码和固定第三方材料；独立 Actions 校验真实 rc2 安装包、归档的 11 步 Rust/Bazel 执行证据、源码/负面门禁及同 FD 协议 smoke。它不在 GitHub 重新编译 Rust，也不是完整 DSH/Guardian、法律或生产认证。
 
 受 [Codex-style Auto Review](https://alignment.openai.com/auto-review/) 启发的独立 DSH 插件项目。本项目不是 OpenAI、Codex 或 DeepSeek 的官方产品，也不声称与完整 Codex Guardian 实现等价。
 
@@ -11,9 +11,9 @@
 
 | DSH 发布通道 | 精确 DSH 版本 | 插件候选版本 |
 |---|---|---|
-| rc6 兼容候选 | 0.1.0-rc.6 | 0.5.5-rc.2 |
-| rc2 兼容候选（本分支） | 0.1.1-rc.2 | 0.5.6-rc.3 |
-| alpha5 兼容候选 | 0.1.2-alpha.5 | 0.5.7-alpha.2 |
+| rc6 兼容候选 | 0.1.0-rc.6 | 0.5.5-rc.3 |
+| rc2 兼容候选（本分支） | 0.1.1-rc.2 | 0.5.6-rc.4 |
+| alpha5 兼容候选 | 0.1.2-alpha.5 | 0.5.7-alpha.3 |
 
 三个通道不能混装，也不承诺兼容未验证 master 或未来版本。表格是源码兼容矩阵，不代表候选已经公开发布；以各版本 Release 的实际附件和门禁结果为准。旧 v0.5.6-rc.2 保持原样，不覆盖旧 tag 或制品。安装顺序、匹配的 UI 补丁和前置条件见 [候选安装说明](docs/INSTALL-CANDIDATE.md)。
 
@@ -32,9 +32,9 @@
 
 ```sh
 # 只选一行：不要合并不同通道的下载目录。
-TAG=v0.5.6-rc.3       # DSH 0.1.1-rc.2
-# TAG=v0.5.5-rc.2     # DSH 0.1.0-rc.6
-# TAG=v0.5.7-alpha.2  # DSH 0.1.2-alpha.5
+TAG=v0.5.6-rc.4       # DSH 0.1.1-rc.2
+# TAG=v0.5.5-rc.3     # DSH 0.1.0-rc.6
+# TAG=v0.5.7-alpha.3  # DSH 0.1.2-alpha.5
 mkdir "auto-review-$TAG-downloads"
 cd "auto-review-$TAG-downloads"
 gh release download "$TAG" --repo jhckevin/dsh-auto-review
@@ -48,16 +48,16 @@ sha256sum --check SHA256SUMS
 仅以下步骤在管理员终端执行，工作目录仍为上一步下载目录；管理员应先独立核验平台包校验值：
 
 ```sh
-sudo install -d -o root -g root -m 0755 /opt/dsh-auto-review-native/0.1.0-rc.1
-sudo npm install --prefix /opt/dsh-auto-review-native/0.1.0-rc.1 \
+sudo install -d -o root -g root -m 0755 /opt/dsh-auto-review-native/0.1.0-rc.2
+sudo npm install --prefix /opt/dsh-auto-review-native/0.1.0-rc.2 \
   --offline --ignore-scripts --no-audit --no-fund \
-  "$PWD/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.1.tgz"
+  "$PWD/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.2.tgz"
 ```
 
 不要以 root 启动 DSH。普通运行用户设置：
 
 ```sh
-export DSH_AUTO_REVIEW_NATIVE_RUNTIME=/opt/dsh-auto-review-native/0.1.0-rc.1/node_modules/@jhckevin/dsh-auto-review-bridge-linux-x64-gnu
+export DSH_AUTO_REVIEW_NATIVE_RUNTIME=/opt/dsh-auto-review-native/0.1.0-rc.2/node_modules/@jhckevin/dsh-auto-review-bridge-linux-x64-gnu
 ```
 
 ### 3. 冷启动与热安装的区别
@@ -97,11 +97,15 @@ node node_modules/@deepseek-ai/dsh/lib/bin.js --profile web \
 ## Actions、CI/CD 与证据在哪里
 
 - [CI](https://github.com/jhckevin/dsh-auto-review/actions/workflows/ci.yml)：push、PR 或手动触发；检查固定桥接 SHA、镜像依赖安装、build、完整类型、行为测试、策略来源和 packed consumer。
+- packed consumer 使用独立空缓存。原 source lock 的复装是另一条门禁：先在新缓存从批准镜像 ONLINE 预取，再在新目录 OFFLINE `npm ci` 重放原锁；不将重新打包的依赖当作 registry 原始制品，也不声称整个 CI 全程断网。
 - [Release candidate](https://github.com/jhckevin/dsh-auto-review/actions/workflows/release.yml)：版本 tag/手动触发，固定 commit 后重新验收；生成包、离线依赖、SHA256SUMS、build-receipt。只能生成**草稿预发布**，不覆盖已有 Release；原生/许可证/兼容门禁仍须审核后才公开。
+- [Native package and source evidence](https://github.com/jhckevin/dsh-auto-review/actions/workflows/native-audit.yml)：共享 native rc2 的真实包 SHA、材料/来源、11 步开发执行证据及 4 帧 same-FD 协议检查。三个通道使用相同 host/platform 字节；不能把共享桥接检查冒称每个 DSH 通道的完整端到端测试。
 - 每次运行的 Artifacts 提供 JUnit、命令日志、成功时的安装包与校验清单，保留 30 天；永久公开版本在 Release。失败步骤不会被改成“跳过即通过”。
 - `build-receipt.json` 标明源码 commit/tree、lock SHA、Node/npm 和 Actions run，便于从制品回查构建。源码 CI 不等于真实模型、浏览器或完整原生门禁通过；这些状态分别记录，不能混为一个绿色 badge。
 
-本分支候选版本：`0.5.6-rc.3`，匹配 DSH `0.1.1-rc.2`，验证环境 Node `24.20.0`。另两个通道使用上表各自候选；表格不代表注册表通道永远不变。
+本分支候选版本：`0.5.6-rc.4`，匹配 DSH `0.1.1-rc.2`，验证环境 Node `24.20.0`。另两个通道使用上表各自候选；表格不代表注册表通道永远不变。
+
+本轮 native rc2 在同一冻结 Debian 11 builder / Rust 1.95 下两次独立空 target、断网构建，二进制逐字节一致（SHA256 `dd6ad6bf0ebec9ae36d40fdaa91dda8aabb21bc3191366a5b0e25b8f5e10888b`）。真实非 root、只读根、断网安装验收为 25 owner 测试 + 13 包模式；来源材料覆盖 672 Rust 组件的 1,350 条引用，launcher 另行绑定 2 个官方 npm 包 / 15 个成员。十项上游原始独立 LICENSE 缺失事实保留；这些工程门禁不构成法律或完整生产认证。固定环境重现不等于任意未来工具链可重现。
 
 适配范围和未完成门禁见 [ISSUE-025](docs/ISSUE-025-DSH-COMPAT.md)。以下历史生产门禁命名不代表完整 Guardian、WebUI 或生产环境已经验收；本轮未替换线上服务。
 
@@ -109,7 +113,7 @@ node node_modules/@deepseek-ai/dsh/lib/bin.js --profile web \
 
 ## 离线回归与发布前验收
 
-`npm run gate:production` 是历史命名的离线回归入口：构建插件 Host/Client 产物、运行类型与行为测试、核验固定策略文本，并检查安装包离线导入。它不构建完整 DSH WebUI，也不证明真实模型、完整 Guardian 或生产沙盒已验收。公开发布还必须核对许可证、公开依赖安装、真实 API trace 及浏览器设置生效。断网检查与必须访问模型 API 的独立容器分开留证，不以源码可导入代替安装包检查。
+`npm run gate:production` 是历史命名的工程回归入口：构建插件 Host/Client 产物、运行类型与行为测试、核验固定策略文本，并分别检查安装包离线导入及原锁镜像预取/离线重装。它不是全程断网，也不构建完整 DSH WebUI，不证明真实模型、完整 Guardian 或生产沙盒已验收。公开发布还必须核对许可证、公开依赖安装、真实 API trace 及浏览器设置生效。断网检查与必须访问模型 API 的独立容器分开留证，不以源码可导入代替安装包检查。
 
 ## 原生接入点
 

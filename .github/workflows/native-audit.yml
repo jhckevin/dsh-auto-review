@@ -1,18 +1,18 @@
-name: Native source evidence
+name: Native package and source evidence
 
 on:
   push:
     branches: ['**']
-    paths: ['native-audit/**', 'vendor/native-audit/**', '.github/workflows/native-audit.yml']
+    paths: ['native-audit/**', 'vendor/native-audit/**', 'vendor/native-bridge/**', '.github/workflows/native-audit.yml']
   pull_request:
-    paths: ['native-audit/**', 'vendor/native-audit/**', '.github/workflows/native-audit.yml']
+    paths: ['native-audit/**', 'vendor/native-audit/**', 'vendor/native-bridge/**', '.github/workflows/native-audit.yml']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  native-audit-source-and-negative-tests:
+  native-package-source-and-negative-tests:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -20,30 +20,47 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24.20.0'
-      - name: Verify frozen source and safely extract material
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen source and real package bytes
         shell: bash
         run: |
           set -euo pipefail
-          echo 'da9609f455a4a69f28de10116d23563cdbb425fd2e9758726a0853e7b2cc1bc8  vendor/native-audit/native-audit-source.tar.gz' | sha256sum --check
-          mkdir -p artifacts
+          echo '08a2c93ea95f80bf7ed36f45bff8e2c9dd4067b912d9d561156a2292d1bdae42  vendor/native-audit/native-audit-source.tar.gz' | sha256sum --check
+          (cd vendor/native-bridge && sha512sum --check SHA512SUMS)
+          mkdir -p artifacts/native-host artifacts/native-platform
           python3 -m tarfile -e vendor/native-audit/native-audit-source.tar.gz artifacts --filter data
-          for source in native-audit/src/*; do
-            cmp "$source" "artifacts/native-audit/$(basename "$source")"
-          done
-      - name: Real bounded runner and source-material negative tests
+          test "$(git ls-files native-audit/src/ | wc -l)" -eq 17
+          while IFS= read -r source; do
+            test -f "$source"
+            cmp "$source" "artifacts/bridge/$(basename "$source")"
+          done < <(git ls-files native-audit/src/)
+          python3 -m tarfile -e vendor/native-bridge/jhckevin-dsh-auto-review-bridge-host-0.1.0-rc.2.tgz artifacts/native-host --filter data
+          python3 -m tarfile -e vendor/native-bridge/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.2.tgz artifacts/native-platform --filter data
+          # Source archives intentionally omit binaries. Only verified package binaries supply test fixtures.
+          cp -a artifacts/native-platform/package/bin artifacts/bridge/packages/platform/bin
+      - name: Source, material, launcher and negative gate tests
         shell: bash
         run: |
           set -euo pipefail
-          cd artifacts/native-audit
+          cd artifacts/bridge
           mkdir -p dist
-          node --test development-runner.test.mjs evidence-gates.test.mjs license-source-gate.test.mjs 2>&1 | tee ../native-node.log
+          node --test development-runner.test.mjs development-mirrors.test.mjs development-rust-tools.test.mjs evidence-gates.test.mjs license-source-gate.test.mjs 2>&1 | tee ../native-node.log
           python3 license-evidence.test.py 2>&1 | tee ../native-license.log
+          python3 launcher-evidence.test.py 2>&1 | tee ../native-launcher.log
           python3 source-archive.test.py 2>&1 | tee ../native-archive.log
-      - name: Upload source gate logs, including failures
+      - name: Verify actual native packages and same-FD protocol
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test native-audit/verify-native-package.test.mjs 2>&1 | tee artifacts/native-cli-tests.log
+          node native-audit/verify-native-package.mjs "$PWD/artifacts/native-platform/package" "$PWD/artifacts/native-host/package" "$PWD/artifacts/bridge" 2>&1 | tee artifacts/native-distribution.log
+      - name: Upload actual package and source gate logs, including failures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: native-source-evidence-${{ github.sha }}
+          name: native-package-evidence-${{ github.sha }}
           path: artifacts/*.log
           if-no-files-found: warn
           retention-days: 30
@@ -52,4 +69,4 @@ jobs:
         env:
           JOB_STATUS: ${{ job.status }}
         run: |
-          printf 'Source/material/negative tests: %s. This is NOT full Rust/Bazel, native binary, legal or production certification.\n' "$JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Actual rc2 packages, source/material/negative tests and 4-frame same-FD protocol: %s. Validates archived 11-step Rust/Bazel execution evidence; does not rebuild Rust here. NOT full DSH/Guardian, legal or production certification.\n' "$JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"

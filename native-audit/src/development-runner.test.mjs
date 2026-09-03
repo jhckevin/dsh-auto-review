@@ -9,6 +9,17 @@ import { safeRead, inspectExecutedDevelopmentEvidence, verifyDevelopmentRun, imp
 // Small disposable evidence fixtures only. No mocked just/cargo success is used
 // as real upstream development evidence, and these tests never run Rust builds.
 const temporary = () => mkdtempSync(join(tmpdir(), 'development-runner-unit-'));
+test('Bazel version uses a command compatible with preceding controlled startup flags',()=>{
+  assert.deepEqual(PLAN.find(s=>s.id==='bazel-version').args,['version','--gnu_format']);
+});
+test('formatter cache directory overrides are canonical only; all Rust toolchain overrides rejected',()=>{
+  const cache=temporary();
+  const env=cleanEnvironment(temporary(),{PATH:'/usr/bin:/bin',UV_CACHE_DIR:cache,DOTSLASH_CACHE:cache});
+  assert.equal(env.UV_CACHE_DIR,cache);assert.equal(env.DOTSLASH_CACHE,cache);
+  symlinkSync(cache,join(cache,'alias'));
+  for(const key of ['UV_CACHE_DIR','DOTSLASH_CACHE']) for(const value of ['relative',join(cache,'alias'),'/tmp/cache\nconfig']) assert.throws(()=>cleanEnvironment(temporary(),{PATH:'/usr/bin:/bin',[key]:value}));
+  for(const value of ['1.95.0','1.96.0','stable',''])assert.throws(()=>cleanEnvironment(temporary(),{PATH:'/usr/bin:/bin',RUSTUP_TOOLCHAIN:value}));
+});
 test('compile-time patch SHA is derived, not inherited, and uv mirror is fixed', () => {
   const env = cleanEnvironment(temporary(), { PATH: '/usr/bin:/bin', CODEX_BRIDGE_PATCH_SHA256: 'forged', UV_DEFAULT_INDEX: 'https://untrusted.invalid/simple' });
   assert.equal(env.CODEX_BRIDGE_PATCH_SHA256, undefined);

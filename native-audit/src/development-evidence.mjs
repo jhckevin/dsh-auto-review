@@ -3,12 +3,18 @@ import { createHash } from 'node:crypto';
 import { readFileSync, lstatSync, realpathSync } from 'node:fs';
 import { resolve, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { verifyMirrorEvidence } from './development-mirrors.mjs';
+import { CARGO_CONFIG_SHA, verifyCargoConfigEvidence, verifyRustToolEvidence } from './development-rust-tools.mjs';
 
 export const UPSTREAM = '9f97cb79eb15b38d24c552c56fe24e211ff9cf3a';
 export const CRATE = 'codex-approval-protocol-bridge-prototype';
 export const REQUIRED = ['sibling *_tests.rs layout', 'just fmt', 'just fix -p', 'just test via nextest', 'bazel-lock-update for Cargo.lock changes'];
 export const MAX_LOG = 64 * 1024 * 1024;
 export const BASE_FILES = Object.freeze({
+  'codex-rs/.cargo/config.toml': CARGO_CONFIG_SHA,
+  '.bazelrc': 'a07acea70aa081625abda8370f06cf905e3871e9c93cf68d46b44591d5508273',
+  'MODULE.bazel': 'e0a9b1abbbd5d29305dc37b45008b417445120fc4e4f4a487137c4be3a82fc6d',
+  '.github/scripts/run_bazel_with_buildbuddy.py': '9bde86d11cfd4271dadc0b942d6b2d2cd90c59600b7e807b66a14eb49b5e1fff',
   'AGENTS.md': 'c3f80e8386eb170b00af1e21de40d770c4941e464915687e728e2d14a7e79480',
   'justfile': '21ade5df7707bad66b7cad8e1e5e7517443554769ab833be88bdd7d07669e6d7',
   'scripts/format.py': 'd930139145ba3e80a188c1b5734aa7fee6bad5687e610cb58bda016216a2f37d',
@@ -20,7 +26,7 @@ export const PLAN = Object.freeze([
   { id: 'cargo-version', tool: 'cargo', args: ['--version'], cwd: 'codex-rs' },
   { id: 'rustc-version', tool: 'rustc', args: ['-vV'], cwd: 'codex-rs' },
   { id: 'nextest-version', tool: 'cargo', args: ['nextest', '--version'], cwd: 'codex-rs' },
-  { id: 'bazel-version', tool: 'bazel', args: ['--version'], cwd: '.' },
+  { id: 'bazel-version', tool: 'bazel', args: ['version', '--gnu_format'], cwd: '.' },
   { id: 'python-version', tool: 'python3', args: ['--version'], cwd: '.' },
   { id: 'test', tool: 'just', args: ['test', '-p', CRATE], cwd: 'codex-rs' },
   { id: 'fix', tool: 'just', args: ['fix', '-p', CRATE], cwd: 'codex-rs' },
@@ -48,7 +54,7 @@ export function safeRead(root, relative, maximum = MAX_LOG) {
 export const json = (root, path) => JSON.parse(safeRead(root, path, 1024 * 1024));
 export function implementationHashes() {
   const base = fileURLToPath(new URL('.', import.meta.url));
-  return Object.fromEntries(['development-runner.mjs', 'development-evidence.mjs'].map(name => [name, sha(readFileSync(resolve(base, name)))]));
+  return Object.fromEntries(['development-runner.mjs', 'development-evidence.mjs', 'development-mirrors.mjs', 'development-mirrors.json', 'development-rust-tools.mjs'].map(name => [name, sha(readFileSync(resolve(base, name)))]));
 }
 
 // Validates source-bound execution records. The CI/executor filesystem remains a
@@ -71,6 +77,19 @@ export function verifyDevelopmentRun(root, manifest) {
   assert.equal(sha(safeRead(root, 'Cargo.lock')), manifest.cargoLockSha256);
   assert.equal(sha(safeRead(root, 'environment.json')), result.environmentSha256);
   const environment = json(root, 'environment.json');
+  verifyCargoConfigEvidence(result.cargoConfiguration,environment);
+  assert.equal(result.cargoConfiguration.source,result.transport.source);
+  assert.equal(result.cargoConfiguration.output,result.transport.output);
+  verifyRustToolEvidence(result.rustToolchain,environment,result.tools);
+  verifyMirrorEvidence(root, result.transport, safeRead);
+  assert.equal(environment.HOME, join(result.transport.output,'home'));
+  assert.equal(environment.TMPDIR, join(result.transport.output,'tmp'));
+  assert.equal(environment.PATH.split(':')[0], join(result.transport.output,'bazel','bin'));
+  assert.equal(result.tools.bazel.path, join(result.transport.output,'bazel','bin','bazel'));
+  assert.equal(result.tools.bazel.sha256, result.transport.files['bazel/bin/bazel']);
+  assert.equal(result.tools.bazelUnderlying.path, result.transport.bazel);
+  assert.equal(result.tools.bazelUnderlying.sha256, result.transport.bazelSha256);
+  assert(isAbsolute(result.tools.bazelUnderlying.canonical));
   assert.equal(environment.CARGO_BUILD_JOBS, '1');
   assert.equal(environment.CARGO_INCREMENTAL, '0');
   assert.equal(environment.CARGO_PROFILE_DEV_DEBUG, '0');
@@ -79,7 +98,8 @@ export function verifyDevelopmentRun(root, manifest) {
   assert.equal(environment.GIT_NO_REPLACE_OBJECTS, '1');
   assert.equal(environment.CODEX_BRIDGE_PATCH_SHA256, manifest.patchSha256);
   assert.equal(environment.UV_DEFAULT_INDEX, 'https://pypi.tuna.tsinghua.edu.cn/simple');
-  const allowed = new Set(['PATH','HOME','TMPDIR','LANG','LC_ALL','CARGO_HOME','RUSTUP_HOME','CARGO_TARGET_DIR','CARGO_BUILD_JOBS','CARGO_INCREMENTAL','CARGO_PROFILE_DEV_DEBUG','CARGO_PROFILE_TEST_DEBUG','CARGO_NET_OFFLINE','GIT_CONFIG_NOSYSTEM','GIT_CONFIG_GLOBAL','GIT_NO_REPLACE_OBJECTS','RUSTUP_TOOLCHAIN','CODEX_BRIDGE_PATCH_SHA256','UV_DEFAULT_INDEX']);
+  const allowed = new Set(['PATH','HOME','TMPDIR','LANG','LC_ALL','CARGO_HOME','RUSTUP_HOME','CARGO_TARGET_DIR','CARGO_BUILD_JOBS','CARGO_INCREMENTAL','CARGO_PROFILE_DEV_DEBUG','CARGO_PROFILE_TEST_DEBUG','CARGO_NET_OFFLINE','GIT_CONFIG_NOSYSTEM','GIT_CONFIG_GLOBAL','GIT_NO_REPLACE_OBJECTS','CODEX_BRIDGE_PATCH_SHA256','UV_DEFAULT_INDEX','UV_CACHE_DIR','DOTSLASH_CACHE']);
+  for (const key of ['UV_CACHE_DIR','DOTSLASH_CACHE']) if(environment[key]!==undefined) assert(/^\/[A-Za-z0-9_./+-]+$/.test(environment[key]),'invalid tool-cache evidence path');
   assert(Object.keys(environment).every(key => allowed.has(key)), 'unexpected inherited environment');
   assert.equal(environment.RUSTUP_TOOLCHAIN, undefined, 'artifact toolchain override is diagnostic, not strict upstream development acceptance');
   assert.equal(result.layout.accepted, true);

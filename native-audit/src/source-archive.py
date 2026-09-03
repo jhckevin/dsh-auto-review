@@ -80,6 +80,17 @@ def verify_archived_materials(path, expected_components):
                 count += 1
         return count
 
+def source_gate_metadata(licensing):
+    # An archive cannot infer workflow outcome from the current day, checkout,
+    # or a copied status field. The independent source-bound receipt decides it.
+    reasons = ['source archives do not establish binary release eligibility; consult the independent execution and artifact receipts']
+    if licensing['materialMissing']:
+        reasons.append('source-recorded license material coverage incomplete')
+    return {'releaseEligible': False, 'gateReasons': reasons,
+            'executionAssessment': {'status': 'not-assessed-by-source-archive',
+                                    'requiredEvidence': 'independent source-bound development execution receipt and binary provenance',
+                                    'verifier': 'development-evidence.mjs:verifyDevelopmentRun'}}
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--upstream-repo', required=True, type=pathlib.Path)
@@ -100,14 +111,10 @@ def main():
              archive(args.upstream_repo, UPSTREAM, out/'upstream-source.tar.gz', 'upstream/')]
     licensing['archivedMaterialReferencesVerified'] = verify_archived_materials(
         out/'bridge-source.tar.gz', licensing['components'])
-    reasons = ['upstream development gates incomplete',
-               'updated native binary rebuild and reproducibility acceptance incomplete']
-    if licensing['materialMissing']:
-        reasons.append('source-recorded license material coverage incomplete')
     manifest = {'schemaVersion': 2,
                 'scope': 'tracked source only; not a binary release, reproducible build or legal certification',
-                'bridgeRevision': revision, 'upstreamCommit': UPSTREAM, 'releaseEligible': False,
-                'gateReasons': reasons, 'licenseEvidence': licensing, 'files': files}
+                'bridgeRevision': revision, 'upstreamCommit': UPSTREAM,
+                **source_gate_metadata(licensing), 'licenseEvidence': licensing, 'files': files}
     (out/'source-manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
     print(json.dumps(manifest, indent=2))
 
