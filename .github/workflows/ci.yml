@@ -22,5 +22,13 @@ jobs:
         with:
           node-version: '24.20.0'
           cache: npm
-      - run: npm ci
-      - run: npm run gate:production
+      - name: Verify bundled native artifacts
+        run: sha512sum --check vendor/native-bridge/SHA512SUMS
+      - name: Install exact lock without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+      - run: npm run check
+      - run: npm run policy:check
+      - name: Verify packed offline consumer
+        env:
+          DSH_BRIDGE_ARTIFACTS: '["${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-host-0.1.0-rc.1.tgz","${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.1.tgz"]'
+        run: npm run pack:verify

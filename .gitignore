@@ -9,5 +9,7 @@ evidence/private/
 lib/
 coverage/
 *.tgz
+!vendor/native-bridge/jhckevin-dsh-auto-review-bridge-host-0.1.0-rc.1.tgz
+!vendor/native-bridge/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.1.tgz
 *.log
 .DS_Store
