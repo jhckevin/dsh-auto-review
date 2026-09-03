@@ -1,0 +1,595 @@
+From d229f776face86b920952d7f0092e7e20dddc775 Mon Sep 17 00:00:00 2001
+From: jhckevin <jhckevin@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 09:17:28 +0000
+Subject: [PATCH] =?UTF-8?q?feat(ISSUE-028):=20=E5=8E=9F=E7=94=9FWeb?=
+ =?UTF-8?q?=E4=BB=85=E8=BF=BD=E5=8A=A0=E6=8F=92=E4=BB=B6=E5=9B=BE=E5=B9=B6?=
+ =?UTF-8?q?=E4=BF=9D=E6=8A=A4=E5=B7=B2=E6=9C=89=E6=A8=A1=E5=9D=97=E7=94=9F?=
+ =?UTF-8?q?=E5=91=BD=E5=91=A8=E6=9C=9F?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ .../client/modules/src/client/additive.ts     |  61 +++++++++
+ packages/client/modules/src/client/index.ts   |  20 +++
+ .../client/modules/src/client/live-graph.ts   |  56 ++++++++
+ .../modules/src/client/loader-admission.ts    |  54 ++++++++
+ .../client/modules/src/client/manifest.ts     |   2 +
+ packages/client/modules/src/client/system.ts  |  24 +++-
+ packages/client/modules/src/graph-events.ts   |  36 +++++
+ packages/client/modules/src/index.ts          |   6 +
+ .../client/modules/tests/ADDITIVE-LIVE.md     |  11 ++
+ .../modules/tests/additive-live.smoke.ts      | 124 ++++++++++++++++++
+ tsconfig.live-modules.json                    |  10 ++
+ 11 files changed, 401 insertions(+), 3 deletions(-)
+ create mode 100644 packages/client/modules/src/client/additive.ts
+ create mode 100644 packages/client/modules/src/client/live-graph.ts
+ create mode 100644 packages/client/modules/src/client/loader-admission.ts
+ create mode 100644 packages/client/modules/src/graph-events.ts
+ create mode 100644 packages/client/modules/tests/ADDITIVE-LIVE.md
+ create mode 100644 packages/client/modules/tests/additive-live.smoke.ts
+ create mode 100644 tsconfig.live-modules.json
+
+diff --git a/packages/client/modules/src/client/additive.ts b/packages/client/modules/src/client/additive.ts
+new file mode 100644
+index 00000000..a27aed0a
+--- /dev/null
++++ b/packages/client/modules/src/client/additive.ts
+@@ -0,0 +1,61 @@
++/** Strict production graph admission. This is not code HMR. */
++import { parseBootManifest, stripClientSuffix } from './manifest.ts'
++import type { BootManifest } from './manifest.ts'
++
++const packageId = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/
++const object = (value: unknown): value is Record<string, unknown> =>
++  value !== null && typeof value === 'object' && !Array.isArray(value)
++const keys = (value: Record<string, unknown>, allowed: string[]): void => {
++  if (Object.keys(value).some(key => !allowed.includes(key))) throw new Error('client graph: unknown field')
++}
++const strings = (value: unknown): void => {
++  if (value !== undefined && (!Array.isArray(value) || value.length > 256
++    || value.some(item => typeof item !== 'string' || item.length > 256))) throw new Error('client graph: invalid dependency list')
++}
++
++/** Validate before copying or admitting any row; caller owns the static seed. */
++export function parseAdditiveGraph(wire: unknown, current: BootManifest, seed: ReadonlySet<string>): BootManifest {
++  if (!object(wire)) throw new Error('client graph: expected object')
++  keys(wire, ['rev', 'entries'])
++  if (typeof wire.rev !== 'string' || !/^[a-f0-9]{12}$/.test(wire.rev)
++    || !Array.isArray(wire.entries) || wire.entries.length > 4096) throw new Error('client graph: invalid envelope')
++  const ids = new Set<string>()
++  for (const value of wire.entries as unknown[]) {
++    if (!object(value)) throw new Error('client graph: invalid row')
++    keys(value, ['id', 'url', 'rev', 'inject', 'external', 'immediately'])
++    const { id, rev } = value
++    if (typeof id !== 'string' || id.length > 214 || !packageId.test(id)
++      || stripClientSuffix(id) !== id || ids.has(id) || seed.has(id) || seed.has(`${id}/client`)) throw new Error('client graph: invalid or conflicting id')
++    if (typeof rev !== 'string' || !/^[a-f0-9]{12}$/.test(rev)
++      || value.url !== `/plugins/${id}/client.js?rev=${rev}`) throw new Error('client graph: noncanonical bundle URL')
++    if (value.immediately !== undefined && typeof value.immediately !== 'boolean') throw new Error('client graph: invalid immediately')
++    strings(value.inject); strings(value.external); ids.add(id)
++  }
++  const next = parseBootManifest(wire)
++  const rows = new Map(next.modules.map(row => [row.id, row]))
++  const plugins = new Map(next.plugins.map(row => [row.id, row]))
++  for (const row of current.modules) {
++    if (JSON.stringify(rows.get(row.id)) !== JSON.stringify(row)) throw new Error(`client graph: needs-restart changed/removed module ${row.id}`)
++  }
++  for (const row of current.plugins) {
++    if (JSON.stringify(plugins.get(row.id)) !== JSON.stringify(row)) throw new Error(`client graph: needs-restart changed/removed plugin ${row.id}`)
++  }
++  // Existing order may not be rewritten. New providers may precede new consumers.
++  const oldIds = new Set(current.modules.map(row => row.id))
++  if (next.modules.filter(row => oldIds.has(row.id)).some((row, index) => row.id !== current.modules[index]?.id)) throw new Error('client graph: needs-restart reordered modules')
++  const visited = new Set<string>(), open = new Set<string>()
++  const visit = (id: string): void => {
++    if (open.has(id)) throw new Error('client graph: dependency cycle')
++    if (visited.has(id)) return
++    open.add(id)
++    for (const request of rows.get(id)!.external) {
++      if (seed.has(request)) continue
++      const dependency = stripClientSuffix(request)
++      if (!rows.has(dependency)) throw new Error(`client graph: missing module ${request}`)
++      visit(dependency)
++    }
++    open.delete(id); visited.add(id)
++  }
++  for (const id of ids) visit(id)
++  return next
++}
+diff --git a/packages/client/modules/src/client/index.ts b/packages/client/modules/src/client/index.ts
+index c2c6a604..0af578b7 100644
+--- a/packages/client/modules/src/client/index.ts
++++ b/packages/client/modules/src/client/index.ts
+@@ -13,6 +13,9 @@
+ import type { Context } from '@deepseek-ai/cordis'
+ import { ClientModuleSystem } from './system.ts'
+ import { parseBootManifest } from './manifest.ts'
++import { createAdditiveConsumer } from './live-graph.ts'
++import { createLoaderAdmission } from './loader-admission.ts'
++import type {} from '@deepseek-ai/cordis-plugin-loader'
+ import type {
+   ClientBootstrapModule, ClientModuleCreateOptions, ClientModuleLoaderTarget,
+ } from './manifest.ts'
+@@ -59,4 +62,21 @@ export function apply(ctx: Context): void {
+     throw new Error('client-modules: createClientModuleSystem must run before plugin boot')
+   }
+   ctx.reflect.provide('modules', moduleSystem)
++  // Non-HTTP embedding transports keep their own graph lifecycle.
++  if (typeof EventSource === 'undefined' || (globalThis as { __DSH_TRANSPORT__?: unknown }).__DSH_TRANSPORT__ !== undefined) return
++  const modules = moduleSystem
++  ctx.inject(['loader'], (scope) => {
++    const report = (error: unknown): void => scope.logger.warn('client graph: needs-restart or retryable transport failure', error)
++    const admission = createLoaderAdmission(scope, report)
++    const consumer = createAdditiveConsumer({
++      modules,
++      report,
++      create: admission.create,
++    })
++    scope.effect(() => {
++      const source = new EventSource('/plugins/graph-events')
++      source.onmessage = event => consumer.push(event.data)
++      return async () => { source.onmessage = null; source.close(); await consumer.dispose(); await admission.dispose() }
++    }, 'client-modules: additive graph consumer')
++  })
+ }
+diff --git a/packages/client/modules/src/client/live-graph.ts b/packages/client/modules/src/client/live-graph.ts
+new file mode 100644
+index 00000000..a2a57faf
+--- /dev/null
++++ b/packages/client/modules/src/client/live-graph.ts
+@@ -0,0 +1,56 @@
++/** One bounded metadata consumer; never invalidates code or existing fibers. */
++import type { ClientModuleLoader } from './manifest.ts'
++export function createAdditiveConsumer(options: {
++  modules: ClientModuleLoader
++  create(id: string, signal: AbortSignal): Promise<void>
++  report(error: unknown): void
++}): { push(data: string): void, dispose(): Promise<void> } {
++  const abort = new AbortController()
++  const attempted = new Set(options.modules.manifest.plugins.map(row => row.id))
++  let latest: string | undefined, running: Promise<void> | undefined
++  const bounded = async <T>(start: (signal: AbortSignal) => Promise<T>): Promise<T> => {
++    const deadline = new AbortController()
++    const signal = AbortSignal.any([abort.signal, deadline.signal])
++    signal.throwIfAborted()
++    let timer: ReturnType<typeof setTimeout> | undefined
++    let rejectAbort: () => void = () => {}
++    try {
++      return await Promise.race([start(signal), new Promise<never>((_, reject) => {
++        rejectAbort = () => reject(signal.reason)
++        signal.addEventListener('abort', rejectAbort, { once: true })
++        timer = setTimeout(() => deadline.abort(new Error('client graph: operation timed out')), 30000)
++      })])
++    } finally { clearTimeout(timer); signal.removeEventListener('abort', rejectAbort) }
++  }
++  const drain = async (): Promise<void> => {
++    while (latest !== undefined && !abort.signal.aborted) {
++      const data = latest; latest = undefined
++      try {
++        const manifest = options.modules.admitGraph(JSON.parse(data))
++        for (const row of manifest.plugins) {
++          if (attempted.has(row.id)) continue
++          await bounded(() => options.modules.prefetch(row.id))
++          abort.signal.throwIfAborted()
++          // Never replay a factory/apply after create begins. A transport-only
++          // failure above remains retryable on the next full snapshot.
++          attempted.add(row.id)
++          await bounded(signal => options.create(row.id, signal))
++          abort.signal.throwIfAborted()
++        }
++      } catch (error) { if (!abort.signal.aborted) options.report(error) }
++    }
++  }
++  const kick = (): void => {
++    if (running !== undefined || abort.signal.aborted || latest === undefined) return
++    running = drain().finally(() => { running = undefined; kick() })
++  }
++  return {
++    push(data) {
++      if (abort.signal.aborted) return
++      if (data.length > 2097152) { options.report(new Error('client graph: frame too large')); return }
++      latest = data
++      kick()
++    },
++    async dispose() { latest = undefined; abort.abort(new Error('client graph: disposed')); await running },
++  }
++}
+diff --git a/packages/client/modules/src/client/loader-admission.ts b/packages/client/modules/src/client/loader-admission.ts
+new file mode 100644
+index 00000000..84517bc8
+--- /dev/null
++++ b/packages/client/modules/src/client/loader-admission.ts
+@@ -0,0 +1,54 @@
++/** Own only entries created by this metadata consumer, never bootstrap entries. */
++import type { Context } from '@deepseek-ai/cordis'
++import type {} from '@deepseek-ai/cordis-plugin-loader'
++
++export function createLoaderAdmission(ctx: Context, report: (error: unknown) => void): {
++  create(name: string, signal: AbortSignal): Promise<void>
++  dispose(): Promise<void>
++} {
++  const owned = new Set<string>()
++  const removals = new Set<Promise<void>>()
++  let stopped = false
++  const remove = (id: string): Promise<void> => {
++    if (!owned.delete(id)) return Promise.resolve()
++    const entry = [...ctx.loader.entries()].find(value => value.id === id)
++    const task = (entry === undefined ? Promise.resolve() : entry.parent.remove(entry.options.id))
++      .finally(() => { removals.delete(task) })
++    removals.add(task)
++    return task
++  }
++  return {
++    async create(name, signal) {
++      signal.throwIfAborted()
++      if (stopped) throw new Error('client graph: entry owner stopped')
++      const before = new Set([...ctx.loader.entries()].map(entry => entry.id))
++      const task = ctx.loader.create({ name })
++      // Loader publishes its Entry before its async import/apply. Capture that
++      // exact new ID before yielding; cancellation can then remove a pending row.
++      const additions = [...ctx.loader.entries()].filter(entry => !before.has(entry.id) && entry.options.name === name)
++      for (const entry of additions) owned.add(entry.id)
++      const cancel = (): void => { for (const entry of additions) void remove(entry.id).catch(report) }
++      signal.addEventListener('abort', cancel, { once: true })
++      try {
++        const id = await task
++        if (signal.aborted || stopped) { if (!owned.has(id)) owned.add(id); await remove(id); return }
++        owned.add(id)
++        const entry = ctx.loader.resolve(id)
++        await entry.fiber?.inertia
++        if (signal.aborted || stopped) { await remove(id); return }
++        // Cordis 4 FiberState.ACTIVE is 2; factory errors are never replayed.
++        if (entry.fiber?.state !== 2) throw new Error(`client graph: needs-restart inactive plugin ${name}`)
++      } finally { signal.removeEventListener('abort', cancel) }
++    },
++    async dispose() {
++      stopped = true
++      for (const id of [...owned]) void remove(id).catch(report)
++      let timer: ReturnType<typeof setTimeout> | undefined
++      try {
++        await Promise.race([Promise.all([...removals].map(task => task.catch(report))), new Promise<void>(resolve => {
++          timer = setTimeout(() => { report(new Error('client graph: needs-restart uncooperative plugin disposal')); resolve() }, 5000)
++        })])
++      } finally { clearTimeout(timer) }
++    },
++  }
++}
+diff --git a/packages/client/modules/src/client/manifest.ts b/packages/client/modules/src/client/manifest.ts
+index cee6679b..096b5c17 100644
+--- a/packages/client/modules/src/client/manifest.ts
++++ b/packages/client/modules/src/client/manifest.ts
+@@ -255,6 +255,8 @@ export interface ClientModuleRecord {
+  * as `ctx.modules`.
+  */
+ export interface ClientModuleLoader {
++  /** Strict additive metadata admission; rejects removals/replacements without mutation. */
++  admitGraph(wire: unknown): BootManifest
+   /** Discriminant against Node's internal loader shapes ('v1'/'v2'). */
+   version: 'client'
+   /** Parsed Host boot graph shared with the web entry after module-system creation. */
+diff --git a/packages/client/modules/src/client/system.ts b/packages/client/modules/src/client/system.ts
+index d4cbb559..1ce0165a 100644
+--- a/packages/client/modules/src/client/system.ts
++++ b/packages/client/modules/src/client/system.ts
+@@ -5,6 +5,7 @@
+  * state tables and the load/materialize machinery.
+  */
+ import { stripClientSuffix } from './manifest.ts'
++import { parseAdditiveGraph } from './additive.ts'
+ import type {
+   BootManifest, BootModuleRow, ClientBundleRegistration, ClientModuleLoader, ClientModuleRecord,
+   ClientModuleSystemOptions,
+@@ -52,7 +53,8 @@ const claimStyles = (id: string): string[] => {
+  */
+ export class ClientModuleSystem implements ClientModuleLoader {
+   readonly version = 'client'
+-  readonly manifest: BootManifest
++  private acceptedManifest: BootManifest
++  get manifest(): BootManifest { return structuredClone(this.acceptedManifest) }
+   readonly loadCache = new Map<string, ClientModuleRecord>()
+ 
+   private readonly seed: Map<string, unknown>
+@@ -62,6 +64,7 @@ export class ClientModuleSystem implements ClientModuleLoader {
+   private readonly pendingArrival = new Map<string, Promise<void>>()
+   /** Materialization re-entrancy guard: factory-form CJS cannot deliver partial exports, so a cycle is fatal. */
+   private readonly materializing = new Set<string>()
++  private readonly failedFactories = new Map<string, unknown>()
+   private readonly graphRows = new Map<string, BootModuleRow>()
+   private readonly loadBundle: (url: string) => Promise<void>
+ 
+@@ -70,13 +73,13 @@ export class ClientModuleSystem implements ClientModuleLoader {
+    * @param options - Parsed graph, platform seed, bootstrap module, registration facade, and transport.
+    */
+   constructor(options: ClientModuleSystemOptions) {
+-    this.manifest = options.manifest
++    this.acceptedManifest = structuredClone(options.manifest)
+     this.seed = new Map(Object.entries(options.staticModules))
+     this.loadBundle = options.loadBundle ?? defaultLoadBundle
+ 
+     for (const row of options.manifest.modules) {
+       if (this.graphRows.has(row.id)) throw new Error(`client-modules: duplicate graph entry "${row.id}"`)
+-      this.graphRows.set(row.id, row)
++      this.graphRows.set(row.id, structuredClone(row))
+     }
+ 
+     const bootstrapId = stripClientSuffix(options.bootstrapModule.id)
+@@ -103,6 +106,7 @@ export class ClientModuleSystem implements ClientModuleLoader {
+   /** Register one bundle factory, rejecting a script that executes twice without invalidation. */
+   private register(registration: ClientBundleRegistration): void {
+     const id = stripClientSuffix(registration.id)
++    if (!this.graphRows.has(id) || typeof registration.factory !== 'function') throw new Error('client-modules: registration is not an admitted module factory')
+     if (this.bootstrapIds.has(id) || this.factories.has(id)) {
+       throw new Error(`client-modules: duplicate factory registration for "${registration.id}" (bundle executed twice without invalidate?)`)
+     }
+@@ -145,6 +149,7 @@ export class ClientModuleSystem implements ClientModuleLoader {
+ 
+   /** Materialize a registered factory (synchronous; memoized in loadCache). */
+   private materialize(id: string): ClientModuleRecord {
++    if (this.failedFactories.has(id)) throw this.failedFactories.get(id)
+     const existing = this.loadCache.get(id)
+     if (existing !== undefined) return existing
+     const registered = this.factories.get(id)
+@@ -160,6 +165,9 @@ export class ClientModuleSystem implements ClientModuleLoader {
+       const record: ClientModuleRecord = { id, exports, styles: claimStyles(id), edges }
+       this.loadCache.set(id, record)
+       return record
++    } catch (error) {
++      this.failedFactories.set(id, error)
++      throw error
+     } finally {
+       this.materializing.delete(id)
+     }
+@@ -211,10 +219,20 @@ export class ClientModuleSystem implements ClientModuleLoader {
+     await this.arriveGraphRow(row)
+   }
+ 
++  /** Admit only additive same-origin metadata; never replace imported code. */
++  admitGraph(wire: unknown): BootManifest {
++    const reserved = new Set([...this.seed.keys(), ...[...this.bootstrapIds].filter(id => !this.graphRows.has(id))])
++    const next = parseAdditiveGraph(wire, this.acceptedManifest, reserved)
++    for (const row of next.modules) if (!this.graphRows.has(row.id)) this.graphRows.set(row.id, structuredClone(row))
++    this.acceptedManifest = structuredClone(next)
++    return structuredClone(next)
++  }
++
+   invalidate(id: string): void {
+     const normalized = stripClientSuffix(id)
+     if (this.bootstrapIds.has(normalized)) return
+     this.factories.delete(normalized)
+     this.loadCache.delete(normalized)
++    this.failedFactories.delete(normalized)
+   }
+ }
+diff --git a/packages/client/modules/src/graph-events.ts b/packages/client/modules/src/graph-events.ts
+new file mode 100644
+index 00000000..cdf88848
+--- /dev/null
++++ b/packages/client/modules/src/graph-events.ts
+@@ -0,0 +1,36 @@
++/** Production metadata subscription: no file polling or source-code HMR. */
++import type { IncomingMessage, ServerResponse } from 'node:http'
++import type { WebBootGraph } from './client/manifest.ts'
++
++export function createGraphEvents(source: { graph(): WebBootGraph, onGraphChanged(fn: () => void): () => void }): {
++  handle(req: IncomingMessage, res: ServerResponse): void
++  dispose(): void
++} {
++  const clients = new Set<ServerResponse>()
++  let stopped = false
++  const send = (res: ServerResponse): void => {
++    if (res.destroyed || res.writableLength > 1048576) { clients.delete(res); res.destroy(); return }
++    const body = JSON.stringify(source.graph())
++    if (body.length > 2097152) { clients.delete(res); res.end(); return }
++    res.write(`data: ${body}\n\n`)
++  }
++  const unsubscribe = source.onGraphChanged(() => { for (const res of clients) send(res) })
++  return {
++    handle(req, res) {
++      if (req.method !== 'GET') { res.writeHead(405); res.end(); return }
++      if (stopped || clients.size >= 32) { res.writeHead(503); res.end(); return }
++      res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no' })
++      clients.add(res)
++      res.on('close', () => { clients.delete(res) })
++      // Register first, then read the newest full snapshot: reconnect cannot
++      // miss an addition between subscription and initial publication.
++      send(res)
++    },
++    dispose() {
++      if (stopped) return
++      stopped = true; unsubscribe()
++      for (const res of clients) res.end()
++      clients.clear()
++    },
++  }
++}
+diff --git a/packages/client/modules/src/index.ts b/packages/client/modules/src/index.ts
+index 58800dda..1bf6eb20 100644
+--- a/packages/client/modules/src/index.ts
++++ b/packages/client/modules/src/index.ts
+@@ -28,6 +28,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
+ import { createRequire } from 'node:module'
+ import { dirname, join } from 'node:path'
+ import { Service } from '@deepseek-ai/cordis'
++import { createGraphEvents } from './graph-events.ts'
+ import type { Context } from '@deepseek-ai/cordis'
+ import type {} from '@deepseek-ai/cordis-plugin-loader'
+ import type { IndexInjection } from '@deepseek-ai/dsh-host-webserver'
+@@ -340,6 +341,11 @@ export class ClientModuleRegistry extends Service {
+       () => ctx.webServer.register({ kind: 'prefix', path: '/plugins', handler: this.serveBundle }),
+       'client-modules: bundle route',
+     )
++    const graphEvents = createGraphEvents(this)
++    ctx.effect(() => {
++      const unregister = ctx.webServer.register({ kind: 'exact', path: '/plugins/graph-events', handler: graphEvents.handle })
++      return () => { graphEvents.dispose(); unregister() }
++    }, 'client-modules: additive graph subscription')
+     ctx.on('webserver/index-inject', (table) => {
+       table.push(...bootInjections(this.composed))
+     })
+diff --git a/packages/client/modules/tests/ADDITIVE-LIVE.md b/packages/client/modules/tests/ADDITIVE-LIVE.md
+new file mode 100644
+index 00000000..4d86df60
+--- /dev/null
++++ b/packages/client/modules/tests/ADDITIVE-LIVE.md
+@@ -0,0 +1,11 @@
++# ISSUE-028 bounded production additive graph
++
++This candidate adds ordinary Web metadata subscription, not development code HMR. The Host publishes its current graph immediately on same-origin SSE connection and after graph changes. The client validates the whole snapshot before adding any module rows, then uses existing prefetch and native Loader creation. Existing module/plugin metadata changes, removal and reordering reject the snapshot with needs-restart; later valid snapshots remain admissible. No page reload is performed.
++
++The wire only admits canonical package IDs and `/plugins/<id>/client.js?rev=<12-hex>` URLs. `/client` remains the existing module-system alias, so a root package whose name collides with that suffix is not newly supported. Static seed and bootstrap identities cannot be replaced. Current authority is privately copied. A factory that throws receives a tombstone until explicit invalidate (the separate development contract); another module cannot replay it through require.
++
++The consumer keeps one latest pending snapshot and one execution queue. Transport prefetch failures can retry on later snapshots; after Loader creation starts, failures are not implicitly replayed. Each prefetch/create wait is bounded to 30 seconds and cancelled at scope disposal. The Loader owner tracks only its newly created IDs, drains normal cleanup and preserves initial entries. Non-cooperative arbitrary JavaScript cannot be forcibly terminated in-process: cleanup exceeding 5 seconds reports needs-restart and must not be called a successful unload.
++
++Standalone Linux Node24 regression: `TSX_TSCONFIG_PATH=$PWD/tsconfig.live-smoke.json node --import tsx/esm --test packages/client/modules/tests/additive-live.smoke.ts`. Nine tests cover hostile/changed snapshots, recovery, real Loader identity/disposal, pending prefetch/create cancellation, cooperative late apply, failed factory dependency replay and real HTTP SSE reconnect/disposal. These are not the complete upstream coverage/browser gates.
++
++Small strict emit: `tsc -p tsconfig.live-modules.json`; then from this package use its original `tsdown.config.ts` to build both faces. Only installed rc2 dependencies and existing build tools are linked; no full monorepo installation or compilation is needed. Browser acceptance must separately verify an existing tab gains the real AutoReview entry without refresh and can persist settings. At this commit that second browser acceptance is still pending; earlier Eawiaf proved backend activation but failed same-tab arrival before this candidate.
+diff --git a/packages/client/modules/tests/additive-live.smoke.ts b/packages/client/modules/tests/additive-live.smoke.ts
+new file mode 100644
+index 00000000..2e3a4ec8
+--- /dev/null
++++ b/packages/client/modules/tests/additive-live.smoke.ts
+@@ -0,0 +1,124 @@
++import test from 'node:test'
++import assert from 'node:assert/strict'
++import { createServer } from 'node:http'
++import { Context } from '@deepseek-ai/cordis'
++import Loader from '@deepseek-ai/cordis-plugin-loader'
++import { ClientModuleSystem } from '../src/client/system.ts'
++import { parseBootManifest } from '../src/client/manifest.ts'
++import type { ClientModuleLoaderTarget, WebBootEntry } from '../src/client/manifest.ts'
++import { createAdditiveConsumer } from '../src/client/live-graph.ts'
++import { createLoaderAdmission } from '../src/client/loader-admission.ts'
++import { createGraphEvents } from '../src/graph-events.ts'
++
++const row = (id: string): WebBootEntry => ({id,rev:'abcdef012345',url:`/plugins/${id}/client.js?rev=abcdef012345`,external:[]})
++const graph = (...entries: WebBootEntry[]) => ({rev:'123456abcdef',entries})
++const base = row('bootstrap')
++
++test('native Loader admission owns only added rows and removes them on consumer disposal',async()=>{
++  const m=system();m.admitGraph(graph(base,row('new')))
++  const ctx=new Context();await ctx.plugin(Loader);ctx.loader.internal=m as never
++  const oldId=await ctx.loader.create({name:'bootstrap'}),old=ctx.loader.resolve(oldId).fiber
++  const errors:unknown[]=[];const admission=createLoaderAdmission(ctx,e=>errors.push(e))
++  try {await m.prefetch('new');await admission.create('new',new AbortController().signal);assert.equal(ctx.get('live-new'),true);await admission.dispose();assert.equal(ctx.get('live-new'),undefined);assert.equal(ctx.loader.resolve(oldId).fiber,old);assert.equal(errors.length,0)}
++  finally{await admission.dispose();await ctx.fiber.dispose()}
++})
++
++test('consumer disposal cancels an unresolved create without waiting forever',async()=>{
++  let called=false
++  const c=createAdditiveConsumer({modules:system(),create:async()=>{called=true;await new Promise(()=>{})},report:()=>{}})
++  c.push(JSON.stringify(graph(base,row('new'))));await until(()=>called)
++  await Promise.race([c.dispose(),new Promise((_,reject)=>setTimeout(()=>reject(Error('dispose hung')),200))])
++})
++
++test('cancel a real in-flight apply, drain cooperative cleanup and prevent late service registration',async()=>{
++  const target={mode:'queue',pendingQueue:[],load(){}} as unknown as ClientModuleLoaderTarget
++  const gate=Promise.withResolvers<void>();let entered=false
++  const m=new ClientModuleSystem({manifest:parseBootManifest(graph(base)),staticModules:{},registrationTarget:target,bootstrapModule:{id:'bootstrap',exports:{apply(){}}},loadBundle:async()=>{target.load({id:'slow',factory:()=>({async apply(ctx: Context){entered=true;await gate.promise;ctx.provide('late-live-service',true)}})})}})
++  const ctx=new Context();await ctx.plugin(Loader);ctx.loader.internal=m as never
++  const errors:unknown[]=[];const admission=createLoaderAdmission(ctx,e=>errors.push(e))
++  const consumer=createAdditiveConsumer({modules:m,create:admission.create,report:e=>errors.push(e)})
++  try {
++    consumer.push(JSON.stringify(graph(base,row('slow'))));await until(()=>entered)
++    await consumer.dispose();const closing=admission.dispose()
++    gate.resolve();await closing
++    await until(()=>![...ctx.loader.entries()].some(entry=>entry.options.name==='slow'))
++    assert.equal(ctx.get('late-live-service'),undefined)
++  } finally {gate.resolve();await consumer.dispose();await admission.dispose();await ctx.fiber.dispose()}
++})
++
++test('bootstrap outside initial graph is reserved and failed factory cannot replay via new dependency',async()=>{
++  const target={mode:'queue',pendingQueue:[],load(){}} as unknown as ClientModuleLoaderTarget
++  let effects=0
++  const m=new ClientModuleSystem({manifest:parseBootManifest(graph()),staticModules:{},registrationTarget:target,bootstrapModule:{id:'bootstrap',exports:{}},loadBundle:async url=>{const id=url.slice('/plugins/'.length).split('/client.js?')[0]!;target.load({id,factory:require=>{if(id==='a'){effects++;throw Error('factory failed')}return {dependency:require('a')}}})}})
++  assert.throws(()=>m.admitGraph(graph(base)))
++  m.admitGraph(graph(row('a')));await assert.rejects(m.import('a'));assert.equal(effects,1)
++  m.admitGraph(graph(row('a'),{...row('b'),external:['a']}));await assert.rejects(m.import('b'));assert.equal(effects,1)
++})
++function system(load?: (id: string) => Promise<void>) {
++  const target = {mode:'queue',pendingQueue:[],load(){}} as unknown as ClientModuleLoaderTarget
++  const modules = new ClientModuleSystem({manifest:parseBootManifest(graph(base)),staticModules:{react:{}},registrationTarget:target,bootstrapModule:{id:base.id,exports:{apply(){}}},loadBundle:async url=>{
++    const id=url.slice('/plugins/'.length).split('/client.js?')[0]!
++    await load?.(id)
++    target.load({id,factory:()=>({apply(ctx: Context){ctx.provide(`live-${id}`,true)}})})
++  }})
++  return modules
++}
++async function until(fn:()=>boolean){const end=Date.now()+3000;while(!fn()){if(Date.now()>end)throw Error('timeout');await new Promise(r=>setTimeout(r,5));}}
++
++test('strict wire preserves original modules and permits recovery after rejected snapshots',()=>{
++  const m=system(), before=m.manifest
++  const cases: unknown[]=[graph(),graph({...base,rev:'ffffffffffff'}),graph({...base,inject:['changed']}),graph(base,base),graph(base,row('react')),graph(base,row('bad/client')),graph(base,{...row('new'),url:'https://evil.invalid/x'}),graph(base,{...row('new'),extra:1}),{...graph(base),extra:1},graph(base,{...row('new'),external:['missing']}),graph(base,{...row('a'),external:['b']},{...row('b'),external:['a']})]
++  for(const value of cases){assert.throws(()=>m.admitGraph(value));assert.deepEqual(m.manifest,before)}
++  const wire=graph(base,row('new'));m.admitGraph(wire);wire.entries[1]!.url='https://evil.invalid/'
++  const projection=m.manifest;projection.modules[1]!.url='bad'
++  assert.equal(m.manifest.modules[1]!.url,row('new').url)
++  assert.throws(()=>m.admitGraph(graph({...base,url:'/bad'},row('new'))))
++  assert.equal(m.admitGraph(graph(base,row('new'),row('next'))).modules.length,3)
++})
++
++test('prefetch failure retries same snapshot; real Loader creates new fiber once and preserves old fiber',async()=>{
++  let tries=0
++  const m=system(async()=>{if(++tries===1)throw Error('temporary transport')})
++  const ctx=new Context();await ctx.plugin(Loader);ctx.loader.internal=m as never
++  const oldId=await ctx.loader.create({name:'bootstrap'}),old=ctx.loader.resolve(oldId).fiber
++  const created:string[]=[],errors:unknown[]=[]
++  const consumer=createAdditiveConsumer({modules:m,report:e=>errors.push(e),create:async name=>{const id=await ctx.loader.create({name});await ctx.loader.resolve(id).fiber?.inertia;assert.equal(ctx.loader.resolve(id).fiber?.state,2);created.push(name)}})
++  try{
++    const data=JSON.stringify(graph(base,row('new')))
++    consumer.push(data);await until(()=>errors.length===1);assert.equal(created.length,0)
++    consumer.push(data);await until(()=>created.length===1);consumer.push(data);consumer.push(JSON.stringify(graph(base,row('new'),row('second'))));await until(()=>created.length===2)
++    assert.deepEqual(created,['new','second']);assert.equal(ctx.loader.resolve(oldId).fiber,old);assert.equal(ctx.get('live-new'),true)
++  }finally{await consumer.dispose();await ctx.fiber.dispose()}
++})
++
++test('dispose during prefetch never creates late fiber',async()=>{
++  const gate=Promise.withResolvers<void>();let entered=false,created=0
++  const m=system(async()=>{entered=true;await gate.promise})
++  const c=createAdditiveConsumer({modules:m,create:async()=>{created++},report:()=>{}})
++  c.push(JSON.stringify(graph(base,row('new'))));await until(()=>entered);await c.dispose();gate.resolve();await new Promise(r=>setTimeout(r,10));assert.equal(created,0)
++  c.push(JSON.stringify(graph(base,row('new'))));assert.equal(created,0)
++})
++
++test('invalid snapshot followed synchronously by good snapshot does not lose tail; apply failure is not replayed',async()=>{
++  let calls=0;const errors:unknown[]=[]
++  const c=createAdditiveConsumer({modules:system(),create:async()=>{calls++;throw Error('apply failed')},report:e=>errors.push(e)})
++  c.push('{}');c.push(JSON.stringify(graph(base,row('new'))));await until(()=>calls===1)
++  c.push(JSON.stringify(graph(base,row('new'))));await new Promise(r=>setTimeout(r,20));assert.equal(calls,1);assert.ok(errors.length>=2);await c.dispose()
++})
++
++test('real HTTP SSE publishes new snapshots, reconnects to latest and closes on dispose',async()=>{
++  let current=graph(base);const listeners=new Set<()=>void>()
++  const events=createGraphEvents({graph:()=>current,onGraphChanged:fn=>{listeners.add(fn);return()=>listeners.delete(fn)}})
++  const server=createServer(events.handle);await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const address=server.address();assert.ok(address&&typeof address!=='string');const url=`http://127.0.0.1:${address.port}`
++  const abort=new AbortController()
++  try{
++    assert.equal((await fetch(url,{method:'POST'})).status,405)
++    const response=await fetch(url,{signal:abort.signal});const reader=response.body!.getReader()
++    assert.match(new TextDecoder().decode((await reader.read()).value),/bootstrap/)
++    current=graph(base,row('new'));for(const listener of listeners)listener()
++    assert.match(new TextDecoder().decode((await reader.read()).value),/new/);await reader.cancel()
++    current=graph(base,row('new'),row('latest'))
++    const reconnected=await fetch(url,{signal:abort.signal});const second=reconnected.body!.getReader();assert.match(new TextDecoder().decode((await second.read()).value),/latest/)
++    events.dispose();assert.equal((await second.read()).done,true);assert.equal(listeners.size,0)
++  }finally{abort.abort();events.dispose();server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()))}
++})
+diff --git a/tsconfig.live-modules.json b/tsconfig.live-modules.json
+new file mode 100644
+index 00000000..4cd0b070
+--- /dev/null
++++ b/tsconfig.live-modules.json
+@@ -0,0 +1,10 @@
++{
++ "compilerOptions": {
++  "target":"ES2024", "module":"ESNext", "moduleResolution":"bundler",
++  "rootDir":"packages/client/modules/src", "outDir":"packages/client/modules/lib/types",
++  "strict":true, "skipLibCheck":true, "rewriteRelativeImportExtensions":true,
++  "declaration":true, "noEmitOnError":true,
++  "typeRoots":["./.live-build-deps/node_modules/@types","./node_modules/@types"]
++ },
++ "include":["packages/client/modules/src/**/*.ts"]
++}
+-- 
+2.43.0
+

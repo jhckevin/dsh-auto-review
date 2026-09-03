@@ -1,0 +1,70 @@
+From b9d1317287dd122188210cf7775017462f45cd86 Mon Sep 17 00:00:00 2001
+From: jhckevin <jhckevin@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 09:28:19 +0000
+Subject: [PATCH] =?UTF-8?q?test(ISSUE-028):=20=E9=AA=8C=E6=94=B6=E7=9C=9F?=
+ =?UTF-8?q?=E5=AE=9E=E6=8F=92=E4=BB=B6=E5=90=8C=E9=A1=B5=E7=83=AD=E5=87=BA?=
+ =?UTF-8?q?=E7=8E=B0=E5=B9=B6=E4=BF=9D=E7=95=99=E8=AF=81=E6=8D=AE=E8=BE=B9?=
+ =?UTF-8?q?=E7=95=8C?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ apps/cli/tests/LIVE-BUNDLES.md                   | 6 ++++++
+ apps/cli/tests/auto-review-hot-install.smoke.mjs | 9 ++++++++-
+ packages/client/modules/tests/ADDITIVE-LIVE.md   | 2 ++
+ 3 files changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/apps/cli/tests/LIVE-BUNDLES.md b/apps/cli/tests/LIVE-BUNDLES.md
+index 39fe0596..029cb6cd 100644
+--- a/apps/cli/tests/LIVE-BUNDLES.md
++++ b/apps/cli/tests/LIVE-BUNDLES.md
+@@ -37,3 +37,9 @@ The independent observer waits for real `actionReview`/`actionReviewSettings` se
+ Bounded backend success evidence: `real-auto-review-JiSb1k` under the evidence parent above; real CLI install, settings revision 0 to 1 and effective sandboxDefaultAllow true to false. Failed runs (including missing peer and wrong proxy-identity assertion) remain available. One complete private install/store consumes about 68MB. The test makes no claim of API/reviewer approval, action execution, native trust authentication, or browser success.
+ 
+ Optional `DSH_LIVE_BROWSER_GATES=1` writes `before-install.json` with localhost URL and PID, waits up to 300 seconds for an `INSTALL` file, executes the actual CLI, then waits up to 300 seconds for `FINISH`. The test's finally closes web; its outer deadline is 700 seconds. A supervising SSH executor may impose a shorter timeout. Browser evidence must be collected separately and must not infer arrival by refreshing away a failed hot-add state.
++
++## ISSUE-028 ordinary Web browser acceptance
++
++Optional `DSH_LIVE_MODULES_DIR` points at the locally built client/modules package. Only the new private ancestor symlink is overridden; existing installed peers remain unchanged. Build both faces with the original package tsdown configuration after `tsc -p tsconfig.live-modules.json`. Verify the actual HTTP-served client bundle hash against the built file, plus the ordinary `/plugins/graph-events` SSE response, rather than inferring runtime selection from the symlink alone.
++
++With the ISSUE-028 core frozen at d229f776, the backend-only repetition `real-auto-review-dPIkGc` passed. Browser gate `real-auto-review-olTsC9` then served the new bundle (SHA256 a650aa481494b69611e20f06fde0f3801bebf914e2fb1a6b65ad2cb005acc6ab), HTTP 200 and an initial SSE snapshot. The root agent independently observed the already-open Settings panel gain AutoReview after actual CLI installation, without navigation, reload or closing/reopening Settings. It opened the real settings UI and saved sandboxDefaultAllow false to true, receiving the success message. A separate server read confirmed the synthetic profile persisted true. The observer registration.json records the earlier initialization revision, not the later browser-save runtime value; do not cite it as a continuous runtime probe. Browser screenshots and outcome are separately owned by the root agent. This is one bounded browser trace, not a claim that complete upstream GUI/coverage, all browsers, upgrades or removals passed.
+diff --git a/apps/cli/tests/auto-review-hot-install.smoke.mjs b/apps/cli/tests/auto-review-hot-install.smoke.mjs
+index 7320fe80..64ce3069 100644
+--- a/apps/cli/tests/auto-review-hot-install.smoke.mjs
++++ b/apps/cli/tests/auto-review-hot-install.smoke.mjs
+@@ -1,6 +1,6 @@
+ import test from 'node:test';
+ import assert from 'node:assert/strict';
+-import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,existsSync,symlinkSync,readdirSync,realpathSync} from 'node:fs';
++import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,existsSync,symlinkSync,readdirSync,realpathSync,unlinkSync} from 'node:fs';
+ import {createRequire} from 'node:module';
+ import {resolve,join} from 'node:path';
+ import {fileURLToPath} from 'node:url';
+@@ -23,6 +23,13 @@ test('real AutoReview release bundle installs into running web with native defau
+     for(const name of readdirSync(scope)){const dest=join(peers,name);if(!existsSync(dest))symlinkSync(realpathSync(join(scope,name)),dest,'dir');}
+   }
+   const overrides=Object.fromEntries(packages.map(p=>[p.pkg.name,`file:${p.path}`]));
++  if(process.env.DSH_LIVE_MODULES_DIR){
++    const candidate=realpathSync(process.env.DSH_LIVE_MODULES_DIR);
++    assert.equal(JSON.parse(readFileSync(join(candidate,'package.json'),'utf8')).name,'@deepseek-ai/dsh-client-modules');
++    assert.ok(existsSync(join(candidate,'lib/client.js'))&&existsSync(join(candidate,'lib/index.js')));
++    const target=join(peers,'dsh-client-modules');if(existsSync(target))unlinkSync(target);symlinkSync(candidate,target,'dir');
++    writeFileSync(join(dir,'modules-override.json'),JSON.stringify({candidate}));
++  }
+   // Bundle roots do not expose every transitive peer (e.g. dsh-settings).
+   // Link actual installed peers, never synthetic implementations or new versions.
+   const owners=readdirSync(peers).map(name=>createRequire(realpathSync(join(peers,name,'package.json'))));
+diff --git a/packages/client/modules/tests/ADDITIVE-LIVE.md b/packages/client/modules/tests/ADDITIVE-LIVE.md
+index 4d86df60..66cc8593 100644
+--- a/packages/client/modules/tests/ADDITIVE-LIVE.md
++++ b/packages/client/modules/tests/ADDITIVE-LIVE.md
+@@ -9,3 +9,5 @@ The consumer keeps one latest pending snapshot and one execution queue. Transpor
+ Standalone Linux Node24 regression: `TSX_TSCONFIG_PATH=$PWD/tsconfig.live-smoke.json node --import tsx/esm --test packages/client/modules/tests/additive-live.smoke.ts`. Nine tests cover hostile/changed snapshots, recovery, real Loader identity/disposal, pending prefetch/create cancellation, cooperative late apply, failed factory dependency replay and real HTTP SSE reconnect/disposal. These are not the complete upstream coverage/browser gates.
+ 
+ Small strict emit: `tsc -p tsconfig.live-modules.json`; then from this package use its original `tsdown.config.ts` to build both faces. Only installed rc2 dependencies and existing build tools are linked; no full monorepo installation or compilation is needed. Browser acceptance must separately verify an existing tab gains the real AutoReview entry without refresh and can persist settings. At this commit that second browser acceptance is still pending; earlier Eawiaf proved backend activation but failed same-tab arrival before this candidate.
++
++Follow-up browser evidence (2026-09-03): the root agent observed PASS in `real-auto-review-olTsC9` with core d229f776. Actual CLI installation added AutoReview to the already-open Settings panel without navigation/reload/reopen; the real UI opened and saved sandboxDefaultAllow false to true. Served client SHA256 was a650aa481494b69611e20f06fde0f3801bebf914e2fb1a6b65ad2cb005acc6ab, equal to the local original-preset build, and ordinary graph SSE returned 200. Independent server inspection confirmed the synthetic settings file persisted true. There was no post-save runtime observer, so the earlier registration snapshot must not be represented as that evidence. The controlled web process exited normally after FINISH. This single browser acceptance does not close the full upstream GUI/coverage gates or establish hot upgrades/removal.
+-- 
+2.43.0
+

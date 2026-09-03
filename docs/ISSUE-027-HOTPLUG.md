@@ -27,7 +27,7 @@ npm install --prefix /opt/dsh-auto-review-native/0.1.0-rc.1 --offline --ignore-s
 export DSH_AUTO_REVIEW_NATIVE_RUNTIME=/opt/dsh-auto-review-native/0.1.0-rc.1/node_modules/@jhckevin/dsh-auto-review-bridge-linux-x64-gnu
 ```
 
-DSH profile 使用原生 `dsh plugin --profile web add` 入口安装候选制品（未发布前必须同时提供 host/platform 的本地 tgz，不能让包管理器请求不存在的 registry 版本）。公开发布后才改成版本化包名。配套宿主补丁针对固定 DSH rc.2 基线，顺序应用 `patches/dsh-rc2-web-live-bundle-discovery.patch`、`patches/dsh-rc2-web-live-bundle-tail-events.patch`，最后应用测试可移植性修补 `patches/dsh-rc2-web-live-bundle-test-portability.patch`。首次应用宿主补丁本身需要构建和重启，之后才有新增 bundle 的 live discovery。不能声称一个尚未加载的插件能自行更新宿主的包发现器。
+DSH profile 使用原生 `dsh plugin --profile web add` 入口安装候选制品（未发布前必须同时提供 host/platform 的本地 tgz，并按 INSTALL-CANDIDATE 准备 pnpm overrides 与相同宿主 peers，不能请求不存在的 registry 版本）。公开发布后才改成版本化包名。针对固定 DSH rc.2 基线依次应用 `patches/` 下的 `dsh-rc2-web-live-bundle-discovery.patch`、`dsh-rc2-web-live-bundle-tail-events.patch`、`dsh-rc2-web-live-bundle-test-portability.patch`、`dsh-rc2-web-live-real-plugin-test.patch`、`dsh-rc2-web-additive-client-graph.patch`、`dsh-rc2-web-additive-client-acceptance.patch`。首次应用宿主补丁本身需要构建和重启，之后才有新增 bundle 的 live discovery 和已打开客户端的新增入口接纳。不能声称一个尚未加载的插件能自行更新宿主的包发现器。
 
 ## 热操作的承诺范围
 
@@ -35,7 +35,7 @@ DSH profile 使用原生 `dsh plugin --profile web add` 入口安装候选制品
 |---|---|
 | 已加载 reviewer provider 关闭、再开启 | 取消旧请求、释放 owner，重新启用创建新 owner |
 | 修改普通插件配置 | 使用 Cordis 生命周期；用户持久配置不被同值默认配置覆盖 |
-| 安装一个尚未加载的新 bundle | 需要配套 DSH web live-discovery 补丁；原版仅重启后发现 |
+| 安装一个尚未加载的新 bundle | 配套 host discovery 与 normal client additive-graph 补丁后，已打开 WebUI 可不刷新出现入口；本轮真实包验证通过 |
 | 删除/替换已经导入的 host 包 | 提示需要重启，保留旧保护；不宣称支持 Node host 代码热替换 |
 | 同路径同 manifest 原地改代码 | 不支持；发布应升版本，不做生产目录原地写入 |
 | alpha DSH | 尚未完成本轮热安装适配，不混用 rc peer 版本 |
@@ -55,6 +55,10 @@ DSH profile 使用原生 `dsh plugin --profile web add` 入口安装候选制品
 - 本轮未调用付费模型 API；不以生命周期 fixture 声称真实 Flash 风险判断验收。
 - 实际 Auto Review tgz 已通过正在运行的 CLI 离线安装：六个 Loader 配置行注册，settings namespace 挂载，设置 RPC 写入并由运行时读取；测试使用受控 rc.2 peer graph，不是公共 registry 安装证明，也不代表六个组件所有行为都已执行。
 - 首次真实浏览器热到达验收 **FAIL**，证据 `real-auto-review-Eawiaf/browser-outcome.json` 保留。同一已打开页面在安装后、关闭重开设置后均没有新选项卡；明确刷新页面后才出现。刷新后保存成功且磁盘配置吻合，只证明刷新路径可用，不能覆盖热到达失败。根因是普通客户端只在 bootstrap 接纳 module graph，尚无新增 graph 的消费通道；开发 HMR 也不能代替生产路径。
+- 该缺口由 DSH `d229f776face86b920952d7f0092e7e20dddc775`（ISSUE-028，`patches/dsh-rc2-web-additive-client-graph.patch`）补齐：普通 Web 接收同源完整 graph 快照，仅接纳新增模块，沿原 Loader 创建入口；不刷新、不使用开发 HMR、不重建既有模块。保护 bootstrap/static 身份、拒绝修改/删除既有元数据、失败 factory 不重放；scope 停用取消任务并清理新增条目。无法合作退出的任意 JS 超过 5 秒仅报告 needs-restart，不能保证强停其副作用。
+- 上述模块由独立审查重跑 9/9 通过：真实 Loader、迟到 apply、基础条目保留、取消、失败依赖防重放及真实 HTTP SSE 重连/终止。已做严格小范围 TypeScript 检查和原版 tsdown 双端构建，不冒充完整上游 CI。
+- 第二轮真实浏览器 `real-auto-review-olTsC9/browser-outcome.json` **PASS**：先打开设置且无 Auto Review，真实 CLI 安装后，同标签页、同一打开的设置窗口直接出现入口；全过程未刷新或关闭重开。打开插件页、将 sandboxDefaultAllow 从 false 改为 true 并保存，UI 显示实时生效；独立服务器检查确认持久化 true。保存后未配置另一独立 runtime observer，因此不另行声称独立读到了保存后的运行态值。本轮没有模型调用/实际编码会话，也没有验证 SVG owner 插槽。
+- 浏览器实际收到的 modules client bundle SHA256 为 `a650aa481494b69611e20f06fde0f3801bebf914e2fb1a6b65ad2cb005acc6ab`，与本次构建吻合，`/plugins/graph-events` 返回 200 SSE；证据同目录 `serving-proof.json`。热到达成功是配套宿主补丁下的结果，不是官方未修改 rc.2 的能力。
 - npm/GitHub 尚未发布。公开 registry 可解析、最新 DSH 兼容、完整浏览器安装体验仍须分别验收，不能仅凭 `private:false` 声称公众已能安装。
 
 最终打包测试支持 `DSH_BRIDGE_ARTIFACTS`（JSON 数组，列出精确 staged host/platform tgz 路径）执行离线安装。它验证本地制品，不伪造 registry 发布结果。公开后应以实际 registry 制品和独立用户环境再次执行洁净安装。
@@ -65,3 +69,5 @@ DSH profile 使用原生 `dsh plugin --profile web add` 入口安装候选制品
 - linux-x64-gnu tgz SHA256：`7e879d7384d2ede31ddeca0928d85e7f6203734232b49ea0aa8a32324424a24d`
 - bridge 源码：`a25421efb28d290e40d84572039be75b94ff2099`；其源码归档记录在后续证据提交 `ac7214b681ca08c999cfe21c870af6a323ff2fd8`。
 - 平台许可声明材料已随包保存；不将声明覆盖率冒充原始上游 LICENSE 文件齐全或法律认证。
+
+已用独立临时 Git index 从基线 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e` 依次应用上述六个补丁，最终 tree 与冻结 DSH 提交 `b9d1317287dd122188210cf7775017462f45cd86` 完全一致。热安装测试接线补丁只用于验证，不替代生产版本管理。首次升级宿主须重启，此后的新增插件安装才是本轮验证的热操作。所有候选制品仍未公开发布，须继续遵守 ISSUE-026 的其他发布门禁。
