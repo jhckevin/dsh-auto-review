@@ -1,0 +1,55 @@
+name: Native source evidence
+
+on:
+  push:
+    branches: ['**']
+    paths: ['native-audit/**', 'vendor/native-audit/**', '.github/workflows/native-audit.yml']
+  pull_request:
+    paths: ['native-audit/**', 'vendor/native-audit/**', '.github/workflows/native-audit.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-audit-source-and-negative-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+      - name: Verify frozen source and safely extract material
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'da9609f455a4a69f28de10116d23563cdbb425fd2e9758726a0853e7b2cc1bc8  vendor/native-audit/native-audit-source.tar.gz' | sha256sum --check
+          mkdir -p artifacts
+          python3 -m tarfile -e vendor/native-audit/native-audit-source.tar.gz artifacts --filter data
+          for source in native-audit/src/*; do
+            cmp "$source" "artifacts/native-audit/$(basename "$source")"
+          done
+      - name: Real bounded runner and source-material negative tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd artifacts/native-audit
+          mkdir -p dist
+          node --test development-runner.test.mjs evidence-gates.test.mjs license-source-gate.test.mjs 2>&1 | tee ../native-node.log
+          python3 license-evidence.test.py 2>&1 | tee ../native-license.log
+          python3 source-archive.test.py 2>&1 | tee ../native-archive.log
+      - name: Upload source gate logs, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-source-evidence-${{ github.sha }}
+          path: artifacts/*.log
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Explain gate boundary
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          printf 'Source/material/negative tests: %s. This is NOT full Rust/Bazel, native binary, legal or production certification.\n' "$JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
