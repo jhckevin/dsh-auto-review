@@ -1,14 +1,14 @@
 ## Public candidate installation and CI
 
-Use [INSTALL](docs/INSTALL-CANDIDATE.md) and [PREVIEW](docs/GITHUB-PREVIEW.md). GitHub Actions retains source/type/behavior/policy/packed-consumer logs and produces 18 checksum-backed assets. This channel is 0.5.7-alpha.2 / DSH 0.1.2-alpha.5; no npm publication, full Guardian certification, native approval or browser hot-install claim. rc2 host patches are not compatible with this channel.
+Use [INSTALL](docs/INSTALL-CANDIDATE.md) and [PREVIEW](docs/GITHUB-PREVIEW.md). GitHub Actions retains source/type/behavior/policy/packed-consumer logs and produces 18 checksum-backed assets. This channel is 0.5.7-alpha.3 / DSH 0.1.2-alpha.5; no npm publication, full Guardian certification, native approval or browser hot-install claim. rc2 host patches are not compatible with this channel.
 
-> Compatibility candidate 0.5.7-alpha.2, DSH 0.1.2-alpha.5: see [current migration scope and unverified installation gates](docs/ISSUE-032-COMPAT.md). Historical sections below are not new validation claims.
+> Compatibility candidate 0.5.7-alpha.3, DSH 0.1.2-alpha.5: see [current migration scope and unverified installation gates](docs/ISSUE-032-COMPAT.md). Historical sections below are not new validation claims.
 
 # DeepSeek Harness Auto Review
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
-当前候选版本：`0.5.7-alpha.1`，仅匹配 DSH `0.1.2-alpha.5`，Node >=24.11.0。
+当前候选版本：`0.5.7-alpha.3`，仅匹配 DSH `0.1.2-alpha.5`，Node 24.20.0。
 
 适配范围和未完成门禁见 [ISSUE-025](docs/ISSUE-025-DSH-COMPAT.md)。以下历史生产门禁命名不代表完整 Guardian、WebUI 或生产环境已经验收；本轮未替换线上服务。
 

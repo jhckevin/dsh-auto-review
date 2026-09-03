@@ -5,9 +5,9 @@ import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 
 const channels = [
-  { channel: 'rc6', dsh: '0.1.0-rc.6', plugin: '0.5.5-rc.2', ref: 'compat/rc6-native-rc2' },
-  { channel: 'rc2', dsh: '0.1.1-rc.2', plugin: '0.5.6-rc.2', ref: 'release/github-rc2' },
-  { channel: 'alpha5', dsh: '0.1.2-alpha.5', plugin: '0.5.7-alpha.2', ref: 'compat/alpha5-native-alpha2' },
+  { channel: 'rc6', dsh: '0.1.0-rc.6', plugin: '0.5.5-rc.3', ref: 'compat/rc6-native-rc2' },
+  { channel: 'rc2', dsh: '0.1.1-rc.2', plugin: '0.5.6-rc.4', ref: 'main' },
+  { channel: 'alpha5', dsh: '0.1.2-alpha.5', plugin: '0.5.7-alpha.3', ref: 'compat/alpha5-native-alpha2' },
 ]
 if (process.argv[2] === '--matrix') {
   console.log(JSON.stringify({ include: channels }))
@@ -29,7 +29,7 @@ assert.ok(dsh.length > 0)
 for (const [name, row] of dsh) assert.equal(row.version, channel.dsh, name)
 const artifacts = ['host', 'linux-x64-gnu'].map(suffix => {
   const name = `@jhckevin/dsh-auto-review-bridge-${suffix}`
-  const file = resolve('vendor/native-bridge', `jhckevin-dsh-auto-review-bridge-${suffix}-0.1.0-rc.1.tgz`)
+  const file = resolve('vendor/native-bridge', `jhckevin-dsh-auto-review-bridge-${suffix}-0.1.0-rc.2.tgz`)
   assert.equal(lock.packages[`node_modules/${name}`].integrity,
     `sha512-${createHash('sha512').update(readFileSync(file)).digest('base64')}`)
   return file
