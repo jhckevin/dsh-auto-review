@@ -9,7 +9,7 @@
 | npm latest / next | 0.1.1-rc.2 | 0.5.6-rc.1 |
 | npm alpha | 0.1.2-alpha.5 | 0.5.7-alpha.1 |
 
-两个候选包不能混装，也不承诺兼容未发布 master。兼容候选版尚非生产发布版；本目录对应表格第一行。
+两个候选包不能混装，也不承诺兼容未发布 master。兼容候选版尚非生产发布版；本目录对应表格第一行。安装顺序、匹配的 UI 补丁和公开安装阻塞见 [候选安装说明](docs/INSTALL-CANDIDATE.md)。
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
@@ -46,7 +46,7 @@
 - `@jhckevin/dsh-auto-review/command`：提供精确动作 `/approve` 与会话级 `/auto-review` 状态命令；
 - `@jhckevin/dsh-auto-review/eval`：从归档审计重建动作漏斗并检查断裂关联。
 
-`cordis.patch.yml` 只负责组合运行时、reviewer、policy、audit 和 command 五个角色。profile 可以替换 reviewer 或 audit sink、关闭 policy，或切换 `shadow/enforcing`，而不修改实现。
+`cordis.patch.yml` 组合 capability、reviewer、settings、policy、audit 和 command 六个角色。profile 可以替换 reviewer 或 audit sink、关闭 policy，或切换 `shadow/enforcing`，而不修改实现。
 
 其他高级插件通过 `ctx.actionReview.registerToolSecurityDescriptor()` 声明闭集 effects、分类和 policy rule。工具名只能由一个 descriptor 占有；冲突会使插件加载失败，卸载/HMR 会撤销贡献。兼容 API `registerActionSemantics()` 只提供粗粒度分类。部署 hard-deny 与显式 sandbox escalation 始终优先于外部描述，避免扩展把硬边界重分类为快速路径。
 

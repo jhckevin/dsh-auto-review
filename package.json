@@ -64,6 +64,7 @@
     "NOTICE",
     "licenses/**",
     "docs/ISSUE-026-OPEN-SOURCE.md",
+    "docs/INSTALL-CANDIDATE.md",
     "patches/**/*.patch",
     "docs/ISSUE-025-DSH-COMPAT.md",
     "docs/ISSUE-025-UI-OWNER-PATCHES.md"
