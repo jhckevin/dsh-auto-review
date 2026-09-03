@@ -26,23 +26,22 @@
 
 前置条件：Linux x86_64/glibc、Node 24.20.0、npm、tar、sha256sum；在全新目录和独立 DSH_HOME 中测试。不全局安装，不复用生产 profile。native runtime 需要管理员预置在运行用户不可写的目录；**插件不会自行 sudo，也不会在部署失败时降级为自动允许**。
 
-### 1. 下载与校验（已发布 rc.2）
+### 1. 按已安装的 DSH 版本下载与校验
 
 以下只下载和校验，不会启动服务；`gh` 使用 GitHub 官方 CLI，公开下载不需要提供模型密钥：
 
 ```sh
-mkdir -p auto-review-preview-downloads
-cd auto-review-preview-downloads
-gh release download v0.5.6-rc.2 --repo jhckevin/dsh-auto-review \
-  --pattern 'auto-review-0.5.6-rc.2-offline-candidate.tar.gz' \
-  --pattern 'jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.1.tgz' \
-  --pattern SHA256SUMS
-sha256sum --ignore-missing --check SHA256SUMS
-mkdir artifacts
-tar -xzf auto-review-0.5.6-rc.2-offline-candidate.tar.gz -C artifacts
+# 只选一行：不要合并不同通道的下载目录。
+TAG=v0.5.6-rc.3       # DSH 0.1.1-rc.2
+# TAG=v0.5.5-rc.2     # DSH 0.1.0-rc.6
+# TAG=v0.5.7-alpha.2  # DSH 0.1.2-alpha.5
+mkdir "auto-review-$TAG-downloads"
+cd "auto-review-$TAG-downloads"
+gh release download "$TAG" --repo jhckevin/dsh-auto-review
+sha256sum --check SHA256SUMS
 ```
 
-也可以在 [Release 页面](https://github.com/jhckevin/dsh-auto-review/releases/tag/v0.5.6-rc.2) 手动下载同名文件。使用下载镜像时，仍必须与本项目 Release 中的 SHA256SUMS 对照。不要将模型 API key 写进下载命令、README 或 profile 的前端配置。
+也可以在 [Release 页面](https://github.com/jhckevin/dsh-auto-review/releases) 下载对应通道的全部附件。草稿不是公众可安装版本；若该 tag 尚无公开 Release，请等待本通道发行，不用别的通道顶替。使用下载镜像时，仍必须与本项目 Release 中的 SHA256SUMS 对照。不要将模型 API key 写进下载命令、README 或 profile 的前端配置。
 
 ### 2. 管理员预置 native runtime
 
@@ -65,7 +64,7 @@ export DSH_AUTO_REVIEW_NATIVE_RUNTIME=/opt/dsh-auto-review-native/0.1.0-rc.1/nod
 
 全新目录测试发现并补齐了上游传递 peer 缺失：公开镜像安装、CLI help/dump-config、loopback HTTP 200、六个插件角色 ACTIVE 已实际通过，没有借用私有祖先依赖图。这只证明冷启动，不代表真实 native 请求、模型风险判断或浏览器热安装通过；证据范围见 [Issue #6](https://github.com/jhckevin/dsh-auto-review/issues/6)。
 
-新版 Actions 制品目录提供全部十个 tgz、SHA256SUMS、`prepare-preview-install.mjs` 和 `public-dsh-family.json`。在该专属下载目录验证校验清单后：
+每个通道的制品目录提供全部运行 tgz、SHA256SUMS、`prepare-preview-install.mjs` 和 `public-dsh-family.json`。rc6/rc2 是十个 tgz；alpha5 另附必需的 `dsh-util-values`，是十一个 tgz。必须使用本通道附带的安装器，不混用脚本或依赖。在该专属下载目录验证校验清单后：
 
 ```sh
 sha256sum --check SHA256SUMS
@@ -84,7 +83,7 @@ npm install
 export DSH_HOME="$PWD/isolated-dsh-home"
 node node_modules/@deepseek-ai/dsh/lib/bin.js --profile web \
   --patch node_modules/@jhckevin/dsh-auto-review/cordis.patch.yml \
-  --host 127.0.0.1 --port 9835 --no-open
+  --host 127.0.0.1 --port 9835
 ```
 
 需要对**运行中的 WebUI 热安装**时，还必须先为对应 DSH 源码应用匹配宿主补丁、按上游方式构建并重启一次。之后才使用 `dsh plugin --profile web add`。不能将 rc2 补丁强行用于 rc6/alpha5；目前两历史通道对 rc2 热发现补丁的实际 apply 检查失败。具体依赖、补丁顺序与权限要求见 [INSTALL-CANDIDATE](docs/INSTALL-CANDIDATE.md)、[热生命周期说明](docs/ISSUE-027-HOTPLUG.md)。使用原生 bundle 自动发现后，不要再次叠加手工 `--patch`。
@@ -102,7 +101,7 @@ node node_modules/@deepseek-ai/dsh/lib/bin.js --profile web \
 - 每次运行的 Artifacts 提供 JUnit、命令日志、成功时的安装包与校验清单，保留 30 天；永久公开版本在 Release。失败步骤不会被改成“跳过即通过”。
 - `build-receipt.json` 标明源码 commit/tree、lock SHA、Node/npm 和 Actions run，便于从制品回查构建。源码 CI 不等于真实模型、浏览器或完整原生门禁通过；这些状态分别记录，不能混为一个绿色 badge。
 
-当前候选版本：`0.5.6-rc.2`，仅匹配 DSH `0.1.1-rc.2`，Node >=24.11.0。表格是已锁定的兼容版本，不代表注册表通道永远不变。
+本分支候选版本：`0.5.6-rc.3`，匹配 DSH `0.1.1-rc.2`，验证环境 Node `24.20.0`。另两个通道使用上表各自候选；表格不代表注册表通道永远不变。
 
 适配范围和未完成门禁见 [ISSUE-025](docs/ISSUE-025-DSH-COMPAT.md)。以下历史生产门禁命名不代表完整 Guardian、WebUI 或生产环境已经验收；本轮未替换线上服务。
 
