@@ -1,7 +1,7 @@
 import { createElement, type ComponentType } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, expect, it, vi } from 'vitest'
-import { apply, AutoReviewCallBadge, AutoReviewNavIcon } from '../src/client/index.tsx'
+import { apply, AutoReviewCallBadge, AutoReviewNavIcon, AutoReviewTurnInterruption } from '../src/client/index.tsx'
 import { ReviewStatusClient } from '../src/client/review-status.ts'
 
 afterEach(() => vi.useRealTimers())
@@ -20,7 +20,19 @@ it('registers the rc.2 navigation glyph and session badge through additive child
   }
   apply(ctx as unknown as Parameters<typeof apply>[0])
   try {
-    expect(entries.map(x => x.options['name'])).toEqual(['settings.section', 'settings.section.icon', 'tool.call.badges'])
+    expect(entries.map(x => x.options['name'])).toEqual(['settings.section', 'settings.section.icon', 'tool.call.badges', 'conversation.chat.turnTail'])
+    const tail = entries[3]!
+    expect(tail.component).toBe(AutoReviewTurnInterruption)
+    expect(tail.options['priority']).toBe(-100)
+    const select = tail.options['select'] as (owner: {turn: {end?: {data: {reason: unknown}}}}) => unknown
+    expect(select({turn: {}})).toBeNull()
+    expect(select({turn: {end: {data: {reason: {kind: 'aborted', reason: {kind: 'user'}}}}}})).toBeNull()
+    const replayedOwner = JSON.parse(JSON.stringify({turn: {end: {data: {reason: {
+      kind: 'aborted', reason: {kind: 'hook', reason: '[AUTO_REVIEW_DENIAL_BREAKER] consecutive=3; denied=3; window=3.'},
+    }}}}})) as Parameters<typeof select>[0]
+    expect(select(replayedOwner)).toEqual({})
+    expect(renderToStaticMarkup(createElement(tail.component as ComponentType<Record<string, unknown>>, replayedOwner)))
+      .toContain('data-auto-review-turn-interrupted="true"')
     expect(entries[0]!.options).not.toHaveProperty('icon')
     expect(entries[1]!.options['key']).toBe('auto-review')
     expect(entries[1]!.component).toBe(AutoReviewNavIcon)

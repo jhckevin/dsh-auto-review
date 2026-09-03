@@ -103,7 +103,9 @@ node node_modules/@deepseek-ai/dsh/lib/bin.js --profile web \
 - 每次运行的 Artifacts 提供 JUnit、命令日志、成功时的安装包与校验清单，保留 30 天；永久公开版本在 Release。失败步骤不会被改成“跳过即通过”。
 - `build-receipt.json` 标明源码 commit/tree、lock SHA、Node/npm 和 Actions run，便于从制品回查构建。源码 CI 不等于真实模型、浏览器或完整原生门禁通过；这些状态分别记录，不能混为一个绿色 badge。
 
-本分支候选版本：`0.5.6-rc.4`，匹配 DSH `0.1.1-rc.2`，验证环境 Node `24.20.0`。另两个通道使用上表各自候选；表格不代表注册表通道永远不变。
+本分支开发候选版本：`0.5.6-rc.5`，匹配 DSH `0.1.1-rc.2`，验证环境 Node `24.20.0`。上方安装命令仍指向已公开的 `0.5.6-rc.4`，不能据此安装本次尚未发布的硬中断改动；另外两个通道尚未回移。表格不代表注册表通道永远不变。
+
+开发候选新增 [拒绝熔断硬中断与终端配置](docs/ISSUE-034-DENIAL-HARD-STOP.md)：第三次连续拒绝或同回合最近50次审查中10次拒绝，通过 DSH 原生取消结束当前回合。WebUI 使用原生回合尾部插槽显示「本轮操作已被自动审查终止」；终端显式加载 `@jhckevin/dsh-auto-review/terminal`（包内 `terminal.patch.yml`）输出同一持久事件的告警。固定 rc.2 没有完整 TUI renderer，因此终端适配器不等于完整 TUI 界面。已有正常会话、下一用户回合及禁用 Auto Review 的行为不改变。
 
 本轮 native rc2 在同一冻结 Debian 11 builder / Rust 1.95 下两次独立空 target、断网构建，二进制逐字节一致（SHA256 `dd6ad6bf0ebec9ae36d40fdaa91dda8aabb21bc3191366a5b0e25b8f5e10888b`）。真实非 root、只读根、断网安装验收为 25 owner 测试 + 13 包模式；来源材料覆盖 672 Rust 组件的 1,350 条引用，launcher 另行绑定 2 个官方 npm 包 / 15 个成员。十项上游原始独立 LICENSE 缺失事实保留；这些工程门禁不构成法律或完整生产认证。固定环境重现不等于任意未来工具链可重现。
 
@@ -150,7 +152,7 @@ node node_modules/@deepseek-ai/dsh/lib/bin.js --profile web \
 - 未知 extension tool：默认进入原生 manual approval；
 - 部署显式 hard-deny 工具：由 `ctx.tools.guard()` 单调拒绝；
 - reviewer 缺失、超时、异常或协议错误：fail closed，回退原生 manual approval，绝不自动放行。
-- 同一回合连续三次拒绝，或最近五十次审查中十次拒绝：暂停自动审查并要求用户决定；
+- 同一回合连续三次拒绝，或最近五十次审查中十次拒绝：开发候选 rc.5 原生中断当前回合并显示持久告警；此前公开版仅暂停自动审查并转人工审批。非拒绝重置连续计数，第一次拒绝仍要求实质更安全的替代方案或询问用户；
 - 精确 override：只匹配同一 action digest，只有一次重试机会，重试仍经过完整票据校验。
 
 每个进入管线的动作都会形成 `routed` audit record；实际调用 reviewer 时形成 `decision`；票据签发和消费形成 `ticket`；精确授权形成 `override`；最终冻结结果形成 `result`。记录由 action digest、call/root-call id 关联，并通过 `previousDigest/recordDigest` 串成不可静默改序的链，可直接统计 workspace 内动作、自动审查、自动批准、拒绝、人工回退与最终成功/失败，而无需解析自然语言日志。

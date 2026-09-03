@@ -145,6 +145,11 @@ try {
   }
   const manifest = JSON.parse(await readFile(join(packageRoot, 'package.json'), 'utf8'))
   if (manifest.name !== '@jhckevin/dsh-auto-review') throw new Error('packed manifest identity mismatch')
+  assert.equal(manifest.exports['./terminal'].default, './lib/terminal.js')
+  assert.equal(manifest.exports['./terminal.patch.yml'], './terminal.patch.yml')
+  assert.match(await readFile(join(packageRoot, 'terminal.patch.yml'), 'utf8'), /@jhckevin\/dsh-auto-review\/terminal/)
+  assert.match(await readFile(join(packageRoot, 'lib/terminal.js'), 'utf8'), /session\/event/)
+  assert.match(await readFile(join(packageRoot, 'lib/denial-breaker.js'), 'utf8'), /AUTO_REVIEW_DENIAL_BREAKER/)
   const hostRoot = join(installRoot, 'node_modules/@jhckevin/dsh-auto-review-bridge-host')
   const hostManifest = JSON.parse(await readFile(join(hostRoot, 'package.json'), 'utf8'))
   if (hostManifest.version !== manifest.dependencies['@jhckevin/dsh-auto-review-bridge-host']) {
