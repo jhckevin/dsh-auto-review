@@ -1,17 +1,104 @@
 # DeepSeek Harness Auto Review
 
+[![CI](https://github.com/jhckevin/dsh-auto-review/actions/workflows/ci.yml/badge.svg)](https://github.com/jhckevin/dsh-auto-review/actions/workflows/ci.yml)
+[Actions / CI 与发行](https://github.com/jhckevin/dsh-auto-review/actions) · [Release 下载](https://github.com/jhckevin/dsh-auto-review/releases) · [DSH 插件集合](https://github.com/topics/dsh-plugin)
+
 受 [Codex-style Auto Review](https://alignment.openai.com/auto-review/) 启发的独立 DSH 插件项目。本项目不是 OpenAI、Codex 或 DeepSeek 的官方产品，也不声称与完整 Codex Guardian 实现等价。
 
 由 [jhckevin](https://github.com/jhckevin) 维护。自有代码采用 MIT；引用与移植的第三方内容保留原许可证，见 [NOTICE](NOTICE)、[第三方说明](THIRD_PARTY_NOTICES.md) 和 [许可证目录](licenses/)。此版本作为 GitHub **工程预发布**提供，不是稳定生产认证，也尚未发布 npm。完整安装路径、制品范围及已知限制见 [GitHub 预发布说明](docs/GITHUB-PREVIEW.md)。历史审查记录见 [ISSUE-026](docs/ISSUE-026-OPEN-SOURCE.md)；热生命周期和保护目录方案见 [ISSUE-027](docs/ISSUE-027-HOTPLUG.md)。
 
 | DSH 发布通道 | 精确 DSH 版本 | 插件候选版本 |
 |---|---|---|
-| 本次 GitHub 候选支持 | 0.1.1-rc.2 | 0.5.6-rc.2 |
-| 历史 alpha 适配，未随此次发布 | 0.1.2-alpha.5 | 0.5.7-alpha.1 |
+| rc6 兼容候选 | 0.1.0-rc.6 | 0.5.5-rc.2 |
+| rc2 兼容候选（本分支） | 0.1.1-rc.2 | 0.5.6-rc.3 |
+| alpha5 兼容候选 | 0.1.2-alpha.5 | 0.5.7-alpha.2 |
 
-两个通道不能混装，也不承诺兼容未验证 master 或未来版本。本仓对应表格第一行；第二行不表示提供 alpha 下载或已同步本轮热安装改造。安装顺序、匹配的 UI 补丁和前置条件见 [候选安装说明](docs/INSTALL-CANDIDATE.md)。
+三个通道不能混装，也不承诺兼容未验证 master 或未来版本。表格是源码兼容矩阵，不代表候选已经公开发布；以各版本 Release 的实际附件和门禁结果为准。旧 v0.5.6-rc.2 保持原样，不覆盖旧 tag 或制品。安装顺序、匹配的 UI 补丁和前置条件见 [候选安装说明](docs/INSTALL-CANDIDATE.md)。
 
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
+
+## 安装：先选对 DSH 通道
+
+**不要使用 `npm install @jhckevin/dsh-auto-review`：目前只在 GitHub Release 提供制品。**
+一次下载中 `auto-review`、`bridge-host`、`bridge-linux-x64-gnu` 三个 tgz 是一个插件及它的两项依赖，不是三个 DSH 兼容版本。`rc6`、`rc2`、`alpha5` 各自必须有匹配的插件包；尚未出现在 Release 的候选不能靠改包名或强制 peer 安装来代替。
+
+前置条件：Linux x86_64/glibc、Node 24.20.0、npm、tar、sha256sum；在全新目录和独立 DSH_HOME 中测试。不全局安装，不复用生产 profile。native runtime 需要管理员预置在运行用户不可写的目录；**插件不会自行 sudo，也不会在部署失败时降级为自动允许**。
+
+### 1. 下载与校验（已发布 rc.2）
+
+以下只下载和校验，不会启动服务；`gh` 使用 GitHub 官方 CLI，公开下载不需要提供模型密钥：
+
+```sh
+mkdir -p auto-review-preview-downloads
+cd auto-review-preview-downloads
+gh release download v0.5.6-rc.2 --repo jhckevin/dsh-auto-review \
+  --pattern 'auto-review-0.5.6-rc.2-offline-candidate.tar.gz' \
+  --pattern 'jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.1.tgz' \
+  --pattern SHA256SUMS
+sha256sum --ignore-missing --check SHA256SUMS
+mkdir artifacts
+tar -xzf auto-review-0.5.6-rc.2-offline-candidate.tar.gz -C artifacts
+```
+
+也可以在 [Release 页面](https://github.com/jhckevin/dsh-auto-review/releases/tag/v0.5.6-rc.2) 手动下载同名文件。使用下载镜像时，仍必须与本项目 Release 中的 SHA256SUMS 对照。不要将模型 API key 写进下载命令、README 或 profile 的前端配置。
+
+### 2. 管理员预置 native runtime
+
+仅以下步骤在管理员终端执行，工作目录仍为上一步下载目录；管理员应先独立核验平台包校验值：
+
+```sh
+sudo install -d -o root -g root -m 0755 /opt/dsh-auto-review-native/0.1.0-rc.1
+sudo npm install --prefix /opt/dsh-auto-review-native/0.1.0-rc.1 \
+  --offline --ignore-scripts --no-audit --no-fund \
+  "$PWD/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.1.tgz"
+```
+
+不要以 root 启动 DSH。普通运行用户设置：
+
+```sh
+export DSH_AUTO_REVIEW_NATIVE_RUNTIME=/opt/dsh-auto-review-native/0.1.0-rc.1/node_modules/@jhckevin/dsh-auto-review-bridge-linux-x64-gnu
+```
+
+### 3. 冷启动与热安装的区别
+
+全新目录测试发现并补齐了上游传递 peer 缺失：公开镜像安装、CLI help/dump-config、loopback HTTP 200、六个插件角色 ACTIVE 已实际通过，没有借用私有祖先依赖图。这只证明冷启动，不代表真实 native 请求、模型风险判断或浏览器热安装通过；证据范围见 [Issue #6](https://github.com/jhckevin/dsh-auto-review/issues/6)。
+
+新版 Actions 制品目录提供全部十个 tgz、SHA256SUMS、`prepare-preview-install.mjs` 和 `public-dsh-family.json`。在该专属下载目录验证校验清单后：
+
+```sh
+sha256sum --check SHA256SUMS
+node prepare-preview-install.mjs "$PWD" "$PWD/../isolated-auto-review"
+cd ../isolated-auto-review
+npm install
+```
+
+准备脚本只创建不存在的新目录、校验每个包的 SHA 和版本、写固定 peer/本地桥接覆盖；不会执行安装、提权或启动服务。`npm install` 使用生成的镜像设置且不运行 lifecycle scripts。它不适用于缺少单个依赖校验值的旧 rc.2 离线集合；旧包不能通过自行生成新校验清单绕过来源验证。三个 DSH 通道分别验收，不混装。
+
+完整公开 DSH 家族按通道固定：rc6 186 项、rc2 189 项、alpha5 216 项，包括 CLI；使用 exact dependencies + overrides，防止上游 `^` 范围混入其他版本。rc6 的 `node-pty@1.1.0` 没有可用 Linux 预构建文件：在该隔离目录、已有 make/C++/Python 与匹配 Node headers 的条件下，仅执行 `npm rebuild node-pty --ignore-scripts=false --build-from-source`；不要全局开启依赖 scripts。rc2、alpha5 的已验收安装没有这一步。rc6 CLI 没有 `--no-open` 参数，使用时不能照搬 rc2 命令。alpha5 默认启用 Web 鉴权：通过 CLI 输出的官方 launch URL 登录，不要为了测试绕过鉴权。
+
+在已准备完整、同版本宿主与 peer 图的环境，显式加载入口为：
+
+```sh
+export DSH_HOME="$PWD/isolated-dsh-home"
+node node_modules/@deepseek-ai/dsh/lib/bin.js --profile web \
+  --patch node_modules/@jhckevin/dsh-auto-review/cordis.patch.yml \
+  --host 127.0.0.1 --port 9835 --no-open
+```
+
+需要对**运行中的 WebUI 热安装**时，还必须先为对应 DSH 源码应用匹配宿主补丁、按上游方式构建并重启一次。之后才使用 `dsh plugin --profile web add`。不能将 rc2 补丁强行用于 rc6/alpha5；目前两历史通道对 rc2 热发现补丁的实际 apply 检查失败。具体依赖、补丁顺序与权限要求见 [INSTALL-CANDIDATE](docs/INSTALL-CANDIDATE.md)、[热生命周期说明](docs/ISSUE-027-HOTPLUG.md)。使用原生 bundle 自动发现后，不要再次叠加手工 `--patch`。
+
+### 4. 验证与回滚
+
+进入设置 → Auto Review，确认模型、权限档位、开关读取和保存；在隔离 workspace 测试沙盒内、送审、拒绝、人工回退各路径，并查看审计实际结果。只看设置页出现或保存成功，不算 native 执行验收。关闭 reviewer 应取消在途请求，不能变成静默批准。移除或替换已加载的 host 代码需要重启 DSH。
+
+测试结束先停止当前 DSH，备份独立 profile 和脱敏审计；回滚时整套恢复对应 DSH、插件和 native runtime 版本。不要删除其他 profile，也不要在运行中的包目录直接覆写 JS。
+
+## Actions、CI/CD 与证据在哪里
+
+- [CI](https://github.com/jhckevin/dsh-auto-review/actions/workflows/ci.yml)：push、PR 或手动触发；检查固定桥接 SHA、镜像依赖安装、build、完整类型、行为测试、策略来源和 packed consumer。
+- [Release candidate](https://github.com/jhckevin/dsh-auto-review/actions/workflows/release.yml)：版本 tag/手动触发，固定 commit 后重新验收；生成包、离线依赖、SHA256SUMS、build-receipt。只能生成**草稿预发布**，不覆盖已有 Release；原生/许可证/兼容门禁仍须审核后才公开。
+- 每次运行的 Artifacts 提供 JUnit、命令日志、成功时的安装包与校验清单，保留 30 天；永久公开版本在 Release。失败步骤不会被改成“跳过即通过”。
+- `build-receipt.json` 标明源码 commit/tree、lock SHA、Node/npm 和 Actions run，便于从制品回查构建。源码 CI 不等于真实模型、浏览器或完整原生门禁通过；这些状态分别记录，不能混为一个绿色 badge。
 
 当前候选版本：`0.5.6-rc.2`，仅匹配 DSH `0.1.1-rc.2`，Node >=24.11.0。表格是已锁定的兼容版本，不代表注册表通道永远不变。
 
