@@ -1,7 +1,8 @@
 {
   "name": "@jhckevin/dsh-auto-review",
   "version": "0.5.6-rc.1",
-  "description": "Native Auto Review capability, reviewer provider and tool policy for DeepSeek Harness",
+  "description": "Codex-style Auto Review inspired plugin for DeepSeek Harness; independently developed",
+  "keywords": ["deepseek-harness", "dsh", "dsh-plugin", "cordis", "auto-review", "codex-style", "sandbox", "agent-security", "human-in-the-loop"],
   "type": "module",
   "license": "MIT",
   "main": "lib/index.js",
@@ -60,6 +61,9 @@
     "CHANGELOG.md",
     "THIRD_PARTY_NOTICES.md",
     "LICENSE",
+    "NOTICE",
+    "licenses/**",
+    "docs/ISSUE-026-OPEN-SOURCE.md",
     "patches/**/*.patch",
     "docs/ISSUE-025-DSH-COMPAT.md",
     "docs/ISSUE-025-UI-OWNER-PATCHES.md"

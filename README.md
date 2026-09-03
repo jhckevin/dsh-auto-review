@@ -1,5 +1,16 @@
 # DeepSeek Harness Auto Review
 
+受 [Codex-style Auto Review](https://alignment.openai.com/auto-review/) 启发的独立 DSH 插件项目。本项目不是 OpenAI、Codex 或 DeepSeek 的官方产品，也不声称与完整 Codex Guardian 实现等价。
+
+自有代码采用 MIT；引用与移植的第三方内容保留原许可证，见 [NOTICE](NOTICE)、[第三方说明](THIRD_PARTY_NOTICES.md) 和 [许可证目录](licenses/)。当前处于开源前验收阶段，发布阻塞见 [ISSUE-026](docs/ISSUE-026-OPEN-SOURCE.md)。尚未公开发布，不能将私有原生桥接包视为可从 npm 安装的依赖。
+
+| DSH 发布通道 | 精确 DSH 版本 | 插件候选版本 |
+|---|---|---|
+| npm latest / next | 0.1.1-rc.2 | 0.5.6-rc.1 |
+| npm alpha | 0.1.2-alpha.5 | 0.5.7-alpha.1 |
+
+两个候选包不能混装，也不承诺兼容未发布 master。兼容候选版尚非生产发布版；本目录对应表格第一行。
+
 面向 DeepSeek Harness 的原生 Auto Review Bundle。首个支持目标为 Linux x86_64。
 
 当前候选版本：`0.5.6-rc.1`，仅匹配 DSH `0.1.1-rc.2`，Node >=24.11.0。
@@ -8,9 +19,9 @@
 
 本项目不把 Auto Review 定义为“自动放行”。它在 DeepSeek Harness 原生工具管线中完成确定性动作分类、隔离模型审查、一次性用户审批回退、Linux 文件沙盒约束与可重放审计。
 
-## 生产发布门禁
+## 离线回归与发布前验收
 
-唯一入口为 `npm run gate:production`：它构建服务器与 WebUI 产物，运行功能、安全、并发和原生 Linux sandbox 测试，核验固定 Codex Guardian 文本摘要，并把 npm tarball 连同直接运行依赖安装到临时空目录后断网导入。CI 与发布机器执行同一入口。额外 Docker 验收必须使用 `--network none`、只读根文件系统、只读源码挂载、移除全部 Linux capability 和 `no-new-privileges`；不允许用源码树可导入来替代 packed artifact 验证。
+`npm run gate:production` 是历史命名的离线回归入口：构建插件 Host/Client 产物、运行类型与行为测试、核验固定策略文本，并检查安装包离线导入。它不构建完整 DSH WebUI，也不证明真实模型、完整 Guardian 或生产沙盒已验收。公开发布还必须核对许可证、公开依赖安装、真实 API trace 及浏览器设置生效。断网检查与必须访问模型 API 的独立容器分开留证，不以源码可导入代替安装包检查。
 
 ## 原生接入点
 
@@ -54,7 +65,7 @@
 
 WebUI 只在动作实际进入独立 reviewer 时，于对应工具调用右侧显示小号 shield-terminal 标记；审查进行中为中性色并轻微呼吸，拒绝后保留红色标记和红色斜杠。inside-boundary、hard-deny、manual、reviewer 缺失、断路器已打开及已暂停的动作都不会伪装成“正在审查”。客户端按可见 session 共享一个有界轮询器，不把审查证据、提示词或凭据暴露给页面。
 
-设置页提供内容隔离的进程级动作漏斗，显示全部动作、原生沙盒内、进入审查、自动批准、拒绝与人工处理；并显示 canonical policy 检索调用数和返回字节。页面不返回动作参数、策略 query、用户内容或 reviewer prompt。权限说明会随 Auto Review 与 sandbox-default-allow 开关动态变化，并明确 Full Access 不存在原生沙盒边界、不会进入 Auto Review。
+设置页提供内容隔离的进程级动作漏斗，显示全部动作、原生沙盒内、进入审查、自动批准、拒绝与人工处理；并显示策略检索调用数和返回字节。页面不返回动作参数、策略 query、用户内容或 reviewer prompt。Full Access 不存在原生沙盒边界；Auto Review 启用且 reviewFullAccess 开启时，除硬拒绝外的动作全部送审，不受 sandboxDefaultAllow 影响。关闭 reviewFullAccess 才将该档位交还原生流程；关闭 Auto Review 则所有档位均不受本插件干预。
 
 拒绝后，下一次相同 action digest 记为 `retried-denied-action`；语法不同但归一化目标与效果相同则记为 `retried-equivalent-effect`，并直接转入 Harness 原生一次性人工审批，避免靠改引号或空白反复抽样 Reviewer；真正不同的效果才记为 `continued-with-different-action`；没有后续动作而结束回合记为 `stopped-after-denial`。不同动作只是 safer-alternative 候选，最终是否属于安全替代由离线评估器判定，运行时不把字符串差异伪装为安全证明。
 
@@ -64,7 +75,7 @@ Reviewer Agent 的 system prompt 和 runtime context 由 provider 权威替换�
 
 隔离范围是模型可见与模型可调用能力：reviewer 不获得 filesystem、shell、network、MCP、memory 或 delegation tool。私有策略工具只读取随包发布的不可变策略语料；Reviewer Session 的递归豁免按运行时对象身份注册并在销毁时撤销，不能靠伪造 session id 获得。进程内 Cordis 插件和 LLM adapter 属于受信任计算基；能修改全局 Agent 生命周期或 request waterfall 的宿主代码不在本插件可防御的攻击者范围内。
 
-Harness rc.6 的持久化读取器明确没有下游插件事件类型注册面，未知且未标记 `ignorable` 的 Session event 会导致冷恢复拒绝；而公开 `Session.append()` 又不能为下游事件设置该信封位。因此本插件不伪造或 monkey-patch `KNOWN_SESSION_EVENT_TYPES`，也不把审计塞入语义错误的内置事件。审计使用正式 capability/provider 分层和独立存储，原生 `approval/asked`/`approval/decided` 仍由 Harness Session Log 权威持久化。
+历史背景：最初针对 Harness 0.1.0-rc.6 的实现选择独立审计存储，避免向不支持下游未知事件的持久化读取器注入自定义 Session event。当前版本继续使用 capability/provider 分层的独立审计，而不是修改上游事件白名单；原生审批事件仍由 Harness Session Log 持久化。新版会话接口适配情况见 ISSUE-025，不能将旧 rc.6 限制当作全部新版 API 的结论。
 
 JSONL provider 启动时验证每个历史文件的完整 digest chain，并在上限内重放 decision、override 与 post-denial 状态。冷恢复只恢复相同 session id；fork 使用新 session id，绝不继承拒绝计数或一次性授权；compaction 保持 session id，但新的 turn 自然获得独立拒绝窗口。审计损坏、链断裂或重放超预算会使插件加载失败。
 
@@ -86,4 +97,4 @@ JSONL provider 启动时验证每个历史文件的完整 digest chain，并在�
 
 ## 许可证
 
-MIT。
+项目自有代码采用 MIT；Codex 派生代码和策略仍适用 Apache-2.0，其他第三方内容按各自许可处理。详见 LICENSE、NOTICE、licenses/ 与 THIRD_PARTY_NOTICES.md。当前未获再分发许可的 Desktop SVG 不得随公开版发布。
