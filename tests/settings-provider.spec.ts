@@ -77,4 +77,22 @@ describe('explicit settings provider', () => {
       expectedRevision: 0,
     })).rejects.toThrow(/unknown settings field/)
   })
+
+  it('keeps custom Flash ids through the public defaults hook and preserves saved choices', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings)
+    await ctx.plugin(ActionReviewRuntime)
+    ctx.actionReview.configureReviewerSettingsDefaults({
+      provider: 'custom', model: 'vendor-flash-preview',
+      maxInputBytes: 16384, maxOutputTokens: 768, timeoutMs: 90000,
+    })
+    await ctx.plugin(AutoReviewSettingsBridge)
+    expect(ctx.actionReviewSettings.read().base.strongModel).toBe('vendor-flash-preview')
+    const saved = await ctx.actionReviewSettings.update({
+      patch: { strongModel: 'saved-reviewer', strongReviewKinds: [] }, expectedRevision: 0,
+    })
+    const next = await ctx.actionReviewSettings.update({ patch: { maxAttempts: 1 }, expectedRevision: saved.revision })
+    expect(next.value).toMatchObject({ strongModel: 'saved-reviewer', strongReviewKinds: [] })
+    expect(next.base.strongModel).toBe('vendor-flash-preview')
+  })
 })
