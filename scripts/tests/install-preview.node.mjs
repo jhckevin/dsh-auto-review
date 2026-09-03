@@ -70,6 +70,7 @@ for (const [version, count] of [['0.1.0-rc.6',186],['0.1.2-alpha.5',216]]) {
   test('exact runtime family for '+version, t => {
     const packages=structuredClone(fixtures);
     packages[0].peerDependencies['@deepseek-ai/dsh-agent']=version;
+    if(version==='0.1.2-alpha.5'){packages[0].dependencies['@deepseek-ai/dsh-util-values']=version;packages.push({name:'@deepseek-ai/dsh-util-values',version})}
     if(version==='0.1.0-rc.6')for(const p of packages){if(p.name==='@deepseek-ai/schemastery')p.version='3.18.1';if(p.name==='@deepseek-ai/cosmokit')p.version='1.8.2'}
     const f=fixture(t,packages);assert.equal(f.run().status,0);
     const result=JSON.parse(readFileSync(join(f.destination,'package.json')));
@@ -78,5 +79,10 @@ for (const [version, count] of [['0.1.0-rc.6',186],['0.1.2-alpha.5',216]]) {
 }
 test('rc6 refuses rc2 runtime despite valid artifact hashes',t=>{
   const packages=structuredClone(fixtures);packages[0].peerDependencies['@deepseek-ai/dsh-agent']='0.1.0-rc.6';
+  assert.notEqual(fixture(t,packages).run().status,0);
+});
+test('alpha rejects missing values archive before destination creation',t=>{
+  const packages=structuredClone(fixtures);packages[0].peerDependencies['@deepseek-ai/dsh-agent']='0.1.2-alpha.5';
+  packages[0].dependencies['@deepseek-ai/dsh-util-values']='0.1.2-alpha.5';
   assert.notEqual(fixture(t,packages).run().status,0);
 });

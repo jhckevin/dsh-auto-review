@@ -38,6 +38,7 @@ try {
     }
   }
   for (const dependency of [
+    '@deepseek-ai/dsh-util-values',
     '@deepseek-ai/schemastery',
     '@deepseek-ai/cosmokit',
     '@standard-schema/spec',
@@ -54,7 +55,7 @@ try {
   await exec('npm', [
     'install', '--offline', '--ignore-scripts', '--legacy-peer-deps', '--no-audit', '--no-fund',
     artifact, ...dependencyArtifacts,
-  ], { cwd: installRoot, maxBuffer: 10 * 1024 * 1024 })
+  ], { cwd: installRoot, env: { ...process.env, npm_config_cache: join(temporary, 'empty-npm-cache') }, maxBuffer: 10 * 1024 * 1024 })
   const packageRoot = join(installRoot, 'node_modules/@jhckevin/dsh-auto-review')
   const packedRuntime = await import(new URL(`file://${join(packageRoot, 'lib/policy-corpus.js').replaceAll('\\', '/')}`))
   if (packedRuntime.GUARDIAN_POLICY_SECTIONS.length < 10) throw new Error('packed runtime failed to load Guardian policy corpus')

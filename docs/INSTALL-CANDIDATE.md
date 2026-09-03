@@ -4,7 +4,7 @@
 
 ## 安装
 
-要求 Linux x86_64/glibc、Node24.20.0、npm、tar、sha256sum。下载对应 Release 的 offline-candidate.tar.gz、SHA256SUMS、prepare-preview-install.mjs、public-dsh-family.json，并在全新下载目录校验全部下载文件的匹配 SHA256SUMS 条目。解压离线包得到十个 tgz 后，仍需对十个包逐项核验 SHA256SUMS。
+要求 Linux x86_64/glibc、Node24.20.0、npm、tar、sha256sum。下载对应 Release 的 offline-candidate.tar.gz、SHA256SUMS、prepare-preview-install.mjs、public-dsh-family.json，并在全新下载目录校验全部下载文件的匹配 SHA256SUMS 条目。解压离线包得到十一个 tgz 后，仍需对十一个包逐项核验 SHA256SUMS。
 
 ```sh
 node /absolute/download/prepare-preview-install.mjs /absolute/download /absolute/new-preview
@@ -21,6 +21,8 @@ HOME="$PWD/home" DSH_HOME="$PWD/home" node node_modules/@deepseek-ai/dsh/lib/bin
 
 源码构建、全量类型、行为测试、policy provenance、packed consumer 与公开冷启动后端已记录。此通道未验收浏览器热安装、真实模型、受保护 native 审批；完整 Guardian/生产安全认证未完成。rc2 的宿主热安装补丁不能应用到本通道；使用独立 profile 冷启动。旧文档中的生产门禁描述是目标，不是已通过结论。
 
-CI/Release 会保留每阶段日志、JUnit、十个 tgz、离线归档、两份文档、准备器、family清单、receipt、SHA256SUMS，共17附件。任何构建或测试失败会阻止发行；历史 alpha 文档/UI夹具 SKIP 保留公开，不伪称执行。
+CI/Release 会保留每阶段日志、JUnit、十一个 tgz、离线归档、两份文档、准备器、family清单、receipt、SHA256SUMS，共18附件。任何构建或测试失败会阻止发行；历史 alpha 文档/UI夹具 SKIP 保留公开，不伪称执行。
 
 源证据见 PUBLIC-COLD-VALIDATION.md 和 ISSUE-032-COMPAT.md。发行 immutable tag，不覆盖旧制品。native仍冻结0.1.0-rc.1，许可证和完整上游开发/重建验收须单独审查，不能由源码打包证明完成。
+
+Alpha5 includes the exact dsh-util-values0.1.2-alpha.5 archive as its eighth runtime dependency. It remains a production dependency because published type declarations reference JsonValue; the upstream utility has no shared service identity. Packed installation uses its own empty npm cache and remains offline.

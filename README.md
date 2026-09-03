@@ -1,6 +1,6 @@
 ## Public candidate installation and CI
 
-Use [INSTALL](docs/INSTALL-CANDIDATE.md) and [PREVIEW](docs/GITHUB-PREVIEW.md). GitHub Actions retains source/type/behavior/policy/packed-consumer logs and produces 17 checksum-backed assets. This channel is 0.5.7-alpha.2 / DSH 0.1.2-alpha.5; no npm publication, full Guardian certification, native approval or browser hot-install claim. rc2 host patches are not compatible with this channel.
+Use [INSTALL](docs/INSTALL-CANDIDATE.md) and [PREVIEW](docs/GITHUB-PREVIEW.md). GitHub Actions retains source/type/behavior/policy/packed-consumer logs and produces 18 checksum-backed assets. This channel is 0.5.7-alpha.2 / DSH 0.1.2-alpha.5; no npm publication, full Guardian certification, native approval or browser hot-install claim. rc2 host patches are not compatible with this channel.
 
 > Compatibility candidate 0.5.7-alpha.2, DSH 0.1.2-alpha.5: see [current migration scope and unverified installation gates](docs/ISSUE-032-COMPAT.md). Historical sections below are not new validation claims.
 
@@ -93,3 +93,5 @@ JSONL provider 启动时验证每个历史文件的完整 digest chain，并在�
 ## 许可证
 
 MIT。
+
+Alpha5 includes the exact dsh-util-values0.1.2-alpha.5 archive as its eighth runtime dependency. It remains a production dependency because published type declarations reference JsonValue; the upstream utility has no shared service identity. Packed installation uses its own empty npm cache and remains offline.

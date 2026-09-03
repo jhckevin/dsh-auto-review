@@ -20,7 +20,7 @@ const main = pack(root)
 const bridge = readdirSync('vendor/native-bridge').filter(name => name.endsWith('.tgz')).sort()
 assert.equal(bridge.length, 2, 'exactly host and platform are required')
 for (const name of bridge) copyFileSync(join('vendor/native-bridge', name), join(distribution, name))
-const dependencies = ['@deepseek-ai/schemastery', '@deepseek-ai/cosmokit', '@standard-schema/spec', 'node-addon-api', 'node-gyp-build', 'tree-sitter', 'tree-sitter-bash']
+const dependencies = ['@deepseek-ai/dsh-util-values', '@deepseek-ai/schemastery', '@deepseek-ai/cosmokit', '@standard-schema/spec', 'node-addon-api', 'node-gyp-build', 'tree-sitter', 'tree-sitter-bash']
 const runtime = dependencies.map(name => pack(join(root, 'node_modules', name)))
 const members = [main, ...bridge, ...runtime]
 run('tar', ['-czf', join(distribution, `auto-review-${pkg.version}-offline-candidate.tar.gz`), '-C', distribution, ...members])

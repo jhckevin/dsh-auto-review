@@ -22,14 +22,16 @@ for (const line of readFileSync(join(artifacts, 'SHA256SUMS'), 'utf8').trim().sp
   checksums.set(match[2], match[1])
 }
 const names = readdirSync(artifacts).filter(name => name.endsWith('.tgz'))
-assert.equal(names.length, 10, 'dedicated directory must contain main, host, platform and seven runtime dependencies')
+assert([10, 11].includes(names.length), 'dedicated directory must contain exact channel runtime closure')
 const expected = new Set(['@jhckevin/dsh-auto-review', '@jhckevin/dsh-auto-review-bridge-host', '@jhckevin/dsh-auto-review-bridge-linux-x64-gnu', '@deepseek-ai/schemastery', '@deepseek-ai/cosmokit', '@standard-schema/spec', 'node-addon-api', 'node-gyp-build', 'tree-sitter', 'tree-sitter-bash'])
 const runtimeVersions = { '@deepseek-ai/schemastery': '3.18.2', '@deepseek-ai/cosmokit': '1.8.3', '@standard-schema/spec': '1.1.0', 'node-addon-api': '8.9.2', 'node-gyp-build': '4.8.4', 'tree-sitter': '0.25.1', 'tree-sitter-bash': '0.25.1' }
+const packagesSeen = new Set()
 const packages = names.map(file => {
   assert(lstatSync(join(artifacts, file)).isFile() && !lstatSync(join(artifacts, file)).isSymbolicLink(), 'regular archives only')
   assert.equal(digest(join(artifacts, file)), checksums.get(file), `artifact checksum mismatch: ${file}`)
   const manifest = JSON.parse(execFileSync('tar', ['-xOf', join(artifacts, file), 'package/package.json'], { encoding: 'utf8', maxBuffer: 1024 * 1024 }))
-  assert(expected.delete(manifest.name), `unknown/duplicate artifact: ${manifest.name}`)
+  assert(expected.delete(manifest.name) || (manifest.name === '@deepseek-ai/dsh-util-values' && !packagesSeen.has(manifest.name)), `unknown/duplicate artifact: ${manifest.name}`)
+  packagesSeen.add(manifest.name)
   return { file, manifest }
 })
 assert.equal(expected.size, 0)
@@ -37,6 +39,13 @@ const plugin = packages.find(item => item.manifest.name === '@jhckevin/dsh-auto-
 const versions = new Set(Object.entries(plugin.peerDependencies).filter(([name]) => name.startsWith('@deepseek-ai/dsh-')).map(([, version]) => version))
 assert.equal(versions.size, 1, 'mixed DSH peer graph is forbidden')
 const [dshVersion] = versions
+const values = packages.find(p => p.manifest.name === '@deepseek-ai/dsh-util-values')
+assert.equal(names.length, dshVersion === '0.1.2-alpha.5' ? 11 : 10, 'channel artifact count mismatch')
+if (dshVersion === '0.1.2-alpha.5') {
+  assert(values, 'alpha requires value library archive')
+  assert.equal(values.manifest.version, dshVersion)
+  assert.equal(plugin.dependencies[values.manifest.name], dshVersion)
+} else assert(!values, 'value library archive is alpha-only')
 assert(['0.1.0-rc.6', '0.1.1-rc.2', '0.1.2-alpha.5'].includes(dshVersion))
 // rc6 uses its exact historical runtime ABI; other channels retain their tested runtime.
 const channelRuntime = dshVersion === '0.1.0-rc.6' ? { ...runtimeVersions, '@deepseek-ai/schemastery': '3.18.1', '@deepseek-ai/cosmokit': '1.8.2' } : runtimeVersions
