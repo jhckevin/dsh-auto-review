@@ -1,4 +1,4 @@
-# 安装与版本匹配（未发布候选）
+# 安装与版本匹配（GitHub 工程预发布）
 
 本页描述固定环境的工程候选安装，不是生产适用性承诺。默认 codex-native 使用独立命名的 bridge 候选包，并通过 staged tgz 离线安装；GitHub 工程预发布范围见 [GITHUB-PREVIEW.md](GITHUB-PREVIEW.md)。npm 尚未发布，不提供不存在的注册表一键命令，也不静默切换 legacy-js。新增热安装范围及一次性受保护 runtime 部署见 [ISSUE-027-HOTPLUG.md](ISSUE-027-HOTPLUG.md)。
 
@@ -8,7 +8,7 @@
 
 - Linux x86_64；Node >=24.11.0，本轮使用 24.20.0。
 - 锁定整套 DSH 依赖，不只锁定 CLI；alpha 不能混入 rc 的 Session/Client API。
-- native 依赖：@jhckevin/dsh-auto-review-bridge-host@0.1.0-rc.1 及精确版本 Linux 平台包。源码 lock 中的镜像 URL 是未来发布位置；SHA512 来自已核验候选 tgz，不代表 URL 已可下载。发布前通过 DSH_BRIDGE_ARTIFACTS 提供匹配 tarball 验收。
+- native 依赖：@jhckevin/dsh-auto-review-bridge-host@0.1.0-rc.1 及精确版本 Linux 平台包。二者已在 GitHub v0.5.6-rc.2 Release 提供；源码 lock 使用 vendor/native-bridge 中同 SHA512 的冻结 tgz，不请求不存在的 npm 包。通过 DSH_BRIDGE_ARTIFACTS 提供匹配 tarball 验收。
 - 原生沙盒的状态必须实测；partial 不得标为 full。容器本身也不等于 DSH 每次动作拥有完整沙盒。
 
 ## 冷启动参考部署（不是热安装命令）
@@ -28,7 +28,7 @@ node node_modules/@deepseek-ai/dsh/lib/bin.js \
 5. 浏览器验证设置读取、保存、刷新、冲突保护和实际模型请求参数。截图成功不能替代运行态审计；API 测试也不能替代浏览器操作。
 6. 停止测试实例，保留脱敏日志和制品；升级生产前备份配置并使用新版本制品。回滚同时匹配 DSH、插件和两个 UI 所有者模块，不跨版本只换 JS。
 
-本轮 pnpm 11.7.0 的隔离 UI 安装已成功；npm peer 求解曾耗时并接近 2 GiB，已主动停止并留日志，不能把安装器异常隐去。完整复现仍需要未公开桥接产物，因此本页只记录已验证的内部候选流程。
+历史 pnpm 11.7.0 隔离 UI 安装已成功；npm peer 求解曾耗时并接近 2 GiB，原失败记录保留。桥接制品现已公开，但公众全新目录必须补齐 DSH 的传递 peer，不能依赖内部现有祖先依赖图。最新冷安装步骤和验收状态以仓库 README 的安装节为准。
 
 ## 新增插件的热安装路径
 
@@ -65,4 +65,4 @@ dsh plugin --profile web add /approved-artifacts/*.tgz --offline --ignore-script
 
 公开源码与工程预发布不等于完整稳定版本验收。SVG 权利状态、第三方材料原始缺项、完整原生执行系统、沙盒与安全替代覆盖仍须分别报告；本次不把这些门禁改成已通过。npm 发布及稳定生产认证是后续范围。
 
-GitHub Topics 计划：deepseek-harness、dsh-plugin、cordis、auto-review、codex-style、sandbox、agent-security。package keywords 已设置，实际远程 Topics 在发布时验证。
+GitHub Topics 已实际设置并核验：dsh-plugin、deepseek-harness、dsh、deepseek、cordis、auto-review、codex-style、sandbox、agent-security。官方通过 dsh-plugin topic 提供发现入口；第三方精选清单可能另需审核，不能承诺仅打标签就自动收录。

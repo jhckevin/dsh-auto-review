@@ -1,6 +1,6 @@
 {
   "name": "@jhckevin/dsh-auto-review",
-  "version": "0.5.6-rc.2",
+  "version": "0.5.6-rc.3",
   "description": "Codex-style Auto Review inspired plugin for DeepSeek Harness; independently developed",
   "keywords": ["deepseek-harness", "dsh", "dsh-plugin", "cordis", "auto-review", "codex-style", "sandbox", "agent-security", "human-in-the-loop"],
   "type": "module",
