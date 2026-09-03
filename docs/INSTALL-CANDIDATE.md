@@ -1,0 +1,26 @@
+# rc6 工程候选 0.5.5-rc.2
+
+精确宿主 DSH 0.1.0-rc.6；native host/platform 0.1.0-rc.1。本通道不混装其他 DSH prerelease。GitHub Release 提供制品，未发布 npm；不存在公开附件的版本不要强行安装。
+
+## 安装
+
+要求 Linux x86_64/glibc、Node24.20.0、npm、tar、sha256sum。下载对应 Release 的 offline-candidate.tar.gz、SHA256SUMS、prepare-preview-install.mjs、public-dsh-family.json，并在全新下载目录校验全部下载文件的匹配 SHA256SUMS 条目。解压离线包得到十个 tgz 后，仍需对十个包逐项核验 SHA256SUMS。
+
+```sh
+node /absolute/download/prepare-preview-install.mjs /absolute/download /absolute/new-preview
+cd /absolute/new-preview
+npm install --ignore-scripts --legacy-peer-deps --registry=https://registry.npmmirror.com
+HOME="$PWD/home" DSH_HOME="$PWD/home" node node_modules/@deepseek-ai/dsh/lib/bin.js --profile web --patch "$PWD/node_modules/@jhckevin/dsh-auto-review/cordis.patch.yml" --host 127.0.0.1 --port 9821
+```
+
+准备器只创建新目录并校验制品，绝不改现有 profile，不自行 sudo。安装下载的是公开 npm 包，不是完整离线 DSH 宿主。rc6 历史 node-pty 若缺 Node24 Linux预构建，需要单独审查并本地构建；脚本不自动运行安装生命周期。alpha5 web 使用宿主原生 token/cookie 登录链，不关闭认证。
+
+管理员必须预置受保护 native runtime；用户可写 node_modules 不能当可信二进制根。未配置 runtime 时不得视为 native approval 通过，插件失败关闭，不悄悄改 legacy-js。
+
+## 实际边界
+
+源码构建、全量类型、行为测试、policy provenance、packed consumer 与公开冷启动后端已记录。此通道未验收浏览器热安装、真实模型、受保护 native 审批；完整 Guardian/生产安全认证未完成。rc2 的宿主热安装补丁不能应用到本通道；使用独立 profile 冷启动。旧文档中的生产门禁描述是目标，不是已通过结论。
+
+CI/Release 会保留每阶段日志、JUnit、十个 tgz、离线归档、两份文档、准备器、family清单、receipt、SHA256SUMS，共17附件。任何构建或测试失败会阻止发行；历史 alpha 文档/UI夹具 SKIP 保留公开，不伪称执行。
+
+源证据见 PUBLIC-COLD-VALIDATION.md 和 ISSUE-032-COMPAT.md。发行 immutable tag，不覆盖旧制品。native仍冻结0.1.0-rc.1，许可证和完整上游开发/重建验收须单独审查，不能由源码打包证明完成。

@@ -1,0 +1,107 @@
+name: Release candidate
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing immutable prerelease tag; must match package.json'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      ref: ${{ steps.validate.outputs.ref }}
+      commit: ${{ steps.validate.outputs.commit }}
+    steps:
+      - id: validate
+        env:
+          REQUESTED_TAG: ${{ inputs.tag || github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          [[ "$REQUESTED_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-(rc|alpha)\.[0-9]+$ ]] || exit 1
+          echo "ref=refs/tags/$REQUESTED_TAG" >> "$GITHUB_OUTPUT"
+          commit="$(gh api "repos/$GH_REPO/commits/refs%2Ftags%2F$REQUESTED_TAG" --jq .sha)"
+          [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || exit 1
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+  build:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+          cache: npm
+      - name: Confirm tag and version, then repeat all publication checks
+        env:
+          RELEASE_REF: ${{ needs.prepare.outputs.ref }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+          DSH_BRIDGE_ARTIFACTS: '["${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-host-0.1.0-rc.1.tgz","${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.1.tgz"]'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$RELEASE_REF" = "refs/tags/v$(node -p 'JSON.parse(require("fs").readFileSync("package.json")).version')"
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          mkdir artifacts
+          sha512sum --check vendor/native-bridge/SHA512SUMS
+          npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com 2>&1 | tee artifacts/install.log
+          npm run build 2>&1 | tee artifacts/build.log
+          npm run test:types 2>&1 | tee artifacts/types.log
+          node --test scripts/tests/install-preview.node.mjs 2>&1 | tee artifacts/installer-tests.log
+          npm test -- --reporter=default --reporter=junit --outputFile.junit=artifacts/tests.xml 2>&1 | tee artifacts/tests.log
+          npm run policy:check 2>&1 | tee artifacts/policy.log
+          npm run pack:verify 2>&1 | tee artifacts/packed-consumer.log
+          node scripts/release-artifacts.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
+  publish-draft:
+    needs: [prepare, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: candidate-${{ github.run_id }}
+          path: artifacts
+      - name: Verify and create a new immutable draft prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_REF: ${{ needs.prepare.outputs.ref }}
+          SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd artifacts/distribution
+          sha256sum --check SHA256SUMS
+          tag="${RELEASE_REF#refs/tags/}"
+          test "$(gh api "repos/$GH_REPO/commits/refs%2Ftags%2F$tag" --jq .sha)" = "$SOURCE_COMMIT"
+          test "$(jq -r .sourceCommit build-receipt.json)" = "$SOURCE_COMMIT"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo 'Existing release is immutable; refusing overwrite.' >&2
+            exit 1
+          fi
+          gh release create "$tag" --verify-tag --target "$SOURCE_COMMIT" --draft --prerelease --latest=false --title "$tag" --notes-file PREVIEW.md ./*
+          test "$(gh api "repos/$GH_REPO/commits/refs%2Ftags%2F$tag" --jq .sha)" = "$SOURCE_COMMIT"
+          echo "Draft ready. Maintainer must review native gates, license evidence and compatibility before publication." >> "$GITHUB_STEP_SUMMARY"
