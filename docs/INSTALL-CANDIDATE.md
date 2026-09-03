@@ -1,6 +1,6 @@
-# rc6 工程候选 0.5.5-rc.2
+# rc6 工程候选 0.5.5-rc.3
 
-精确宿主 DSH 0.1.0-rc.6；native host/platform 0.1.0-rc.1。本通道不混装其他 DSH prerelease。GitHub Release 提供制品，未发布 npm；不存在公开附件的版本不要强行安装。
+精确宿主 DSH 0.1.0-rc.6；native host/platform 0.1.0-rc.2。本通道不混装其他 DSH prerelease。GitHub Release 提供制品，未发布 npm；不存在公开附件的版本不要强行安装。
 
 ## 安装
 
@@ -23,4 +23,4 @@ HOME="$PWD/home" DSH_HOME="$PWD/home" node node_modules/@deepseek-ai/dsh/lib/bin
 
 CI/Release 会保留每阶段日志、JUnit、十个 tgz、离线归档、两份文档、准备器、family清单、receipt、SHA256SUMS，共17附件。任何构建或测试失败会阻止发行；历史 alpha 文档/UI夹具 SKIP 保留公开，不伪称执行。
 
-源证据见 PUBLIC-COLD-VALIDATION.md 和 ISSUE-032-COMPAT.md。发行 immutable tag，不覆盖旧制品。native仍冻结0.1.0-rc.1，许可证和完整上游开发/重建验收须单独审查，不能由源码打包证明完成。
+源证据见 PUBLIC-COLD-VALIDATION.md 和 ISSUE-032-COMPAT.md。发行 immutable tag，不覆盖旧制品。native仍冻结0.1.0-rc.2，许可证和完整上游开发/重建验收须单独审查，不能由源码打包证明完成。

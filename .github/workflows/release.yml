@@ -51,14 +51,14 @@ jobs:
         env:
           RELEASE_REF: ${{ needs.prepare.outputs.ref }}
           SOURCE_COMMIT: ${{ needs.prepare.outputs.commit }}
-          DSH_BRIDGE_ARTIFACTS: '["${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-host-0.1.0-rc.1.tgz","${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.1.tgz"]'
+          DSH_BRIDGE_ARTIFACTS: '["${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-host-0.1.0-rc.2.tgz","${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.2.tgz"]'
         shell: bash
         run: |
           set -euo pipefail
           test "$RELEASE_REF" = "refs/tags/v$(node -p 'JSON.parse(require("fs").readFileSync("package.json")).version')"
           test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
           mkdir artifacts
-          sha512sum --check vendor/native-bridge/SHA512SUMS
+          (cd vendor/native-bridge && sha512sum --check SHA512SUMS)
           npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com 2>&1 | tee artifacts/install.log
           npm run build 2>&1 | tee artifacts/build.log
           npm run test:types 2>&1 | tee artifacts/types.log

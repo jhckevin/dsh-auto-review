@@ -1,6 +1,6 @@
 {
   "name": "@jhckevin/dsh-auto-review",
-  "version": "0.5.5-rc.2",
+  "version": "0.5.5-rc.3",
   "description": "Native Auto Review capability, reviewer provider and tool policy for DeepSeek Harness",
   "type": "module",
   "license": "MIT",
@@ -109,7 +109,7 @@
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.1",
-    "@jhckevin/dsh-auto-review-bridge-host": "0.1.0-rc.1",
+    "@jhckevin/dsh-auto-review-bridge-host": "0.1.0-rc.2",
     "tree-sitter": "0.25.1",
     "tree-sitter-bash": "0.25.1"
   },

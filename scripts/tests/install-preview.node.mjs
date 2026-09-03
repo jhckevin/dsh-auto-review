@@ -9,9 +9,9 @@ import { fileURLToPath } from 'node:url'
 
 const script = fileURLToPath(new URL('../prepare-preview-install.mjs', import.meta.url))
 const fixtures = [
-  { name: '@jhckevin/dsh-auto-review', version: '0.5.6-rc.2', peerDependencies: { '@deepseek-ai/dsh-agent': '0.1.1-rc.2' }, dependencies: { '@jhckevin/dsh-auto-review-bridge-host': '0.1.0-rc.1' } },
-  { name: '@jhckevin/dsh-auto-review-bridge-host', version: '0.1.0-rc.1', optionalDependencies: { '@jhckevin/dsh-auto-review-bridge-linux-x64-gnu': '0.1.0-rc.1' } },
-  ...Object.entries({ '@jhckevin/dsh-auto-review-bridge-linux-x64-gnu': '0.1.0-rc.1', '@deepseek-ai/schemastery': '3.18.2', '@deepseek-ai/cosmokit': '1.8.3', '@standard-schema/spec': '1.1.0', 'node-addon-api': '8.9.2', 'node-gyp-build': '4.8.4', 'tree-sitter': '0.25.1', 'tree-sitter-bash': '0.25.1' }).map(([name, version]) => ({ name, version })),
+  { name: '@jhckevin/dsh-auto-review', version: '0.5.6-rc.2', peerDependencies: { '@deepseek-ai/dsh-agent': '0.1.1-rc.2' }, dependencies: { '@jhckevin/dsh-auto-review-bridge-host': '0.1.0-rc.2' } },
+  { name: '@jhckevin/dsh-auto-review-bridge-host', version: '0.1.0-rc.2', optionalDependencies: { '@jhckevin/dsh-auto-review-bridge-linux-x64-gnu': '0.1.0-rc.2' } },
+  ...Object.entries({ '@jhckevin/dsh-auto-review-bridge-linux-x64-gnu': '0.1.0-rc.2', '@deepseek-ai/schemastery': '3.18.2', '@deepseek-ai/cosmokit': '1.8.3', '@standard-schema/spec': '1.1.0', 'node-addon-api': '8.9.2', 'node-gyp-build': '4.8.4', 'tree-sitter': '0.25.1', 'tree-sitter-bash': '0.25.1' }).map(([name, version]) => ({ name, version })),
 ]
 function fixture(t, packages = fixtures) {
   const root = mkdtempSync(join(tmpdir(), 'auto-review-installer-test-'))
