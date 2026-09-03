@@ -28,6 +28,40 @@ const action = Object.freeze<ActionEnvelope>({
 })
 
 describe('ActionReviewRuntime', () => {
+  it.each(['resolve', 'reject'] as const)('old generation %s completions cannot open the new provider breaker', async mode => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime, {failureThreshold: 2})
+    const finishers: Array<() => void> = []
+    const dispose = ctx.actionReview.registerReviewer({id: 'old', review: () => new Promise((resolve, reject) => {
+      finishers.push(() => mode === 'reject' ? reject(new Error('old owner closed')) : resolve({
+        schemaVersion: 1, outcome: 'approved', riskLevel: 'low', rationale: 'old', policyRuleIds: [], uncertainty: '',
+      }))
+    })})
+    const old = [ctx.actionReview.review(action, undefined, new AbortController().signal), ctx.actionReview.review(action, undefined, new AbortController().signal)]
+    dispose()
+    ctx.actionReview.registerReviewer({id: 'new', review: async () => ({
+      schemaVersion: 1, outcome: 'approved', riskLevel: 'low', rationale: 'new', policyRuleIds: [], uncertainty: '',
+    })})
+    finishers.forEach(finish => finish())
+    expect((await Promise.all(old)).every(result => result.outcome === 'unavailable')).toBe(true)
+    expect((await ctx.actionReview.review(action, undefined, new AbortController().signal)).rationale).toBe('new')
+    expect(ctx.actionReview.auditRecords().some(record => record.kind === 'breaker' && 'state' in record.data && record.data.state === 'opened')).toBe(false)
+    await ctx.fiber.dispose()
+  })
+  it('rejects old pending approval even when the same reviewer object is re-registered', async () => {
+    const ctx = new Context()
+    await ctx.plugin(ActionReviewRuntime)
+    let finish!: (decision: Awaited<ReturnType<ActionReviewer['review']>>) => void
+    const reviewer: ActionReviewer = {id: 'hotplug', review: () => new Promise(resolve => { finish = resolve })}
+    const dispose = ctx.actionReview.registerReviewer(reviewer)
+    const pending = ctx.actionReview.review(action, undefined, new AbortController().signal)
+    dispose()
+    const disposeNew = ctx.actionReview.registerReviewer(reviewer)
+    finish({schemaVersion: 1, outcome: 'approved', riskLevel: 'low', rationale: 'old reply', policyRuleIds: [], uncertainty: ''})
+    expect((await pending).outcome).toBe('unavailable')
+    disposeNew()
+    await ctx.fiber.dispose()
+  })
   it.each(['manual', 'unavailable'] as const)('shadow does not promote %s to approval', async (outcome) => {
     const ctx = new Context()
     await ctx.plugin(ActionReviewRuntime, { mode: 'shadow' })

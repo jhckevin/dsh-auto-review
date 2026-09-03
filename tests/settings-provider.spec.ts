@@ -11,6 +11,20 @@ class MemorySettings extends SettingsProvider {
 }
 
 describe('explicit settings provider', () => {
+  it('permits unchanged provider reactivation without resetting saved settings', async () => {
+    const ctx = new Context()
+    await ctx.plugin(MemorySettings)
+    await ctx.plugin(ActionReviewRuntime)
+    const config = {provider: 'custom', model: 'reviewer', maxInputBytes: 16384, maxOutputTokens: 768, timeoutMs: 90000}
+    ctx.actionReview.configureReviewerSettingsDefaults(config)
+    await ctx.plugin(AutoReviewSettingsBridge)
+    await ctx.actionReviewSettings.update({patch: {maxAttempts: 1}, expectedRevision: 0})
+    expect(() => ctx.actionReview.configureReviewerSettingsDefaults({...config})).not.toThrow()
+    expect(ctx.actionReviewSettings.read()).toMatchObject({revision: 1, value: {maxAttempts: 1}})
+    expect(() => ctx.actionReview.configureReviewerSettingsDefaults({...config, model: 'different'})).toThrow(/reloading the settings bridge/)
+    expect(ctx.actionReviewSettings.read()).toMatchObject({revision: 1, value: {primaryModel: 'reviewer', maxAttempts: 1}})
+    await ctx.fiber.dispose()
+  })
   it('persists independent Full Access opt-out and restores safe default', async () => {
     const ctx = new Context()
     await ctx.plugin(MemorySettings)

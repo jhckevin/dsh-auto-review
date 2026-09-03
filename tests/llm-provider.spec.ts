@@ -13,7 +13,7 @@ import LlmRuntime, {
 import SessionStore, { type SessionEvent } from '@deepseek-ai/dsh-session'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
-import { apply as applyProvider } from '../src/llm-provider.ts'
+import { apply as applyProvider, inject as providerInject } from '../src/llm-provider.ts'
 import * as NativeProtocol from '../src/native-approval-protocol.ts'
 import ActionReviewRuntime from '../src/service.ts'
 import type { ActionEnvelope, LlmReviewerConfig } from '../src/types.ts'
@@ -135,6 +135,7 @@ async function fixture(outputs: string[], fixtureOptions: {
   reviewerConfig?: Partial<LlmReviewerConfig>
   runtimeMode?: 'enforcing' | 'shadow'
   createError?: unknown
+  lifecycle?: boolean
 } = {}) {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt, {})
@@ -173,7 +174,7 @@ async function fixture(outputs: string[], fixtureOptions: {
     },
   }
   ctx.agents.setFactory(factory)
-  applyProvider(ctx, {
+  const config: LlmReviewerConfig = {
     approvalProtocol: 'legacy-js', // These pre-existing tests isolate model/session behavior.
     provider: 'fixture-provider',
     model: 'fixture-reviewer',
@@ -184,11 +185,30 @@ async function fixture(outputs: string[], fixtureOptions: {
     maxAttempts: 3,
     retryDelayMs: 0,
     ...fixtureOptions.reviewerConfig,
-  })
-  return { ctx, stats: () => ({ creates, disposes, setupCalls, prompts, models }) }
+  }
+  const plugin = {name: 'lifecycle-reviewer-fixture', inject: providerInject, apply: (child: Context) => applyProvider(child, config)}
+  const providerFiber = fixtureOptions.lifecycle ? await ctx.plugin(plugin) : undefined
+  if (!fixtureOptions.lifecycle) applyProvider(ctx, config)
+  return { ctx, providerFiber, remount: () => ctx.plugin(plugin), stats: () => ({ creates, disposes, setupCalls, prompts, models }) }
 }
 
 describe('isolated reviewer agent provider', () => {
+  it('hot-disposes a real Cordis provider fiber while a reviewer is pending and can reactivate', async () => {
+    const options = {hang: true, lifecycle: true, timeoutMs: 5000}
+    const {ctx, providerFiber, remount, stats} = await fixture([approved], options)
+    const pending = ctx.actionReview.review(action, undefined, new AbortController().signal)
+    await new Promise(resolve => setTimeout(resolve, 0))
+    await providerFiber!.dispose()
+    expect((await pending).outcome).toBe('unavailable')
+    expect(stats()).toMatchObject({creates: 1, disposes: 1})
+    options.hang = false
+    const next = await remount()
+    expect((await ctx.actionReview.review(action, undefined, new AbortController().signal)).outcome).toBe('approved')
+    await next.dispose()
+    expect((await ctx.actionReview.review(action, undefined, new AbortController().signal)).outcome).toBe('unavailable')
+    expect(stats()).toMatchObject({creates: 2, disposes: 2})
+    await ctx.fiber.dispose()
+  })
   it.each(['enforcing', 'shadow'] as const)('does not retry, upgrade or approve a failed native gate in %s mode', async mode => {
     const gate = vi.spyOn(NativeProtocol, 'validateNativeApprovalDecision')
       .mockRejectedValue(new NativeProtocol.NativeApprovalProtocolError('artifact'))

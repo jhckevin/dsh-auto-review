@@ -6,8 +6,8 @@ const fixture = vi.hoisted(() => ({
   request: vi.fn(), createSession: vi.fn(() => Object.freeze({})),
   closeSession: vi.fn(async () => undefined), close: vi.fn(async () => undefined),
 }))
-vi.mock('@dsh/codex-approval-bridge-host', () => ({ acquireCodexApprovalBridge: () => fixture }))
-import { validateNativeApprovalDecision } from '../src/native-approval-protocol.ts'
+vi.mock('@dsh/codex-approval-bridge-host', () => ({ createCodexApprovalBridge: () => fixture }))
+import { NativeApprovalScope, validateNativeApprovalDecision } from '../src/native-approval-protocol.ts'
 const approved: ReviewDecision = {
   schemaVersion: 1, outcome: 'approved', riskLevel: 'low', rationale: 'allowed',
   policyRuleIds: [], uncertainty: '',
@@ -26,6 +26,42 @@ beforeEach(() => {
   }))
 })
 describe('native Core decision gate (mock transport unit tests; real package separately)', () => {
+  it('retains an owner only for the supplied activation and permits reactivation', async () => {
+    const { ctx } = runtime(), scope = new NativeApprovalScope()
+    await validateNativeApprovalDecision(ctx, approved, 'r1', 'p', new AbortController().signal, scope)
+    await validateNativeApprovalDecision(ctx, approved, 'r2', 'p', new AbortController().signal, scope)
+    expect(fixture.close).not.toHaveBeenCalled()
+    await scope.dispose()
+    await scope.dispose()
+    expect(fixture.close).toHaveBeenCalledTimes(1)
+    await expect(validateNativeApprovalDecision(ctx, approved, 'old', 'p', new AbortController().signal, scope)).rejects.toThrow()
+    const next = new NativeApprovalScope()
+    await expect(validateNativeApprovalDecision(ctx, approved, 'new', 'p', new AbortController().signal, next)).resolves.toMatchObject({outcome: 'approved'})
+    await next.dispose()
+    expect(fixture.close).toHaveBeenCalledTimes(2)
+  })
+  it('cancels a pending native result on scope disposal and releases the exit listener', async () => {
+    const { ctx, records } = runtime(), scope = new NativeApprovalScope()
+    const listeners = process.listenerCount('exit')
+    let entered!: () => void, complete!: (value: unknown) => void
+    const started = new Promise<void>(resolve => { entered = resolve })
+    fixture.request.mockImplementation(() => { entered(); return new Promise(resolve => { complete = resolve }) })
+    const pending = validateNativeApprovalDecision(ctx, approved, 'r', 'p', new AbortController().signal, scope)
+    const rejected = expect(pending).rejects.toMatchObject({failureKind: 'shutdown'})
+    await started
+    expect(process.listenerCount('exit')).toBe(listeners + 1)
+    await scope.dispose()
+    complete({ir: {schemaVersion: 1, decision: 'approved'}, canonicalWire: '\"approved\"'})
+    await rejected
+    expect(records.some(r => r.data.status === 'validated')).toBe(false)
+    expect(process.listenerCount('exit')).toBe(listeners)
+  })
+  it('can dispose an unused scope without importing a native owner', async () => {
+    const scope = new NativeApprovalScope()
+    await scope.dispose()
+    expect(fixture.close).not.toHaveBeenCalled()
+    await expect(scope.host()).rejects.toMatchObject({failureKind: 'shutdown'})
+  })
   it('passes exact approved wire through native and correlates audits', async () => {
     const { ctx, records } = runtime()
     expect((await validateNativeApprovalDecision(ctx, approved, 'review-1', 'parent', new AbortController().signal)).outcome).toBe('approved')

@@ -14,8 +14,7 @@ interface Host {
   closeSession(session: unknown): Promise<void>
   close(): Promise<void>
 }
-let hostPromise: Promise<Host> | undefined
-let shuttingDown = false
+const activeScopes = new Set<NativeApprovalScope>()
 
 export class NativeApprovalProtocolError extends Error {
   override readonly name = 'NativeApprovalProtocolError'
@@ -24,30 +23,57 @@ export class NativeApprovalProtocolError extends Error {
   }
 }
 
-function host(): Promise<Host> {
-  if (shuttingDown) return Promise.reject(new NativeApprovalProtocolError('shutdown'))
-  hostPromise ??= import(PACKAGE).then(module => {
-    const acquired = module.acquireCodexApprovalBridge() as Host
-    // One shared owner for the host process, not one process per model turn.
-    // Session handles are always released below. Application shutdown may use
-    // the explicit terminal shutdown hook; exit cleanup must remain synchronous.
-    process.once('exit', () => {
-      if (acquired.pid !== undefined) {
-        try { process.kill(acquired.pid, 'SIGKILL') } catch { /* already exited */ }
+/** One native owner per provider activation. Never borrow the legacy singleton. */
+export class NativeApprovalScope {
+  private readonly controller = new AbortController()
+  private hostPromise: Promise<Host> | undefined
+  private closePromise?: Promise<void>
+  private exitHandler?: () => void
+  readonly signal = this.controller.signal
+
+  async host(): Promise<Host> {
+    if (this.signal.aborted) throw new NativeApprovalProtocolError('shutdown')
+    this.hostPromise ??= import(PACKAGE).then(module => {
+      if (this.signal.aborted) throw new NativeApprovalProtocolError('shutdown')
+      if (typeof module.createCodexApprovalBridge !== 'function') {
+        throw new NativeApprovalProtocolError('host-api-version')
       }
+      const acquired = module.createCodexApprovalBridge() as Host
+      this.exitHandler = () => {
+        if (acquired.pid !== undefined) {
+          try { process.kill(acquired.pid, 'SIGKILL') } catch { /* already exited */ }
+        }
+      }
+      process.once('exit', this.exitHandler)
+      activeScopes.add(this)
+      return acquired
+    }).catch(error => {
+      if (!this.signal.aborted) this.hostPromise = undefined
+      throw error
     })
-    return acquired
-  }).catch(error => {
-    hostPromise = undefined
-    throw error
-  })
-  return hostPromise
+    return this.hostPromise
+  }
+
+  /** Abort synchronously; await only this activation's child-process cleanup. */
+  dispose(): Promise<void> {
+    if (this.closePromise !== undefined) return this.closePromise
+    this.controller.abort(new NativeApprovalProtocolError('shutdown'))
+    this.closePromise = (async () => {
+      try {
+        const acquired = await this.hostPromise?.catch(() => undefined)
+        if (acquired !== undefined) await acquired.close()
+      } finally {
+        if (this.exitHandler !== undefined) process.off('exit', this.exitHandler)
+        activeScopes.delete(this)
+      }
+    })()
+    return this.closePromise
+  }
 }
 
-/** Terminal host shutdown, not a per-session disposer or a hot-reload hook. */
+/** Close currently acquired owners; a later plugin activation gets a fresh scope. */
 export async function shutdownNativeApprovalBridge(): Promise<void> {
-  shuttingDown = true
-  if (hostPromise !== undefined) await (await hostPromise).close()
+  await Promise.all([...activeScopes].map(scope => scope.dispose()))
 }
 
 const digest = (text: string): string => createHash('sha256').update(text).digest('hex')
@@ -61,9 +87,13 @@ export async function validateNativeApprovalDecision(
   reviewerSessionId: string,
   parentSessionId: string | undefined,
   signal: AbortSignal,
+  providerScope?: NativeApprovalScope,
 ): Promise<ReviewDecision> {
   // Manual/unavailable never becomes a Core approval and never receives a grant.
   if (decision.outcome !== 'approved' && decision.outcome !== 'denied') return decision
+  const scope = providerScope ?? new NativeApprovalScope()
+  const callerSignal = signal
+  signal = AbortSignal.any([signal, scope.signal])
   const core = decision.outcome === 'approved'
     ? 'approved'
     : { denied: { rejection: decision.rationale } }
@@ -79,7 +109,7 @@ export async function validateNativeApprovalDecision(
   try {
     signal.throwIfAborted()
     ctx.actionReview.recordAudit('native-protocol', { ...base, status: 'preflight', at: Date.now() }, parentSessionId)
-    owner = await host()
+    owner = await scope.host()
     signal.throwIfAborted()
     session = owner.createSession()
     opened = true
@@ -104,6 +134,9 @@ export async function validateNativeApprovalDecision(
     await owner.closeSession(session)
     opened = false
     signal.throwIfAborted()
+    // Standalone callers do not retain a child process beyond this validation.
+    if (providerScope === undefined) await scope.dispose()
+    callerSignal.throwIfAborted()
     ctx.actionReview.recordAudit('native-protocol', {
       ...base, status: 'validated', outcome, resultSha256: digest(result.canonicalWire), at: Date.now(),
     }, parentSessionId)
@@ -120,5 +153,6 @@ export async function validateNativeApprovalDecision(
     if (opened && owner !== undefined) {
       try { await owner.closeSession(session) } catch { /* original error already fails closed */ }
     }
+    if (providerScope === undefined) await scope.dispose()
   }
 }

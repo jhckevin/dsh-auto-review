@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
+import { isDeepStrictEqual } from 'node:util'
 import { Context, Service } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { SettingsScope } from '@deepseek-ai/dsh-settings'
@@ -101,6 +102,7 @@ export class ActionReviewRuntime extends Service {
   private settingsBase: AutoReviewUiSettings
   private settingsScope: SettingsScope<AutoReviewUiSettings> | undefined
   private reviewer: ActionReviewer | undefined
+  private reviewerGeneration = Symbol('reviewer-generation')
   private auditSink: ActionReviewAuditSink | undefined
   private readonly semantics = new Map<string, { owner: string; classification: ActionClassification }>()
   private readonly descriptors = new Map<string, { owner: string; descriptor: ToolSecurityDescriptor }>()
@@ -169,10 +171,12 @@ export class ActionReviewRuntime extends Service {
 
   /** Bind provider-owned model defaults before the settings namespace is registered. */
   configureReviewerSettingsDefaults(config: LlmReviewerConfig): void {
+    const next = Object.freeze(autoReviewSettingsBase(this.deployedConfig, config))
     if (this.settingsScope !== undefined) {
-      throw new Error('auto-review: reviewer defaults must be configured before the settings bridge is mounted')
+      if (isDeepStrictEqual(next, this.settingsBase)) return
+      throw new Error('auto-review: changed deployment defaults require reloading the settings bridge; existing user settings were preserved')
     }
-    this.settingsBase = Object.freeze(autoReviewSettingsBase(this.deployedConfig, config))
+    this.settingsBase = next
   }
 
   /** Attach the one live settings owner; the bridge row owns its lifetime. */
@@ -209,8 +213,13 @@ export class ActionReviewRuntime extends Service {
     if (this.reviewer !== undefined) throw new Error(`auto-review: reviewer ${JSON.stringify(this.reviewer.id)} is already registered`)
     return this.ctx.effect(function* (this: ActionReviewRuntime) {
       this.reviewer = reviewer
+      this.reviewerGeneration = Symbol('reviewer-generation')
+      this.recordSuccess(undefined)
       yield () => {
-        if (this.reviewer === reviewer) this.reviewer = undefined
+        if (this.reviewer === reviewer) {
+          this.reviewer = undefined
+          this.reviewerGeneration = Symbol('reviewer-generation')
+        }
       }
     }.bind(this), 'actionReview.registerReviewer()')
   }
@@ -685,6 +694,7 @@ export class ActionReviewRuntime extends Service {
       })
     }
     const reviewer = this.reviewer
+    const generation = this.reviewerGeneration
     let decision: ReviewDecision
     if (reviewer === undefined) {
       decision = unavailableDecision('No Auto Review provider is mounted.')
@@ -697,20 +707,22 @@ export class ActionReviewRuntime extends Service {
           reviewerInvoked = true
         }
         const reviewed = await reviewer.review({ action, signal })
-        decision = signal.aborted
+        decision = signal.aborted || this.reviewerGeneration !== generation
           ? Object.freeze({
-            ...unavailableDecision('Reviewer request was cancelled before an authoritative decision could be used.'),
+            ...unavailableDecision('Reviewer request was cancelled or its plugin activation changed before an authoritative decision could be used.'),
             ...(reviewed.reviewerExecution === undefined
               ? {}
               : { reviewerExecution: reviewed.reviewerExecution }),
           })
           : reviewed
-        if (decision.outcome === 'unavailable') this.recordFailure(session)
-        else this.recordSuccess(session)
+        if (!signal.aborted && this.reviewerGeneration === generation) {
+          if (decision.outcome === 'unavailable') this.recordFailure(session)
+          else this.recordSuccess(session)
+        }
       } catch (error) {
         if (indicatorEligible && reviewerInvoked) this.setReviewIndicator(action, indicatorSessionId, undefined, startedAt)
         decision = unavailableDecision(error instanceof Error ? error.message : String(error))
-        this.recordFailure(session)
+        if (!signal.aborted && this.reviewerGeneration === generation) this.recordFailure(session)
       }
     }
     // Observation mode may override a completed denial, never missing evidence

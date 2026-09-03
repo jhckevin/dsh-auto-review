@@ -10,7 +10,7 @@ import {
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { guardianBootstrapPrompt } from './policy-corpus.ts'
 import { parseReviewDecision, ReviewProtocolError } from './protocol.ts'
-import { validateNativeApprovalDecision } from './native-approval-protocol.ts'
+import { NativeApprovalScope, validateNativeApprovalDecision } from './native-approval-protocol.ts'
 import { redactJson } from './redaction.ts'
 import { installReviewerPolicyTools } from './reviewer-policy-tools.ts'
 import { STRONG_REVIEW_KINDS } from './settings.ts'
@@ -525,6 +525,8 @@ async function reviewWithProfile(
 
 export function apply(ctx: Context, input: LlmReviewerConfig): void {
   const deployed = validateConfig(input)
+  const nativeScope = new NativeApprovalScope()
+  ctx.effect(() => () => nativeScope.dispose(), 'auto-review: provider activation lifetime')
   ctx.actionReview.configureReviewerSettingsDefaults(deployed)
   const reviewer: ActionReviewer = {
     get id() {
@@ -532,6 +534,7 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
       return `agent:${config.modelStrategy}:${config.provider}/${config.model}`
     },
     async review(request) {
+      request = { ...request, signal: AbortSignal.any([request.signal, nativeScope.signal]) }
       request.signal.throwIfAborted()
       const config = configFromSettings(deployed, ctx.actionReview.uiSettings())
       const payload = reviewerPayload(config, request.action)
@@ -568,6 +571,7 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
           first.attempts, first.failureCategories,
         )
       }
+      if (selected.outcome === 'approved' || selected.outcome === 'denied') request.signal.throwIfAborted()
       if (config.approvalProtocol === 'legacy-js') return selected
       // Outside both model retries and tier escalation. A native transport,
       // artifact or validation failure cannot cause another model attempt or
@@ -576,6 +580,7 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
         ctx, selected, reviewerSessionId ?? 'no-authoritative-reviewer',
         request.action.authority.sessionId,
         AbortSignal.any([request.signal, timeoutSignal]),
+        nativeScope,
       )
     },
   }
