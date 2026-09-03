@@ -8,3 +8,4 @@ coverage/
 !vendor/native-bridge/*.tgz
 
 compatibility-report/
+artifacts/

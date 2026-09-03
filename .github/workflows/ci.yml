@@ -4,6 +4,8 @@ on:
   push:
     branches: ['**']
   pull_request:
+  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -13,14 +15,65 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linux-x86-production-gate:
+  linux-x86-release-compatibility:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '24.20.0'
           cache: npm
-      - run: npm ci
-      - run: npm run gate:production
+      - name: Create evidence directory
+        run: mkdir -p artifacts
+      - name: Verify bundled native artifacts
+        shell: bash
+        run: |
+          set -o pipefail
+          sha512sum --check vendor/native-bridge/SHA512SUMS 2>&1 | tee artifacts/native-checksums.log
+      - name: Install exact lock without lifecycle scripts
+        shell: bash
+        run: |
+          set -o pipefail
+          npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com 2>&1 | tee artifacts/install.log
+      - name: Build and typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee artifacts/build.log
+          npm run test:types 2>&1 | tee artifacts/types.log
+          node --test scripts/tests/install-preview.node.mjs 2>&1 | tee artifacts/installer-tests.log
+      - name: Behavior tests and JUnit report
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test -- --reporter=default --reporter=junit --outputFile.junit=artifacts/tests.xml 2>&1 | tee artifacts/tests.log
+      - name: Policy provenance
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run policy:check 2>&1 | tee artifacts/policy.log
+      - name: Verify packed offline consumer
+        env:
+          DSH_BRIDGE_ARTIFACTS: '["${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-host-0.1.0-rc.1.tgz","${{ github.workspace }}/vendor/native-bridge/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.1.tgz"]'
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run pack:verify 2>&1 | tee artifacts/packed-consumer.log
+      - name: Build versioned distribution and checksum evidence
+        run: node scripts/release-artifacts.mjs
+      - name: Upload logs and distribution, including failed runs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Report scope and actual job status
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          printf '## Source/package CI: %s\n\n' "$JOB_STATUS" >> "$GITHUB_STEP_SUMMARY"
+          printf 'JUnit, command logs and successful distribution files are in the artifact above. A failed stage prevents release creation. This job does not certify upstream native or real-model/browser gates.\n' >> "$GITHUB_STEP_SUMMARY"
