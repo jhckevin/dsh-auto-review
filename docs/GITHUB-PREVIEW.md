@@ -1,26 +1,26 @@
-# GitHub 工程预发布：0.5.6-rc.3 候选
+# GitHub 工程预发布：0.5.6-rc.4 候选
 
 项目：[jhckevin/dsh-auto-review](https://github.com/jhckevin/dsh-auto-review)。本次发布源代码、测试、下游宿主补丁及经过校验的候选制品；不是 npm 发布，也不是完整 Guardian 或生产稳定性认证。
 
-**重要：本通道仍引用冻结的 native 0.1.0-rc.1 制品，不把新源码进展伪装成旧制品已重新验收。** GitHub #5 中受控上游开发 runner 已实现并正在真实执行；源码许可证材料校验已覆盖 672 个组件，原始独立许可证缺文件仍有 10 项，使用精确发布声明与单列标准全文补足材料覆盖，`legalApproval=false`。完整开发执行结果、对应二进制重建和发行门禁必须单独通过，才能发布新的 native 版本。旧 v0.5.6-rc.2 与原 tgz 不覆盖。制品用于隔离评估和工程复现，不是法律审查或生产认证。
+**本轮候选升级到独立的 native 0.1.0-rc.2，不覆盖旧 rc.1 制品。** GitHub #5 跟踪固定源码、Rust 1.95、受控上游开发流程、真实二进制重建和执行证据绑定。源码许可证材料覆盖 672 个组件；其中 10 项没有原始独立许可证文件，精确发布声明与单列标准全文作为不同类型材料保留，`legalApproval=false`。发行时须以本版本实际执行凭据和双重构建结果验收，不能借旧版绿色状态。旧 tag 与 tgz 不覆盖。制品用于隔离评估和工程复现，不是法律审查或生产认证。
 
 ## 支持范围
 
 - Linux x86_64/glibc，Node 24；固定 DSH 0.1.1-rc.2。
-- 自动审查插件 0.5.6-rc.3 候选；native host/platform 0.1.0-rc.1。
-- rc6 对应 0.5.5-rc.2、alpha5 对应 0.5.7-alpha.2 独立候选；以各 Release 附件为准，不混用 peer 版本。
-- 热安装需要首次应用宿主补丁并重启；之后新增 bundle 可通过原生 `dsh plugin --profile web add` 接入，已打开 WebUI 不需要刷新。
+- 自动审查插件 0.5.6-rc.4 候选；native host/platform 0.1.0-rc.2。
+- rc6 对应 0.5.5-rc.3、alpha5 对应 0.5.7-alpha.3 独立候选；以各 Release 附件为准，不混用 peer 版本。
+- rc2 热安装需要首次应用配套宿主补丁并重启；之后新增 bundle 可通过原生 `dsh plugin --profile web add` 接入。rc6/alpha5 仅冷启动兼容不能推导出该组 rc2 热发现补丁可用。
 - 已加载 reviewer 可停止/重新启用；已导入宿主代码的升级、删除仍要求重启。停用 reviewer 不应把不可用自动变成批准。
 
 ## 安装
 
-先阅读 [完整候选安装说明](INSTALL-CANDIDATE.md) 和 [信任边界与热生命周期](ISSUE-027-HOTPLUG.md)。使用 Release 的 SHA256SUMS 验证制品，独立工作区安装，不与已有生产 profile 混装。
+先阅读 [完整候选安装说明](https://github.com/jhckevin/dsh-auto-review/blob/v0.5.6-rc.4/docs/INSTALL-CANDIDATE.md) 和 [信任边界与热生命周期](https://github.com/jhckevin/dsh-auto-review/blob/v0.5.6-rc.4/docs/ISSUE-027-HOTPLUG.md)。使用 Release 的 SHA256SUMS 验证制品，独立工作区安装，不与已有生产 profile 混装。
 
 默认 codex-native 需要管理员首次部署受保护平台目录。普通用户可写 profile 不能作为可信二进制根；插件不会自行提权、下载可执行文件或静默改用 legacy-js。此准备不能被“热安装”省略。
 
 源码 checkout 的 lock 使用 `vendor/native-bridge/` 内经校验的桥接候选档案；因此公共 CI 不需要访问不存在的 npm bridge 版本。运行包安装使用明确的本地 tgz overrides，见安装文档。不要把源码 CI 的可复现性当作任何现有用户 profile 都无依赖冲突。
 
-## 已验证证据
+## 历史行为证据（不冒用为新 native 构建验收）
 
 | 范围 | 结果 | 不包含的结论 |
 |---|---|---|
@@ -45,6 +45,6 @@
 
 ## 原生源码与伴随材料
 
-Release 附件中的 `bridge-source.tar.gz`、`upstream-source.tar.gz` 和 `source-manifest.json` 保留固定来源；源 manifest 的 `releaseEligible:false` 原样保留。桥接源码提交为 `a25421efb28d290e40d84572039be75b94ff2099`，后续归档证据提交 `ac7214b681ca08c999cfe21c870af6a323ff2fd8`，上游 Codex 固定 `9f97cb79eb15b38d24c552c56fe24e211ff9cf3a`。
+Release 的源码及校验清单保留固定来源；以本次 `source-manifest.json` 中的桥接提交为准，上游 Codex 固定 `9f97cb79eb15b38d24c552c56fe24e211ff9cf3a`。源码归档本身不进行二进制发行验收，因此 `releaseEligible:false` 不应被改成成功凭据；实际开发执行、构建复现和包门禁由各自独立的 receipt 提供。上游未修改的源码若复用旧 Release 附件，须由本次清单提供确切下载地址和 SHA256，不能让用户猜文件出处。
 
-额外 `allocative-fixed-source-and-licenses.tar`、`allocative-exact-proof.json`、`verify-allocative.py` 来自固定上游 `fc41670cf9cfebd86ba597925081577897112c51`，与发布 crate 的 62 + 4 个源成员逐字节匹配。它们是补充证据，不是修改已冻结二进制或重新签发“全部通过”的凭据。
+本次伴随 `SOURCE-README.md` 与 `SOURCE-SHA256SUMS` 给出源码档、固定上游档及证据入口。历史 allocative 补充来源来自固定上游 `fc41670cf9cfebd86ba597925081577897112c51`，不以其替代本次实际打包的材料/完整执行验收。

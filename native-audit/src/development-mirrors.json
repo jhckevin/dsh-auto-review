@@ -1,0 +1,1472 @@
+{
+  "schemaVersion": 1,
+  "upstreamCommit": "9f97cb79eb15b38d24c552c56fe24e211ff9cf3a",
+  "moduleLockSha256": "009bb4a6f30beeb3fd750c0c8190abe79396db73c7f0713b0cea2827de843bde",
+  "resources": [
+    {
+      "url": "https://bcr.bazel.build/bazel_registry.json",
+      "sha256": "8a28e4aff06ee60aed2a8c281907fb8bcbf3b753c91fb5a5c57da3215d5b3497",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/bazel_registry.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20210324.2/MODULE.bazel",
+      "sha256": "7cd0312e064fde87c8d1cd79ba06c876bd23630c83466e9500321be55c96ace2",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20210324.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20211102.0/MODULE.bazel",
+      "sha256": "70390338f7a5106231d20620712f7cccb659cd0e9d073d1991c038eb9fc57589",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20211102.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20230125.1/MODULE.bazel",
+      "sha256": "89047429cb0207707b2dface14ba7f8df85273d484c2572755be4bab7ce9c3a0",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20230125.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20230802.0.bcr.1/MODULE.bazel",
+      "sha256": "1c8cec495288dccd14fdae6e3f95f772c1c91857047a098fad772034264cc8cb",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20230802.0.bcr.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20230802.0/MODULE.bazel",
+      "sha256": "d253ae36a8bd9ee3c5955384096ccb6baf16a1b1e93e858370da0a3b94f77c16",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20230802.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20230802.1/MODULE.bazel",
+      "sha256": "fa92e2eb41a04df73cdabeec37107316f7e5272650f81d6cc096418fe647b915",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20230802.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20240116.1/MODULE.bazel",
+      "sha256": "37bcdb4440fbb61df6a1c296ae01b327f19e9bb521f9b8e26ec854b6f97309ed",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20240116.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20240116.2/MODULE.bazel",
+      "sha256": "73939767a4686cd9a520d16af5ab440071ed75cec1a876bf2fcfaf1f71987a16",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20240116.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20250127.1/MODULE.bazel",
+      "sha256": "c4a89e7ceb9bf1e25cf84a9f830ff6b817b72874088bf5141b314726e46a57c1",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20250127.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20250512.1/MODULE.bazel",
+      "sha256": "d209fdb6f36ffaf61c509fcc81b19e81b411a999a934a032e10cd009a0226215",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20250512.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20250814.0/MODULE.bazel",
+      "sha256": "c43c16ca2c432566cdb78913964497259903ebe8fb7d9b57b38e9f1425b427b8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20250814.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20250814.1/MODULE.bazel",
+      "sha256": "51f2312901470cdab0dbdf3b88c40cd21c62a7ed58a3de45b365ddc5b11bcab2",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20250814.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/abseil-cpp/20250814.1/source.json",
+      "sha256": "cea3901d7e299da7320700abbaafe57a65d039f10d0d7ea601c4a66938ea4b0c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/abseil-cpp/20250814.1/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/alsa_lib/1.2.9.bcr.4/MODULE.bazel",
+      "sha256": "66842efc2b50b7c12274a5218d468119a5d6f9dc46a5164d9496fb517f64aba6",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/alsa_lib/1.2.9.bcr.4/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/alsa_lib/1.2.9.bcr.4/source.json",
+      "sha256": "118ea7208f2fab61b4b14cc763a6fb4e5931bc4d3cec30b83c749a3134463752",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/alsa_lib/1.2.9.bcr.4/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/apple_support/1.11.1/MODULE.bazel",
+      "sha256": "1843d7cd8a58369a444fc6000e7304425fba600ff641592161d9f15b179fb896",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/apple_support/1.11.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/apple_support/1.15.1/MODULE.bazel",
+      "sha256": "a0556fefca0b1bb2de8567b8827518f94db6a6e7e7d632b4c48dc5f865bc7c85",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/apple_support/1.15.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/apple_support/1.21.0/MODULE.bazel",
+      "sha256": "ac1824ed5edf17dee2fdd4927ada30c9f8c3b520be1b5fd02a5da15bc10bff3e",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/apple_support/1.21.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/apple_support/1.21.1/MODULE.bazel",
+      "sha256": "5809fa3efab15d1f3c3c635af6974044bac8a4919c62238cce06acee8a8c11f1",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/apple_support/1.21.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/apple_support/1.22.1/MODULE.bazel",
+      "sha256": "90bd1a660590f3ceffbdf524e37483094b29352d85317060b2327fff8f3f4458",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/apple_support/1.22.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/apple_support/1.24.1/MODULE.bazel",
+      "sha256": "f46e8ddad60aef170ee92b2f3d00ef66c147ceafea68b6877cb45bd91737f5f8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/apple_support/1.24.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/apple_support/1.24.2/MODULE.bazel",
+      "sha256": "0e62471818affb9f0b26f128831d5c40b074d32e6dda5a0d3852847215a41ca4",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/apple_support/1.24.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/apple_support/2.1.0/MODULE.bazel",
+      "sha256": "b15c125dabed01b6803c129cd384de4997759f02f8ec90dc5136bcf6dfc5086a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/apple_support/2.1.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/apple_support/2.1.0/source.json",
+      "sha256": "78064cfefe18dee4faaf51893661e0d403784f3efe88671d727cdcdc67ed8fb3",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/apple_support/2.1.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/aspect_tools_telemetry/0.3.3/MODULE.bazel",
+      "sha256": "37c764292861c2f70314efa9846bb6dbb44fc0308903b3285da6528305450183",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/aspect_tools_telemetry/0.3.3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/aspect_tools_telemetry/0.3.3/source.json",
+      "sha256": "605086bbc197743a0d360f7ddc550a1d4dfa0441bc807236e17170f636153348",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/aspect_tools_telemetry/0.3.3/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/aws-lc/5.1.0.bcr.1/MODULE.bazel",
+      "sha256": "82300781422804ec45397555891b583bbaa21b97b5a8815e928e81089b7432bc",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/aws-lc/5.1.0.bcr.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/aws-lc/5.1.0.bcr.1/source.json",
+      "sha256": "7d88fc6db323947a11d1638fe95185e9c733c337a1d1e7b50cdcf487e29ce56e",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/aws-lc/5.1.0.bcr.1/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.1.1/MODULE.bazel",
+      "sha256": "27b8c79ef57efe08efccbd9dd6ef70d61b4798320b8d3c134fd571f78963dbcd",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.1.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.10.0/MODULE.bazel",
+      "sha256": "f75e8807570484a99be90abcd52b5e1f390362c258bcb73106f4544957a48101",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.10.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.11.0/MODULE.bazel",
+      "sha256": "f9382337dd5a474c3b7d334c2f83e50b6eaedc284253334cf823044a26de03e8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.11.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.15.0/MODULE.bazel",
+      "sha256": "d38ff6e517149dc509406aca0db3ad1efdd890a85e049585b7234d04238e2a4d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.15.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.17.0/MODULE.bazel",
+      "sha256": "039de32d21b816b47bd42c778e0454217e9c9caac4a3cf8e15c7231ee3ddee4d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.17.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.18.0/MODULE.bazel",
+      "sha256": "1be0ae2557ab3a72a57aeb31b29be347bcdc5d2b1eb1e70f39e3851a7e97041a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.18.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.19.0/MODULE.bazel",
+      "sha256": "59adcdf28230d220f0067b1f435b8537dd033bfff8db21335ef9217919c7fb58",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.19.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.21.0/MODULE.bazel",
+      "sha256": "675642261665d8eea09989aa3b8afb5c37627f1be178382c320d1b46afba5e3b",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.21.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.23.0/MODULE.bazel",
+      "sha256": "fd1ac84bc4e97a5a0816b7fd7d4d4f6d837b0047cf4cbd81652d616af3a6591a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.23.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.24.0/MODULE.bazel",
+      "sha256": "4796b4c25b47053e9bbffa792b3792d07e228ff66cd0405faef56a978708acd4",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.24.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.27.0/MODULE.bazel",
+      "sha256": "621eeee06c4458a9121d1f104efb80f39d34deff4984e778359c60eaf1a8cb65",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.27.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.28.0/MODULE.bazel",
+      "sha256": "4b4200e6cbf8fa335b2c3f43e1d6ef3e240319c33d43d60cc0fbd4b87ece299d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.28.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.3.0/MODULE.bazel",
+      "sha256": "cdcafe83ec318cda34e02948e81d790aab8df7a929cec6f6969f13a489ccecd9",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.3.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.30.0/MODULE.bazel",
+      "sha256": "a14b62d05969a293b80257e72e597c2da7f717e1e69fa8b339703ed6731bec87",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.30.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.33.0/MODULE.bazel",
+      "sha256": "8b8dc9d2a4c88609409c3191165bccec0e4cb044cd7a72ccbe826583303459f6",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.33.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.34.0/MODULE.bazel",
+      "sha256": "e8475ad7c8965542e0c7aac8af68eb48c4af904be3d614b6aa6274c092c2ea1e",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.34.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.4.1/MODULE.bazel",
+      "sha256": "e45b6bb2350aff3e442ae1111c555e27eac1d915e77775f6fdc4b351b758b5d7",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.4.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.42.0/MODULE.bazel",
+      "sha256": "e8ca15cb2639c5f12183db6dcb678735555d0cdd739b32a0418b6532b5e565f8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.42.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.43.0/MODULE.bazel",
+      "sha256": "defa2226f06ba20550d6548c3a2ea2a7929634437a52973869c20c225450eb91",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.43.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.45.0/MODULE.bazel",
+      "sha256": "7daec6d87ab0703417486d4cb948af0b06f55d4d7c08cbb5978c80e79b538edf",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.45.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.47.0/MODULE.bazel",
+      "sha256": "e34df3cb35b1684cfa69923a61ae3803595babd3942cd306a488d51400886b30",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.47.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.50.0/MODULE.bazel",
+      "sha256": "2083ef9c7a469f520890483ccf8e0189d6e71e2117e7752e15e6554433d5ae3e",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.50.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.50.0/source.json",
+      "sha256": "e0ee3debde2789ff56e4452e612d126925ba9ab64d4bde79c67f099d2902df9b",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.50.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.9.0/MODULE.bazel",
+      "sha256": "885151d58d90d8d9c811eb75e3288c11f850e1d6b481a8c9f766adee4712358b",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.9.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_features/1.9.1/MODULE.bazel",
+      "sha256": "8f679097876a9b609ad1f60249c49d68bfab783dd9be012faf9d82547b14815a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_features/1.9.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_lib/3.0.0/MODULE.bazel",
+      "sha256": "22b70b80ac89ad3f3772526cd9feee2fa412c2b01933fea7ed13238a448d370d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_lib/3.0.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_lib/3.1.0/MODULE.bazel",
+      "sha256": "6809765c14e3c766a9b9286c7b0ec56ed87a73326e48fe01749f0c0fdcfe3287",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_lib/3.1.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_lib/3.2.2/MODULE.bazel",
+      "sha256": "e2c890c8a515d6bca9c66d47718aa9e44b458fde64ec7204b8030bf2d349058c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_lib/3.2.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_lib/3.2.2/source.json",
+      "sha256": "9e84e115c20e14652c5c21401ae85ff4daa8702e265b5c0b3bf89353f17aa212",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_lib/3.2.2/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.0.3/MODULE.bazel",
+      "sha256": "bcb0fd896384802d1ad283b4e4eb4d718eebd8cb820b0a2c3a347fb971afd9d8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.0.3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.1.1/MODULE.bazel",
+      "sha256": "1add3e7d93ff2e6998f9e118022c84d163917d912f5afafb3058e3d2f1545b5e",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.1.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.2.0/MODULE.bazel",
+      "sha256": "44fe84260e454ed94ad326352a698422dbe372b21a1ac9f3eab76eb531223686",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.2.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.2.1/MODULE.bazel",
+      "sha256": "f35baf9da0efe45fa3da1696ae906eea3d615ad41e2e3def4aeb4e8bc0ef9a7a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.2.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.3.0/MODULE.bazel",
+      "sha256": "20228b92868bf5cfc41bda7afc8a8ba2a543201851de39d990ec957b513579c5",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.3.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.4.1/MODULE.bazel",
+      "sha256": "a0dcb779424be33100dcae821e9e27e4f2901d9dfd5333efe5ac6a8d7ab75e1d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.4.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.4.2/MODULE.bazel",
+      "sha256": "3bd40978e7a1fac911d5989e6b09d8f64921865a45822d8b09e815eaa726a651",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.4.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.5.0/MODULE.bazel",
+      "sha256": "32880f5e2945ce6a03d1fbd588e9198c0a959bb42297b2cfaf1685b7bc32e138",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.5.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.6.1/MODULE.bazel",
+      "sha256": "8fdee2dbaace6c252131c00e1de4b165dc65af02ea278476187765e1a617b917",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.6.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.7.0/MODULE.bazel",
+      "sha256": "0db596f4563de7938de764cc8deeabec291f55e8ec15299718b93c4423e9796d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.7.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.7.1/MODULE.bazel",
+      "sha256": "3120d80c5861aa616222ec015332e5f8d3171e062e3e804a2a0253e1be26e59b",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.7.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.8.0/MODULE.bazel",
+      "sha256": "2fb3fb53675f6adfc1ca5bfbd5cfb655ae350fba4706d924a8ec7e3ba945671c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.8.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.8.1/MODULE.bazel",
+      "sha256": "88ade7293becda963e0e3ea33e7d54d3425127e0a326e0d17da085a5f1f03ff6",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.8.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.8.2/MODULE.bazel",
+      "sha256": "69ad6927098316848b34a9142bcc975e018ba27f08c4ff403f50c1b6e646ca67",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.8.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.9.0/MODULE.bazel",
+      "sha256": "72997b29dfd95c3fa0d0c48322d05590418edef451f8db8db5509c57875fb4b7",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.9.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bazel_skylib/1.9.0/source.json",
+      "sha256": "7ad77c1e8c1b84222d9b3f3cae016a76639435744c19330b0b37c0a3c9da7dc0",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bazel_skylib/1.9.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/buildozer/8.2.1/MODULE.bazel",
+      "sha256": "61e9433c574c2bd9519cad7fa66b9c1d2b8e8d5f3ae5d6528a2c2d26e68d874d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/buildozer/8.2.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/buildozer/8.2.1/source.json",
+      "sha256": "7c33f6a26ee0216f85544b4bca5e9044579e0219b6898dd653f5fb449cf2e484",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/buildozer/8.2.1/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bzip2/1.0.8.bcr.3/MODULE.bazel",
+      "sha256": "29ecf4babfd3c762be00d7573c288c083672ab60e79c833ff7f49ee662e54471",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bzip2/1.0.8.bcr.3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/bzip2/1.0.8.bcr.3/source.json",
+      "sha256": "8be4a3ef2599693f759e5c0990a4cc5a246ac08db4c900a38f852ba25b5c39be",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/bzip2/1.0.8.bcr.3/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/gawk/5.3.2.bcr.3/MODULE.bazel",
+      "sha256": "f1b7bb2dd53e8f2ef984b39485ec8a44e9076dda5c4b8efd2fb4c6a6e856a31d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/gawk/5.3.2.bcr.3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/gawk/5.3.2.bcr.3/source.json",
+      "sha256": "ebe931bfe362e4b41e59ee00a528db6074157ff2ced92eb9e970acab2e1089c9",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/gawk/5.3.2.bcr.3/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/google_benchmark/1.8.2/MODULE.bazel",
+      "sha256": "a70cf1bba851000ba93b58ae2f6d76490a9feb74192e57ab8e8ff13c34ec50cb",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/google_benchmark/1.8.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/googletest/1.11.0/MODULE.bazel",
+      "sha256": "3a83f095183f66345ca86aa13c58b59f9f94a2f81999c093d4eeaa2d262d12f4",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/googletest/1.11.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/googletest/1.14.0.bcr.1/MODULE.bazel",
+      "sha256": "22c31a561553727960057361aa33bf20fb2e98584bc4fec007906e27053f80c6",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/googletest/1.14.0.bcr.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/googletest/1.14.0/MODULE.bazel",
+      "sha256": "cfbcbf3e6eac06ef9d85900f64424708cc08687d1b527f0ef65aa7517af8118f",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/googletest/1.14.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/googletest/1.15.2/MODULE.bazel",
+      "sha256": "6de1edc1d26cafb0ea1a6ab3f4d4192d91a312fd2d360b63adaa213cd00b2108",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/googletest/1.15.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/googletest/1.17.0.bcr.2/MODULE.bazel",
+      "sha256": "827f54f492a3ce549c940106d73de332c2b30cebd0c20c0bc5d786aba7f116cb",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/googletest/1.17.0.bcr.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/googletest/1.17.0.bcr.2/source.json",
+      "sha256": "3664514073a819992320ffbce5825e4238459df344d8b01748af2208f8d2e1eb",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/googletest/1.17.0.bcr.2/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/googletest/1.17.0/MODULE.bazel",
+      "sha256": "dbec758171594a705933a29fcf69293d2468c49ec1f2ebca65c36f504d72df46",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/googletest/1.17.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/hermetic_launcher/0.0.8/MODULE.bazel",
+      "sha256": "3be7b0faca6f1e69e89197999e0b01ce058c42f3e764ef028466f7e0ff77c761",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/hermetic_launcher/0.0.8/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/hermetic_launcher/0.0.8/source.json",
+      "sha256": "8403718636114198fca6ea04b437fa001ac7167b4d485102defb0a6f7d11bc08",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/hermetic_launcher/0.0.8/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/jsoncpp/1.9.5/MODULE.bazel",
+      "sha256": "31271aedc59e815656f5736f282bb7509a97c7ecb43e927ac1a37966e0578075",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/jsoncpp/1.9.5/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/jsoncpp/1.9.6/MODULE.bazel",
+      "sha256": "2f8d20d3b7d54143213c4dfc3d98225c42de7d666011528dc8fe91591e2e17b0",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/jsoncpp/1.9.6/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/jsoncpp/1.9.6/source.json",
+      "sha256": "a04756d367a2126c3541682864ecec52f92cdee80a35735a3cb249ce015ca000",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/jsoncpp/1.9.6/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/libcap/2.27.bcr.1/MODULE.bazel",
+      "sha256": "7c034d7a4d92b2293294934377f5d1cbc88119710a11079fa8142120f6f08768",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/libcap/2.27.bcr.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/libcap/2.27.bcr.1/source.json",
+      "sha256": "3b116cbdbd25a68ffb587b672205f6d353a4c19a35452e480d58fc89531e0a10",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/libcap/2.27.bcr.1/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/libpfm/4.11.0/MODULE.bazel",
+      "sha256": "45061ff025b301940f1e30d2c16bea596c25b176c8b6b3087e92615adbd52902",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/libpfm/4.11.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/llvm/0.8.11/MODULE.bazel",
+      "sha256": "0f8c30b74be64f0e91764e925d0f562c70e8d85b6cea912f724d6b3753d6a33f",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/llvm/0.8.11/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/llvm/0.8.11/source.json",
+      "sha256": "b40edb2bb2ed271bf613b396d245cb473c42fb057a2b26a3bc7d7e8bfcf6aa71",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/llvm/0.8.11/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/llvm/0.8.9/MODULE.bazel",
+      "sha256": "9e35ff5bcac996f9edc1b44b8f8baa58c7855e742c5608b07d925dcdbe642100",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/llvm/0.8.9/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/nlohmann_json/3.6.1/MODULE.bazel",
+      "sha256": "6f7b417dcc794d9add9e556673ad25cb3ba835224290f4f848f8e2db1e1fca74",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/nlohmann_json/3.6.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/openssl/3.5.4.bcr.0/MODULE.bazel",
+      "sha256": "0f6b8f20b192b9ff0781406256150bcd46f19e66d807dcb0c540548439d6fc35",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/openssl/3.5.4.bcr.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/openssl/3.5.4.bcr.0/source.json",
+      "sha256": "543ed7627cc18e6460b9c1ae4a1b6b1debc5a5e0aca878b00f7531c7186b73da",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/openssl/3.5.4.bcr.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/package_metadata/0.0.3/MODULE.bazel",
+      "sha256": "77890552ecea9e284b5424c9de827a58099348763a4359e975c359a83d4faa83",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/package_metadata/0.0.3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/package_metadata/0.0.7/MODULE.bazel",
+      "sha256": "7adb03933fc8401f495800cf4eafcff0edc6da0ff55c7db223ef69d19f689486",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/package_metadata/0.0.7/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/package_metadata/0.0.7/source.json",
+      "sha256": "50639625e937b56115012674c797cca7a05a96b4878c87d803c13dc2b31de8a0",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/package_metadata/0.0.7/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/platforms/0.0.10/MODULE.bazel",
+      "sha256": "8cb8efaf200bdeb2150d93e162c40f388529a25852b332cec879373771e48ed5",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/platforms/0.0.10/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/platforms/0.0.11/MODULE.bazel",
+      "sha256": "0daefc49732e227caa8bfa834d65dc52e8cc18a2faf80df25e8caea151a9413f",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/platforms/0.0.11/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/platforms/0.0.4/MODULE.bazel",
+      "sha256": "9b328e31ee156f53f3c416a64f8491f7eb731742655a47c9eec4703a71644aee",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/platforms/0.0.4/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/platforms/0.0.5/MODULE.bazel",
+      "sha256": "5733b54ea419d5eaf7997054bb55f6a1d0b5ff8aedf0176fef9eea44f3acda37",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/platforms/0.0.5/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/platforms/0.0.6/MODULE.bazel",
+      "sha256": "ad6eeef431dc52aefd2d77ed20a4b353f8ebf0f4ecdd26a807d2da5aa8cd0615",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/platforms/0.0.6/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/platforms/0.0.7/MODULE.bazel",
+      "sha256": "72fd4a0ede9ee5c021f6a8dd92b503e089f46c227ba2813ff183b71616034814",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/platforms/0.0.7/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/platforms/0.0.8/MODULE.bazel",
+      "sha256": "9f142c03e348f6d263719f5074b21ef3adf0b139ee4c5133e2aa35664da9eb2d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/platforms/0.0.8/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/platforms/0.0.9/MODULE.bazel",
+      "sha256": "4a87a60c927b56ddd67db50c89acaa62f4ce2a1d2149ccb63ffd871d5ce29ebc",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/platforms/0.0.9/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/platforms/1.0.0/MODULE.bazel",
+      "sha256": "f05feb42b48f1b3c225e4ccf351f367be0371411a803198ec34a389fb22aa580",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/platforms/1.0.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/platforms/1.1.0/MODULE.bazel",
+      "sha256": "1c0c09f5bdcf4b3f924720d2478a3711cb39f4977019ca5988685e5b7e18b3d2",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/platforms/1.1.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/platforms/1.1.0/source.json",
+      "sha256": "fcf351c47596c939140ab0d333dfdd08ed1ea6ce33c2fe70c12493a301cf1344",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/platforms/1.1.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/21.7/MODULE.bazel",
+      "sha256": "a5a29bb89544f9b97edce05642fac225a808b5b7be74038ea3640fae2f8e66a7",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/21.7/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/23.1/MODULE.bazel",
+      "sha256": "88b393b3eb4101d18129e5db51847cd40a5517a53e81216144a8c32dfeeca52a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/23.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/24.4/MODULE.bazel",
+      "sha256": "7bc7ce5f2abf36b3b7b7c8218d3acdebb9426aeb35c2257c96445756f970eb12",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/24.4/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/27.0/MODULE.bazel",
+      "sha256": "7873b60be88844a0a1d8f80b9d5d20cfbd8495a689b8763e76c6372998d3f64c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/27.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/27.1/MODULE.bazel",
+      "sha256": "703a7b614728bb06647f965264967a8ef1c39e09e8f167b3ca0bb1fd80449c0d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/27.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/29.0-rc2/MODULE.bazel",
+      "sha256": "6241d35983510143049943fc0d57937937122baf1b287862f9dc8590fc4c37df",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/29.0-rc2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/29.0-rc3/MODULE.bazel",
+      "sha256": "33c2dfa286578573afc55a7acaea3cada4122b9631007c594bf0729f41c8de92",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/29.0-rc3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/29.1/MODULE.bazel",
+      "sha256": "557c3457560ff49e122ed76c0bc3397a64af9574691cb8201b4e46d4ab2ecb95",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/29.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/3.19.0/MODULE.bazel",
+      "sha256": "6b5fbb433f760a99a22b18b6850ed5784ef0e9928a72668b66e4d7ccd47db9b0",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/3.19.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/32.1/MODULE.bazel",
+      "sha256": "89cd2866a9cb07fee9ff74c41ceace11554f32e0d849de4e23ac55515cfada4d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/32.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/33.4/MODULE.bazel",
+      "sha256": "114775b816b38b6d0ca620450d6b02550c60ceedfdc8d9a229833b34a223dc42",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/33.4/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/34.0.bcr.1/MODULE.bazel",
+      "sha256": "74e541b0ba877813da786a11707d4e394433c157841d5111a36be0d44b907931",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/34.0.bcr.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/protobuf/34.0.bcr.1/source.json",
+      "sha256": "fc174b3d6215aa14197d1bd779f98bb72d9fd666ee5ec0d6bba6ae986baa4535",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/protobuf/34.0.bcr.1/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/pybind11_bazel/2.11.1/MODULE.bazel",
+      "sha256": "88af1c246226d87e65be78ed49ecd1e6f5e98648558c14ce99176da041dc378e",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/pybind11_bazel/2.11.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/pybind11_bazel/2.12.0/MODULE.bazel",
+      "sha256": "e6f4c20442eaa7c90d7190d8dc539d0ab422f95c65a57cc59562170c58ae3d34",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/pybind11_bazel/2.12.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/pybind11_bazel/2.13.6/MODULE.bazel",
+      "sha256": "2d746fda559464b253b2b2e6073cb51643a2ac79009ca02100ebbc44b4548656",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/pybind11_bazel/2.13.6/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/pybind11_bazel/2.13.6/source.json",
+      "sha256": "6aa0703de8efb20cc897bbdbeb928582ee7beaf278bcd001ac253e1605bddfae",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/pybind11_bazel/2.13.6/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/re2/2023-09-01/MODULE.bazel",
+      "sha256": "cb3d511531b16cfc78a225a9e2136007a48cf8a677e4264baeab57fe78a80206",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/re2/2023-09-01/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/re2/2024-07-02.bcr.1/MODULE.bazel",
+      "sha256": "b4963dda9b31080be1905ef085ecd7dd6cd47c05c79b9cdf83ade83ab2ab271a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/re2/2024-07-02.bcr.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/re2/2024-07-02/MODULE.bazel",
+      "sha256": "0eadc4395959969297cbcf31a249ff457f2f1d456228c67719480205aa306daa",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/re2/2024-07-02/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/re2/2025-08-12.bcr.1/MODULE.bazel",
+      "sha256": "e09b434b122bfb786a69179f9b325e35cb1856c3f56a7a81dd61609260ed46e1",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/re2/2025-08-12.bcr.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/re2/2025-08-12.bcr.1/source.json",
+      "sha256": "a8ae7c09533bf67f9f6e5122d884d5741600b09d78dca6fc0f2f8d2ee0c2d957",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/re2/2025-08-12.bcr.1/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_android/0.1.1/MODULE.bazel",
+      "sha256": "48809ab0091b07ad0182defb787c4c5328bd3a278938415c00a7b69b50c4d3a8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_android/0.1.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_android/0.1.1/source.json",
+      "sha256": "e6986b41626ee10bdc864937ffb6d6bf275bb5b9c65120e6137d56e6331f089e",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_android/0.1.1/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_apple/3.16.0/MODULE.bazel",
+      "sha256": "0d1caf0b8375942ce98ea944be754a18874041e4e0459401d925577624d3a54a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_apple/3.16.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_apple/4.1.0/MODULE.bazel",
+      "sha256": "76e10fd4a48038d3fc7c5dc6e63b7063bbf5304a2e3bd42edda6ec660eebea68",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_apple/4.1.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_autoconf/0.0.14/MODULE.bazel",
+      "sha256": "ea2e63f6d25a40adf67daa25a2bb78b868cceb7a67d67c8d3110bfd5f51a35dc",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_autoconf/0.0.14/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_autoconf/0.0.14/source.json",
+      "sha256": "fc30be09bee23541d4a17c5bd654ab45c6d0cadd0434dbcabb166a60112294b8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_autoconf/0.0.14/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.0.1/MODULE.bazel",
+      "sha256": "cb2aa0747f84c6c3a78dad4e2049c154f08ab9d166b1273835a8174940365647",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.0.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.0.10/MODULE.bazel",
+      "sha256": "ec1705118f7eaedd6e118508d3d26deba2a4e76476ada7e0e3965211be012002",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.0.10/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.0.13/MODULE.bazel",
+      "sha256": "0e8529ed7b323dad0775ff924d2ae5af7640b23553dfcd4d34344c7e7a867191",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.0.13/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.0.15/MODULE.bazel",
+      "sha256": "6704c35f7b4a72502ee81f61bf88706b54f06b3cbe5558ac17e2e14666cd5dcc",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.0.15/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.0.16/MODULE.bazel",
+      "sha256": "7661303b8fc1b4d7f532e54e9d6565771fea666fbdf839e0a86affcd02defe87",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.0.16/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.0.17/MODULE.bazel",
+      "sha256": "2ae1d8f4238ec67d7185d8861cb0a2cdf4bc608697c331b95bf990e69b62e64a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.0.17/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.0.2/MODULE.bazel",
+      "sha256": "6915987c90970493ab97393024c156ea8fb9f3bea953b2f3ec05c34f19b5695c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.0.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.0.6/MODULE.bazel",
+      "sha256": "abf360251023dfe3efcef65ab9d56beefa8394d4176dd29529750e1c57eaa33f",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.0.6/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.0.8/MODULE.bazel",
+      "sha256": "964c85c82cfeb6f3855e6a07054fdb159aced38e99a5eecf7bce9d53990afa3e",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.0.8/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.0.9/MODULE.bazel",
+      "sha256": "836e76439f354b89afe6a911a7adf59a6b2518fafb174483ad78a2a2fde7b1c5",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.0.9/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.1.1/MODULE.bazel",
+      "sha256": "2f0222a6f229f0bf44cd711dc13c858dad98c62d52bd51d8fc3a764a83125513",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.1.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.1.2/MODULE.bazel",
+      "sha256": "557ddc3a96858ec0d465a87c0a931054d7dcfd6583af2c7ed3baf494407fd8d0",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.1.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.1.4/MODULE.bazel",
+      "sha256": "bb03a452a7527ac25a7518fb86a946ef63df860b9657d8323a0c50f8504fb0b9",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.1.4/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.1.5/MODULE.bazel",
+      "sha256": "88dfc9361e8b5ae1008ac38f7cdfd45ad738e4fa676a3ad67d19204f045a1fd8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.1.5/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.2.0/MODULE.bazel",
+      "sha256": "b5c17f90458caae90d2ccd114c81970062946f49f355610ed89bebf954f5783c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.2.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.2.13/MODULE.bazel",
+      "sha256": "eecdd666eda6be16a8d9dc15e44b5c75133405e820f620a234acc4b1fdc5aa37",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.2.13/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.2.14/MODULE.bazel",
+      "sha256": "353c99ed148887ee89c54a17d4100ae7e7e436593d104b668476019023b58df8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.2.14/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.2.16/MODULE.bazel",
+      "sha256": "9242fa89f950c6ef7702801ab53922e99c69b02310c39fb6e62b2bd30df2a1d4",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.2.16/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.2.18/MODULE.bazel",
+      "sha256": "4460ec36adc8f722a6a2a4ac9374cb91f2acebadaa93fc37966129afb3dece87",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.2.18/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.2.19/MODULE.bazel",
+      "sha256": "d5e0f05b63273281a16654eb6b1a8742a75ec153ac8b4f0419949d6e401e46f0",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.2.19/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.2.20/MODULE.bazel",
+      "sha256": "f5c07bce5ddcb99be21a0812ff5aadb439e688b7449c6542152363b2fd859c1a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.2.20/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.2.20/source.json",
+      "sha256": "1155433dc6b8161bc339ce94095b337ed95feb1f048b014e10b62339d4b4239c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.2.20/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.2.4/MODULE.bazel",
+      "sha256": "1ff1223dfd24f3ecf8f028446d4a27608aa43c3f41e346d22838a4223980b8cc",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.2.4/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_cc/0.2.8/MODULE.bazel",
+      "sha256": "f1df20f0bf22c28192a794f29b501ee2018fa37a3862a1a2132ae2940a23a642",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_cc/0.2.8/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_foreign_cc/0.9.0/MODULE.bazel",
+      "sha256": "c9e8c682bf75b0e7c704166d79b599f93b72cfca5ad7477df596947891feeef6",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_foreign_cc/0.9.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_fuzzing/0.5.2/MODULE.bazel",
+      "sha256": "40c97d1144356f52905566c55811f13b299453a14ac7769dfba2ac38192337a8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_fuzzing/0.5.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/4.0.0/MODULE.bazel",
+      "sha256": "5a78a7ae82cd1a33cef56dc578c7d2a46ed0dca12643ee45edbb8417899e6f74",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/4.0.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/5.3.5/MODULE.bazel",
+      "sha256": "a4ec4f2db570171e3e5eb753276ee4b389bae16b96207e9d3230895c99644b86",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/5.3.5/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/6.5.2/MODULE.bazel",
+      "sha256": "1d440d262d0e08453fa0c4d8f699ba81609ed0e9a9a0f02cd10b3e7942e61e31",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/6.5.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/7.1.0/MODULE.bazel",
+      "sha256": "30d9135a2b6561c761bd67bd4990da591e6bdc128790ce3e7afd6a3558b2fb64",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/7.1.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/7.10.0/MODULE.bazel",
+      "sha256": "530c3beb3067e870561739f1144329a21c851ff771cd752a49e06e3dc9c2e71a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/7.10.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/7.12.2/MODULE.bazel",
+      "sha256": "579c505165ee757a4280ef83cda0150eea193eed3bef50b1004ba88b99da6de6",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/7.12.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/7.2.0/MODULE.bazel",
+      "sha256": "06c0334c9be61e6cef2c8c84a7800cef502063269a5af25ceb100b192453d4ab",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/7.2.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/7.6.1/MODULE.bazel",
+      "sha256": "2f14b7e8a1aa2f67ae92bc69d1ec0fa8d9f827c4e17ff5e5f02e91caa3b2d0fe",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/7.6.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/8.3.2/MODULE.bazel",
+      "sha256": "7336d5511ad5af0b8615fdc7477535a2e4e723a357b6713af439fe8cf0195017",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/8.3.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/8.5.1/MODULE.bazel",
+      "sha256": "d8a9e38cc5228881f7055a6079f6f7821a073df3744d441978e7a43e20226939",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/8.5.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/8.6.0/MODULE.bazel",
+      "sha256": "9c064c434606d75a086f15ade5edb514308cccd1544c2b2a89bbac4310e41c71",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/8.6.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/8.6.1/MODULE.bazel",
+      "sha256": "f4808e2ab5b0197f094cabce9f4b006a27766beb6a9975931da07099560ca9c2",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/8.6.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/9.0.3/MODULE.bazel",
+      "sha256": "1f98ed015f7e744a745e0df6e898a7c5e83562d6b759dfd475c76456dda5ccea",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/9.0.3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_java/9.0.3/source.json",
+      "sha256": "b038c0c07e12e658135bbc32cc1a2ded6e33785105c9d41958014c592de4593e",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_java/9.0.3/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_jvm_external/4.4.2/MODULE.bazel",
+      "sha256": "a56b85e418c83eb1839819f0b515c431010160383306d13ec21959ac412d2fe7",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_jvm_external/4.4.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_jvm_external/5.1/MODULE.bazel",
+      "sha256": "33f6f999e03183f7d088c9be518a63467dfd0be94a11d0055fe2d210f89aa909",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_jvm_external/5.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_jvm_external/5.2/MODULE.bazel",
+      "sha256": "d9351ba35217ad0de03816ef3ed63f89d411349353077348a45348b096615036",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_jvm_external/5.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_jvm_external/6.3/MODULE.bazel",
+      "sha256": "c998e060b85f71e00de5ec552019347c8bca255062c990ac02d051bb80a38df0",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_jvm_external/6.3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_jvm_external/6.7/MODULE.bazel",
+      "sha256": "e717beabc4d091ecb2c803c2d341b88590e9116b8bf7947915eeb33aab4f96dd",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_jvm_external/6.7/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_jvm_external/6.7/source.json",
+      "sha256": "5426f412d0a7fc6b611643376c7e4a82dec991491b9ce5cb1cfdd25fe2e92be4",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_jvm_external/6.7/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_kotlin/1.9.6/MODULE.bazel",
+      "sha256": "d269a01a18ee74d0335450b10f62c9ed81f2321d7958a2934e44272fe82dcef3",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_kotlin/1.9.6/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_kotlin/1.9.6/source.json",
+      "sha256": "2faa4794364282db7c06600b7e5e34867a564ae91bda7cae7c29c64e9466b7d5",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_kotlin/1.9.6/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_license/0.0.3/MODULE.bazel",
+      "sha256": "627e9ab0247f7d1e05736b59dbb1b6871373de5ad31c3011880b4133cafd4bd0",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_license/0.0.3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_license/0.0.4/MODULE.bazel",
+      "sha256": "6a88dd22800cf1f9f79ba32cacad0d3a423ed28efa2c2ed5582eaa78dd3ac1e5",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_license/0.0.4/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_license/0.0.7/MODULE.bazel",
+      "sha256": "088fbeb0b6a419005b89cf93fe62d9517c0a2b8bb56af3244af65ecfe37e7d5d",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_license/0.0.7/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_license/1.0.0/MODULE.bazel",
+      "sha256": "a7fda60eefdf3d8c827262ba499957e4df06f659330bbe6cdbdb975b768bb65c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_license/1.0.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_license/1.0.0/source.json",
+      "sha256": "a52c89e54cc311196e478f8382df91c15f7a2bfdf4c6cd0e2675cc2ff0b56efb",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_license/1.0.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_perl/0.5.0/MODULE.bazel",
+      "sha256": "1bff473031644dfb23bd57abe3befe9780f003f0d2156b082527a5c477008792",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_perl/0.5.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_perl/0.5.0/source.json",
+      "sha256": "0076e22051d1b8aedf6d1bf3655bd9e895e9b01dbd3ccc82d80d3bbcae863c34",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_perl/0.5.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_pkg/0.7.0/MODULE.bazel",
+      "sha256": "df99f03fc7934a4737122518bb87e667e62d780b610910f0447665a7e2be62dc",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_pkg/0.7.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_pkg/1.0.1/MODULE.bazel",
+      "sha256": "5b1df97dbc29623bccdf2b0dcd0f5cb08e2f2c9050aab1092fd39a41e82686ff",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_pkg/1.0.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_pkg/1.0.1/source.json",
+      "sha256": "bd82e5d7b9ce2d31e380dd9f50c111d678c3bdaca190cb76b0e1c71b05e1ba8a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_pkg/1.0.1/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_platform/0.1.0/MODULE.bazel",
+      "sha256": "1fe546d3ced195ad1632ed3621446d3c0bb4757e5becc44b12303a4ac23d6058",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_platform/0.1.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_platform/0.1.0/source.json",
+      "sha256": "98becf9569572719b65f639133510633eb3527fb37d347d7ef08447f3ebcf1c9",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_platform/0.1.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_proto/4.0.0/MODULE.bazel",
+      "sha256": "a7a7b6ce9bee418c1a760b3d84f83a299ad6952f9903c67f19e4edd964894e06",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_proto/4.0.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_proto/5.3.0-21.7/MODULE.bazel",
+      "sha256": "e8dff86b0971688790ae75528fe1813f71809b5afd57facb44dad9e8eca631b7",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_proto/5.3.0-21.7/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_proto/6.0.0-rc1/MODULE.bazel",
+      "sha256": "1e5b502e2e1a9e825eef74476a5a1ee524a92297085015a052510b09a1a09483",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_proto/6.0.0-rc1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_proto/6.0.2/MODULE.bazel",
+      "sha256": "ce916b775a62b90b61888052a416ccdda405212b6aaeb39522f7dc53431a5e73",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_proto/6.0.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_proto/7.0.2/MODULE.bazel",
+      "sha256": "bf81793bd6d2ad89a37a40693e56c61b0ee30f7a7fdbaf3eabbf5f39de47dea2",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_proto/7.0.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_proto/7.1.0/MODULE.bazel",
+      "sha256": "002d62d9108f75bb807cd56245d45648f38275cb3a99dcd45dfb864c5d74cb96",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_proto/7.1.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_proto/7.1.0/source.json",
+      "sha256": "39f89066c12c24097854e8f57ab8558929f9c8d474d34b2c00ac04630ad8940e",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_proto/7.1.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/0.10.2/MODULE.bazel",
+      "sha256": "cc82bc96f2997baa545ab3ce73f196d040ffb8756fd2d66125a530031cd90e5f",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/0.10.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/0.23.1/MODULE.bazel",
+      "sha256": "49ffccf0511cb8414de28321f5fcf2a31312b47c40cc21577144b7447f2bf300",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/0.23.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/0.25.0/MODULE.bazel",
+      "sha256": "72f1506841c920a1afec76975b35312410eea3aa7b63267436bfb1dd91d2d382",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/0.25.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/0.28.0/MODULE.bazel",
+      "sha256": "cba2573d870babc976664a912539b320cbaa7114cd3e8f053c720171cde331ed",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/0.28.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/0.31.0/MODULE.bazel",
+      "sha256": "93a43dc47ee570e6ec9f5779b2e64c1476a6ce921c48cc9a1678a91dd5f8fd58",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/0.31.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/0.33.2/MODULE.bazel",
+      "sha256": "3e036c4ad8d804a4dad897d333d8dce200d943df4827cb849840055be8d2e937",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/0.33.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/0.34.0/MODULE.bazel",
+      "sha256": "1d623d026e075b78c9fde483a889cda7996f5da4f36dffb24c246ab30f06513a",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/0.34.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/0.4.0/MODULE.bazel",
+      "sha256": "9208ee05fd48bf09ac60ed269791cf17fb343db56c8226a720fbb1cdf467166c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/0.4.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/1.0.0/MODULE.bazel",
+      "sha256": "898a3d999c22caa585eb062b600f88654bf92efb204fa346fb55f6f8edffca43",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/1.0.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/1.3.0/MODULE.bazel",
+      "sha256": "8361d57eafb67c09b75bf4bbe6be360e1b8f4f18118ab48037f2bd50aa2ccb13",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/1.3.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/1.4.1/MODULE.bazel",
+      "sha256": "8991ad45bdc25018301d6b7e1d3626afc3c8af8aaf4bc04f23d0b99c938b73a6",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/1.4.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/1.5.1/MODULE.bazel",
+      "sha256": "acfe65880942d44a69129d4c5c3122d57baaf3edf58ae5a6bd4edea114906bf5",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/1.5.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/1.6.0/MODULE.bazel",
+      "sha256": "7e04ad8f8d5bea40451cf80b1bd8262552aa73f841415d20db96b7241bd027d8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/1.6.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/1.6.3/MODULE.bazel",
+      "sha256": "a7b80c42cb3de5ee2a5fa1abc119684593704fcd2fec83165ebe615dec76574f",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/1.6.3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/1.7.0/MODULE.bazel",
+      "sha256": "d01f995ecd137abf30238ad9ce97f8fc3ac57289c8b24bd0bf53324d937a14f8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/1.7.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_python/1.7.0/source.json",
+      "sha256": "028a084b65dcf8f4dc4f82f8778dbe65df133f234b316828a82e060d81bdce32",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_python/1.7.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_rs/0.0.96/MODULE.bazel",
+      "sha256": "678fdcee5a9847611276770eab47190dda04a41973b7bf6037e50a3f98e49e09",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_rs/0.0.96/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_rs/0.0.96/source.json",
+      "sha256": "2b52d3d209324bd4aaa4896aa0e8b28d0123856b4ade32ebd7bf24b4fded6f12",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_rs/0.0.96/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_shell/0.2.0/MODULE.bazel",
+      "sha256": "fda8a652ab3c7d8fee214de05e7a9916d8b28082234e8d2c0094505c5268ed3c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_shell/0.2.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_shell/0.3.0/MODULE.bazel",
+      "sha256": "de4402cd12f4cc8fda2354fce179fdb068c0b9ca1ec2d2b17b3e21b24c1a937b",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_shell/0.3.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_shell/0.4.1/MODULE.bazel",
+      "sha256": "00e501db01bbf4e3e1dd1595959092c2fadf2087b2852d3f553b5370f5633592",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_shell/0.4.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_shell/0.6.1/MODULE.bazel",
+      "sha256": "72e76b0eea4e81611ef5452aa82b3da34caca0c8b7b5c0c9584338aa93bae26b",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_shell/0.6.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_shell/0.6.1/source.json",
+      "sha256": "20ec05cd5e592055e214b2da8ccb283c7f2a421ea0dc2acbf1aa792e11c03d0c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_shell/0.6.1/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_swift/1.16.0/MODULE.bazel",
+      "sha256": "4a09f199545a60d09895e8281362b1ff3bb08bbde69c6fc87aff5b92fcc916ca",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_swift/1.16.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_swift/2.1.1/MODULE.bazel",
+      "sha256": "494900a80f944fc7aa61500c2073d9729dff0b764f0e89b824eb746959bc1046",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_swift/2.1.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_swift/2.4.0/MODULE.bazel",
+      "sha256": "1639617eb1ede28d774d967a738b4a68b0accb40650beadb57c21846beab5efd",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_swift/2.4.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/rules_swift/3.1.2/MODULE.bazel",
+      "sha256": "72c8f5cf9d26427cee6c76c8e3853eb46ce6b0412a081b2b6db6e8ad56267400",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/rules_swift/3.1.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/sed/4.9.bcr.3/MODULE.bazel",
+      "sha256": "3aca45895b85b6ef65366cc12a45217ba6870f8931d2d62e09c99c772d9736ab",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/sed/4.9.bcr.3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/sed/4.9.bcr.3/source.json",
+      "sha256": "31c0cf4c135ed3fa58298cd7bcfd4301c54ea4cf59d7c4e2ea0a180ce68eb34f",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/sed/4.9.bcr.3/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/stardoc/0.5.1/MODULE.bazel",
+      "sha256": "1a05d92974d0c122f5ccf09291442580317cdd859f07a8655f1db9a60374f9f8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/stardoc/0.5.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/stardoc/0.5.3/MODULE.bazel",
+      "sha256": "c7f6948dae6999bf0db32c1858ae345f112cacf98f174c7a8bb707e41b974f1c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/stardoc/0.5.3/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/stardoc/0.7.0/MODULE.bazel",
+      "sha256": "05e3d6d30c099b6770e97da986c53bd31844d7f13d41412480ea265ac9e8079c",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/stardoc/0.7.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/stardoc/0.7.2/MODULE.bazel",
+      "sha256": "fc152419aa2ea0f51c29583fab1e8c99ddefd5b3778421845606ee628629e0e5",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/stardoc/0.7.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/stardoc/0.7.2/source.json",
+      "sha256": "58b029e5e901d6802967754adf0a9056747e8176f017cfe3607c0851f4d42216",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/stardoc/0.7.2/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/swift_argument_parser/1.3.1.1/MODULE.bazel",
+      "sha256": "5e463fbfba7b1701d957555ed45097d7f984211330106ccd1352c6e0af0dcf91",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/swift_argument_parser/1.3.1.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/swift_argument_parser/1.3.1.2/MODULE.bazel",
+      "sha256": "75aab2373a4bbe2a1260b9bf2a1ebbdbf872d3bd36f80bff058dccd82e89422f",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/swift_argument_parser/1.3.1.2/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/tar.bzl/0.10.4/MODULE.bazel",
+      "sha256": "e8f9ff79199e8d9eaad7f1b0a77ad74b30bb82d794b87d8ca942bead5de83ae9",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/tar.bzl/0.10.4/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/tar.bzl/0.10.4/source.json",
+      "sha256": "20143442376c03426f6135292ba02d825cb75308aa47e6bf42dd4cc5a435c2ff",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/tar.bzl/0.10.4/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/upb/0.0.0-20220923-a547704/MODULE.bazel",
+      "sha256": "7298990c00040a0e2f121f6c32544bab27d4452f80d9ce51349b1a28f3005c43",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/upb/0.0.0-20220923-a547704/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/upb/0.0.0-20230516-61a97ef/MODULE.bazel",
+      "sha256": "c0df5e35ad55e264160417fd0875932ee3c9dda63d9fccace35ac62f45e1b6f9",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/upb/0.0.0-20230516-61a97ef/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/windows_support/0.2.0/MODULE.bazel",
+      "sha256": "aa17e272ca57409a71a53dae29bdadea721f9c8eeb4c136d1eaa1ee5f33b18a3",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/windows_support/0.2.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/windows_support/0.2.0/source.json",
+      "sha256": "5c9ed7f3fb7577cd2ce8030f2955d45dc0fa37e784b91431c0148631144a0209",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/windows_support/0.2.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/with_cfg.bzl/0.12.0/MODULE.bazel",
+      "sha256": "b573395fe63aef4299ba095173e2f62ccfee5ad9bbf7acaa95dba73af9fc2b38",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/with_cfg.bzl/0.12.0/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/with_cfg.bzl/0.12.0/source.json",
+      "sha256": "3f3fbaeafecaf629877ad152a2c9def21f8d330d91aa94c5dc75bbb98c10b8b8",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/with_cfg.bzl/0.12.0/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/xz/5.4.5.bcr.8/MODULE.bazel",
+      "sha256": "e48a69bd54053c2ec5fffc2a29fb70122afd3e83ab6c07068f63bc6553fa57cc",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/xz/5.4.5.bcr.8/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/xz/5.4.5.bcr.8/source.json",
+      "sha256": "bd7e928ccd63505b44f4784f7bbf12cc11f9ff23bf3ca12ff2c91cd74846099e",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/xz/5.4.5.bcr.8/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/zlib/1.2.11/MODULE.bazel",
+      "sha256": "07b389abc85fdbca459b69e2ec656ae5622873af3f845e1c9d80fe179f3effa0",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/zlib/1.2.11/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/zlib/1.3.1.bcr.5/MODULE.bazel",
+      "sha256": "eec517b5bbe5492629466e11dae908d043364302283de25581e3eb944326c4ca",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/zlib/1.3.1.bcr.5/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/zlib/1.3.1.bcr.8/MODULE.bazel",
+      "sha256": "772c674bb78a0342b8caf32ab5c25085c493ca4ff08398208dcbe4375fe9f776",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/zlib/1.3.1.bcr.8/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/zlib/1.3.1.bcr.8/source.json",
+      "sha256": "cf377d76800dfc3d3b71e9dd4a8c53a62837cbce37cc4f25e6207b15fc1e8f2b",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/zlib/1.3.1.bcr.8/source.json"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/zlib/1.3.1/MODULE.bazel",
+      "sha256": "751c9940dcfe869f5f7274e1295422a34623555916eb98c174c1e945594bf198",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/zlib/1.3.1/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/zstd/1.5.7/MODULE.bazel",
+      "sha256": "f5780cdbd6f4c5bb985a20f839844316fe48fb5e463056f372dbc37cfabdf450",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/zstd/1.5.7/MODULE.bazel"
+    },
+    {
+      "url": "https://bcr.bazel.build/modules/zstd/1.5.7/source.json",
+      "sha256": "f72c48184b6528ffc908a5a2bcbf3070c6684f3db03da2182c8ca999ae5f5cfd",
+      "mirror": "https://gh-proxy.com/https://raw.githubusercontent.com/bazelbuild/bazel-central-registry/main/modules/zstd/1.5.7/source.json"
+    },
+    {
+      "url": "https://github.com/aspect-build/tools_telemetry/releases/download/v0.3.3/tools_telemetry-v0.3.3.tar.gz",
+      "sha256": "3d6372792dd0654b2e77806bf9b358e06706234f179132575a178d0ce7312790",
+      "mirror": "https://gh-proxy.com/https://github.com/aspect-build/tools_telemetry/releases/download/v0.3.3/tools_telemetry-v0.3.3.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazel-contrib/bazel_features/releases/download/v1.50.0/bazel_features-v1.50.0.tar.gz",
+      "sha256": "094367e732ece23f334eaf84089a720b861d053beeba6a6a68356d3aee1dc32b",
+      "mirror": "https://gh-proxy.com/https://github.com/bazel-contrib/bazel_features/releases/download/v1.50.0/bazel_features-v1.50.0.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazel-contrib/bazel-lib/releases/download/v3.2.2/bazel-lib-v3.2.2.tar.gz",
+      "sha256": "3d62bf30b95b71a566d9ebca50ee78d370b12522d244235b41166f65b142705d",
+      "mirror": "https://gh-proxy.com/https://github.com/bazel-contrib/bazel-lib/releases/download/v3.2.2/bazel-lib-v3.2.2.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazel-contrib/rules_jvm_external/releases/download/6.7/rules_jvm_external-6.7.tar.gz",
+      "sha256": "a1e351607f04fed296ba33c4977d3fe2a615ed50df7896676b67aac993c53c18",
+      "mirror": "https://gh-proxy.com/https://github.com/bazel-contrib/rules_jvm_external/releases/download/6.7/rules_jvm_external-6.7.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazel-contrib/rules_perl/archive/refs/tags/0.5.0.tar.gz",
+      "sha256": "4128dc22e438e81b7d9491841d7209d7169635294693a4ed8f760e5a720a88ad",
+      "mirror": "https://gh-proxy.com/https://github.com/bazel-contrib/rules_perl/archive/refs/tags/0.5.0.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazel-contrib/rules_python/releases/download/1.7.0/rules_python-1.7.0.tar.gz",
+      "sha256": "f609f341d6e9090b981b3f45324d05a819fd7a5a56434f849c761971ce2c47da",
+      "mirror": "https://gh-proxy.com/https://github.com/bazel-contrib/rules_python/releases/download/1.7.0/rules_python-1.7.0.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazel-contrib/tar.bzl/releases/download/v0.10.4/tar.bzl-v0.10.4.tar.gz",
+      "sha256": "fea07e17117bf264f78bd4fc522c6b07a843cdcd82c6dfbeafa5bdaff70ae198",
+      "mirror": "https://gh-proxy.com/https://github.com/bazel-contrib/tar.bzl/releases/download/v0.10.4/tar.bzl-v0.10.4.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazelbuild/apple_support/releases/download/2.1.0/apple_support.2.1.0.tar.gz",
+      "sha256": "f0b30185b1140f92f24ea963bdf783af6fc905d6e6e6f567df6968161684ec3f",
+      "mirror": "https://gh-proxy.com/https://github.com/bazelbuild/apple_support/releases/download/2.1.0/apple_support.2.1.0.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazelbuild/bazel-skylib/releases/download/1.9.0/bazel-skylib-1.9.0.tar.gz",
+      "sha256": "3b5b49006181f5f8ff626ef8ddceaa95e9bb8ad294f7b5d7b11ea9f7ddaf8c59",
+      "mirror": "https://gh-proxy.com/https://github.com/bazelbuild/bazel-skylib/releases/download/1.9.0/bazel-skylib-1.9.0.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazelbuild/platforms/releases/download/1.1.0/platforms-1.1.0.tar.gz",
+      "sha256": "dbad4a23abcca6171e47b79edc53bd6a41067a3b75f9e8b104656b459ff25046",
+      "mirror": "https://gh-proxy.com/https://github.com/bazelbuild/platforms/releases/download/1.1.0/platforms-1.1.0.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazelbuild/rules_cc/releases/download/0.2.20/rules_cc-0.2.20.tar.gz",
+      "sha256": "69e05df29f0010ba248ef8dafc1f084c8fd2f5c553da634422d8167f5c4b277b",
+      "mirror": "https://gh-proxy.com/https://github.com/bazelbuild/rules_cc/releases/download/0.2.20/rules_cc-0.2.20.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazelbuild/rules_java/releases/download/9.0.3/rules_java-9.0.3.tar.gz",
+      "sha256": "865b3d334bd0f769587737447410d8042d6a95134cc45be5380805fdbacd7152",
+      "mirror": "https://gh-proxy.com/https://github.com/bazelbuild/rules_java/releases/download/9.0.3/rules_java-9.0.3.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazelbuild/rules_kotlin/releases/download/v1.9.6/rules_kotlin-v1.9.6.tar.gz",
+      "sha256": "3b772976fec7bdcda1d84b9d39b176589424c047eb2175bed09aac630e50af43",
+      "mirror": "https://gh-proxy.com/https://github.com/bazelbuild/rules_kotlin/releases/download/v1.9.6/rules_kotlin-v1.9.6.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazelbuild/rules_shell/releases/download/v0.6.1/rules_shell-v0.6.1.tar.gz",
+      "sha256": "e6b87c89bd0b27039e3af2c5da01147452f240f75d505f5b6880874f31036307",
+      "mirror": "https://gh-proxy.com/https://github.com/bazelbuild/rules_shell/releases/download/v0.6.1/rules_shell-v0.6.1.tar.gz"
+    },
+    {
+      "url": "https://github.com/bazelbuild/stardoc/releases/download/0.7.2/stardoc-0.7.2.tar.gz",
+      "sha256": "0e1ed4a98f26e718776bd64d053d02bb34d98572ccd03d6ba355112a1205706b",
+      "mirror": "https://gh-proxy.com/https://github.com/bazelbuild/stardoc/releases/download/0.7.2/stardoc-0.7.2.tar.gz"
+    },
+    {
+      "url": "https://github.com/fmeum/buildozer/releases/download/v8.2.1/buildozer-v8.2.1.tar.gz",
+      "sha256": "aa0b9ce8b2c57562fb397935066d9f6ad2eacce12082ed40bf9c0054d8899de7",
+      "mirror": "https://gh-proxy.com/https://github.com/fmeum/buildozer/releases/download/v8.2.1/buildozer-v8.2.1.tar.gz"
+    },
+    {
+      "url": "https://github.com/google/googletest/releases/download/v1.17.0/googletest-1.17.0.tar.gz",
+      "sha256": "65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c",
+      "mirror": "https://gh-proxy.com/https://github.com/google/googletest/releases/download/v1.17.0/googletest-1.17.0.tar.gz"
+    },
+    {
+      "url": "https://github.com/hermeticbuild/bsdtar-prebuilt/releases/download/v3.8.1-3/tar_linux_amd64",
+      "sha256": "ae24dbc3ecf6ad628c2fdd205a52347fd4446589e750469766669e25cb80e22b",
+      "mirror": "https://ghfast.top/https://github.com/hermeticbuild/bsdtar-prebuilt/releases/download/v3.8.1-3/tar_linux_amd64"
+    },
+    {
+      "url": "https://github.com/hermeticbuild/hermetic-launcher/releases/download/v0.0.8/hermetic_launcher-v0.0.8.tar.gz",
+      "sha256": "073620caf86de7ff5c4793a3d1bf52aa50a301859182dc74d1a951c3743e735e",
+      "mirror": "https://gh-proxy.com/https://github.com/hermeticbuild/hermetic-launcher/releases/download/v0.0.8/hermetic_launcher-v0.0.8.tar.gz"
+    },
+    {
+      "url": "https://github.com/hermeticbuild/hermetic-llvm/releases/download/v0.8.11/hermetic-llvm-v0.8.11.tar.gz",
+      "sha256": "781670efedbcffe9e6bedd086a8037a3fe467baec16d24124534062e36e727a4",
+      "mirror": "https://gh-proxy.com/https://github.com/hermeticbuild/hermetic-llvm/releases/download/v0.8.11/hermetic-llvm-v0.8.11.tar.gz"
+    },
+    {
+      "url": "https://github.com/hermeticbuild/llvm-redist/releases/download/llvmorg-22.1.8-r1/llvm-project-22.1.8.src.tar.zst",
+      "sha256": "0a120cd02aa4319887b938ed98f34907563e9b4bcdd4a2aed23a1a05dd5a8157",
+      "mirror": "https://gh-proxy.com/https://github.com/hermeticbuild/llvm-redist/releases/download/llvmorg-22.1.8-r1/llvm-project-22.1.8.src.tar.zst"
+    },
+    {
+      "url": "https://github.com/hermeticbuild/rules_rs/releases/download/v0.0.96/rules_rs-v0.0.96.tar.gz",
+      "sha256": "04781205ae648b0c67bf1108e28b8f780445bef40c721564ec525cab63c475d6",
+      "mirror": "https://gh-proxy.com/https://github.com/hermeticbuild/rules_rs/releases/download/v0.0.96/rules_rs-v0.0.96.tar.gz"
+    },
+    {
+      "url": "https://github.com/hermeticbuild/rules_rust/archive/f19661ba71f77c993ce1eb082053692610fe4313.tar.gz",
+      "sha256": "d8e9a5b3f82dbce39d2a099c5dacd3aab0b17f9cde8002ba24c4912ffdc9e757",
+      "mirror": "https://gh-proxy.com/https://github.com/hermeticbuild/rules_rust/archive/f19661ba71f77c993ce1eb082053692610fe4313.tar.gz"
+    },
+    {
+      "url": "https://github.com/hermeticbuild/toml2json/releases/download/v0.0.26/toml2json_linux_amd64",
+      "sha256": "87921b36ceb343af152fc988be59eec49ac9865f2e499a48152bed03e66f8228",
+      "mirror": "https://gh-proxy.com/https://github.com/hermeticbuild/toml2json/releases/download/v0.0.26/toml2json_linux_amd64"
+    },
+    {
+      "url": "https://github.com/hermeticbuild/windows_support/releases/download/v0.2.0/windows_support-v0.2.0.tar.gz",
+      "sha256": "f79a871b84d5c1d5c296293947e364308615379c703573309e0cd49840e363f2",
+      "mirror": "https://gh-proxy.com/https://github.com/hermeticbuild/windows_support/releases/download/v0.2.0/windows_support-v0.2.0.tar.gz"
+    },
+    {
+      "url": "https://github.com/protocolbuffers/protobuf/releases/download/v34.0/protobuf-34.0.bazel.tar.gz",
+      "sha256": "78e81997b89a3f1441a7d295f5c39dfe810866f2e775e011c4b225618757f0ca",
+      "mirror": "https://gh-proxy.com/https://github.com/protocolbuffers/protobuf/releases/download/v34.0/protobuf-34.0.bazel.tar.gz"
+    },
+    {
+      "url": "https://github.com/pybind/pybind11_bazel/releases/download/v2.13.6/pybind11_bazel-2.13.6.tar.gz",
+      "sha256": "cae680670bfa6e82703c03f2a3c995408cdcbf43616d7bdd198ef45d3c327731",
+      "mirror": "https://gh-proxy.com/https://github.com/pybind/pybind11_bazel/releases/download/v2.13.6/pybind11_bazel-2.13.6.tar.gz"
+    },
+    {
+      "url": "https://github.com/v8/v8/archive/refs/tags/15.0.245.2.tar.gz",
+      "sha256": "164f3d3e0a8b4c02a386d3a88d1b1133d37e5c20be0239fecdcdde414a4340d5",
+      "mirror": "https://gh-proxy.com/https://github.com/v8/v8/archive/refs/tags/15.0.245.2.tar.gz"
+    },
+    {
+      "url": "https://static.rust-lang.org/dist/cargo-1.95.0-x86_64-unknown-linux-gnu.tar.xz",
+      "sha256": "e74edd2cf7d0f1f1383b4f00eb90c843750bc489e2ccf7214e6476678a907425",
+      "mirror": "https://rsproxy.cn/dist/cargo-1.95.0-x86_64-unknown-linux-gnu.tar.xz"
+    }
+  ]
+}

@@ -51,6 +51,32 @@ class EvidenceTests(unittest.TestCase):
                 with self.assertRaises(ValueError): gate.inspect(self.root)
                 self.docpath.write_bytes(original)
 
+    def test_pack_safe_mapping_is_fixed_source_bound_and_injective(self):
+        result,_ = gate.inspect(self.root)
+        for ref,row in result['components'].items():
+            paths = []
+            for item in row['originalCrateFiles']:
+                original = item['archiveMember'].split('/',1)[1]
+                self.assertEqual(item['materialPath'],'licenses/'+ref+'/original-crate/'+original+'.source')
+                self.assertEqual(item['sha256'],gate.sha((self.root/item['materialPath']).read_bytes()))
+                paths.append(item['materialPath'])
+            self.assertEqual(len(paths),len(set(paths)))
+
+    def test_relabelled_mapping_cannot_replace_missing_original(self):
+        coverage = self.root/'provenance/license-material-coverage.json'
+        doc = json.loads(coverage.read_text())
+        row = doc['components']['debugserver-types@0.5.0']['originalCrateFiles'][0]
+        row['materialPath'] += '.arbitrary'
+        coverage.write_text(json.dumps(doc))
+        with self.assertRaisesRegex(ValueError,'self-reported coverage'):
+            gate.inspect(self.root)
+
+    def test_npm_filtered_original_requires_exact_safe_copy(self):
+        path = self.root/'licenses/debugserver-types@0.5.0/original-crate/Cargo.toml.orig.source'
+        path.rename(path.with_name('Cargo.toml.orig.source.extra'))
+        with self.assertRaises(ValueError):
+            gate.inspect(self.root)
+
     def test_missing_and_duplicate_component_fail(self):
         for duplicate in (False,True):
             with self.subTest(duplicate=duplicate):
@@ -85,7 +111,7 @@ class EvidenceTests(unittest.TestCase):
         doc = json.loads(self.docpath.read_text())
         row = doc['components'][0]
         item = row['files'][0]
-        path = self.root/'provenance/license-declarations'/item['artifact']
+        path = self.root/'provenance/license-declarations'/(item['artifact']+'.source')
         original = path.read_bytes()
         path.write_bytes(original+b'\nforged notice\n')
         item['sha256'] = gate.sha(path.read_bytes())

@@ -33,6 +33,14 @@ class SourceMetadataTests(unittest.TestCase):
         result = module.license_metadata(json.dumps(self.audit).encode())
         self.assertEqual(result['materialMissing'], self.audit['missing'])
 
+    def test_archive_neither_invents_incomplete_execution_nor_promotes_it_to_release(self):
+        for missing in ([], ['example@1']):
+            gate = module.source_gate_metadata({'materialMissing': missing, 'status': 'passed'})
+            self.assertFalse(gate['releaseEligible'])
+            self.assertEqual(gate['executionAssessment']['status'], 'not-assessed-by-source-archive')
+            self.assertNotIn('upstream development gates incomplete', gate['gateReasons'])
+            self.assertEqual('source-recorded license material coverage incomplete' in gate['gateReasons'], bool(missing))
+
     def test_legal_approval_or_unknown_classification_is_rejected(self):
         for changes in ({'legalApproval': True}, {'components': True},
                         {'missing': None}, {'upstreamLicenseFilesMissing': None}):

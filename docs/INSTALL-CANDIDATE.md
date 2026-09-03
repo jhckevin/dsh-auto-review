@@ -4,11 +4,13 @@
 
 ## 固定版本
 
-本轮热生命周期候选：DSH 0.1.1-rc.2 对应插件 0.5.6-rc.2。DSH 0.1.2-alpha.5 对应旧插件 0.5.7-alpha.1，尚未同步本轮热安装。使用完整 Git commit 和 tgz SHA256 区分，不移动既有 tag，不覆盖已发布同版本包。
+本轮候选：DSH 0.1.0-rc.6 对应插件 0.5.5-rc.3；DSH 0.1.1-rc.2 对应插件 0.5.6-rc.4；DSH 0.1.2-alpha.5 对应插件 0.5.7-alpha.3。三套独立发行，统一匹配 native host/platform 0.1.0-rc.2；未公开的草稿不可当作已发布。按 [README](../README.md) 下载本通道全部附件和安装器，使用完整 Git commit、SHA256 与原生执行凭据核验，不移动既有 tag，不覆盖已发布同版本包。
+
+以下 WebUI 热安装步骤只适用于已经打过配套宿主补丁的 DSH 0.1.1-rc.2。rc6/alpha5 的冷启动兼容不等于这组热发现补丁兼容；不得将 rc2 补丁强行应用到另两版本。
 
 - Linux x86_64；Node >=24.11.0，本轮使用 24.20.0。
 - 锁定整套 DSH 依赖，不只锁定 CLI；alpha 不能混入 rc 的 Session/Client API。
-- native 依赖：@jhckevin/dsh-auto-review-bridge-host@0.1.0-rc.1 及精确版本 Linux 平台包。二者已在 GitHub v0.5.6-rc.2 Release 提供；源码 lock 使用 vendor/native-bridge 中同 SHA512 的冻结 tgz，不请求不存在的 npm 包。通过 DSH_BRIDGE_ARTIFACTS 提供匹配 tarball 验收。
+- native 依赖：@jhckevin/dsh-auto-review-bridge-host@0.1.0-rc.2 及同版本 Linux 平台包；以所选 Release 实际附件为准。源码 lock 使用 vendor/native-bridge 中同 SHA512 的冻结 tgz，不请求不存在的 npm 包。通过 DSH_BRIDGE_ARTIFACTS 提供匹配 tarball 验收。旧 v0.5.6-rc.2 的 native rc.1 不能用改文件名的方式顶替。
 - 原生沙盒的状态必须实测；partial 不得标为 full。容器本身也不等于 DSH 每次动作拥有完整沙盒。
 
 ## 冷启动参考部署（不是热安装命令）
@@ -39,9 +41,9 @@ node node_modules/@deepseek-ai/dsh/lib/bin.js \
 ```yaml
 autoInstallPeers: false
 overrides:
-  '@jhckevin/dsh-auto-review': file:/approved-artifacts/jhckevin-dsh-auto-review-0.5.6-rc.2.tgz
-  '@jhckevin/dsh-auto-review-bridge-host': file:/approved-artifacts/jhckevin-dsh-auto-review-bridge-host-0.1.0-rc.1.tgz
-  '@jhckevin/dsh-auto-review-bridge-linux-x64-gnu': file:/approved-artifacts/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.1.tgz
+  '@jhckevin/dsh-auto-review': file:/approved-artifacts/jhckevin-dsh-auto-review-0.5.6-rc.4.tgz
+  '@jhckevin/dsh-auto-review-bridge-host': file:/approved-artifacts/jhckevin-dsh-auto-review-bridge-host-0.1.0-rc.2.tgz
+  '@jhckevin/dsh-auto-review-bridge-linux-x64-gnu': file:/approved-artifacts/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.2.tgz
   '@deepseek-ai/schemastery': file:/approved-artifacts/deepseek-ai-schemastery-3.18.2.tgz
   '@deepseek-ai/cosmokit': file:/approved-artifacts/deepseek-ai-cosmokit-1.8.3.tgz
   '@standard-schema/spec': file:/approved-artifacts/standard-schema-spec-1.1.0.tgz
