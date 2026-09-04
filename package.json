@@ -1,12 +1,27 @@
 {
   "name": "@jhckevin/dsh-auto-review",
-  "version": "0.5.6-rc.4",
+  "version": "0.5.6-rc.5",
   "description": "Codex-style Auto Review inspired plugin for DeepSeek Harness; independently developed",
-  "keywords": ["deepseek-harness", "dsh", "dsh-plugin", "cordis", "auto-review", "codex-style", "sandbox", "agent-security", "human-in-the-loop"],
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "auto-review",
+    "codex-style",
+    "sandbox",
+    "agent-security",
+    "human-in-the-loop"
+  ],
   "type": "module",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/jhckevin/dsh-auto-review.git" },
-  "bugs": { "url": "https://github.com/jhckevin/dsh-auto-review/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jhckevin/dsh-auto-review.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jhckevin/dsh-auto-review/issues"
+  },
   "homepage": "https://github.com/jhckevin/dsh-auto-review#readme",
   "publishConfig": {
     "access": "public",
