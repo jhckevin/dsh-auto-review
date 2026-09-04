@@ -6,6 +6,21 @@
 
 本轮候选：DSH 0.1.0-rc.6 对应插件 0.5.5-rc.3；DSH 0.1.1-rc.2 对应插件 0.5.6-rc.4；DSH 0.1.2-alpha.5 对应插件 0.5.7-alpha.3。三套独立发行，统一匹配 native host/platform 0.1.0-rc.2；未公开的草稿不可当作已发布。按 [README](../README.md) 下载本通道全部附件和安装器，使用完整 Git commit、SHA256 与原生执行凭据核验，不移动既有 tag，不覆盖已发布同版本包。
 
+### 各版本的安装差异
+
+三版都先下载各自 Release 的完整附件，使用该 Release 附带的安装脚本。不要跨版本混用脚本或依赖。
+
+- **DSH 0.1.1-rc.2**：按项目首页的五步流程安装即可。
+- **DSH 0.1.0-rc.6**：`npm install` 后，需要在安装目录单独构建 `node-pty`。先准备 make、C++ 编译器、Python 和与当前 Node 版本匹配的 headers，再执行下面的命令。不要全局开启依赖安装脚本。该版 CLI 不支持 `--no-open`；首页的启动示例不带此参数，可直接沿用。
+
+  ```sh
+  npm rebuild node-pty --ignore-scripts=false --build-from-source
+  ```
+
+- **DSH 0.1.2-alpha.5**：使用本版安装脚本准备额外的 `dsh-util-values` 依赖。WebUI 默认需要鉴权，启动后请打开终端输出的完整 launch URL，不是只打开不带登录信息的端口地址；不要把该 URL 发到公开 Issue 或截图中。远程访问仍通过 SSH 转发，并保留 URL 中的鉴权信息。
+
+### 已有 WebUI 的插件安装前提
+
 以下 WebUI 热安装步骤只适用于已经打过配套宿主补丁的 DSH 0.1.1-rc.2。rc6/alpha5 的冷启动兼容不等于这组热发现补丁兼容；不得将 rc2 补丁强行应用到另两版本。
 
 - Linux x86_64；Node >=24.11.0，本轮使用 24.20.0。
