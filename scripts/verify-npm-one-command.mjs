@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 
 const root = resolve(new URL('..', import.meta.url).pathname)
 const temporary = mkdtempSync(join(tmpdir(), 'auto-review-one-command-'))
@@ -51,7 +52,11 @@ try {
   for (const name of ['dsh-auto-review', 'dsh-auto-review-bridge-host', 'dsh-auto-review-bridge-linux-x64-gnu']) {
     assert(JSON.parse(readFileSync(join(consumer, 'node_modules/@jhckevin', name, 'package.json'), 'utf8')).name.endsWith(name))
   }
-  console.log('one package argument installed the bundle and both bridge packages')
+  const scope = join(consumer, 'node_modules/@jhckevin')
+  const expected = JSON.parse(readFileSync(join(scope, 'dsh-auto-review-bridge-host/expected-provenance.json'), 'utf8'))
+  const platform = JSON.parse(readFileSync(join(scope, 'dsh-auto-review-bridge-linux-x64-gnu/package.json'), 'utf8'))
+  assert(isDeepStrictEqual(expected.package, platform), 'host must pin the exact published platform package manifest')
+  console.log(JSON.stringify({ status: 'PASS', installArguments: 1, recursivePackages: 3, provenancePin: 'exact' }))
 } finally {
   rmSync(temporary, { recursive: true, force: true })
 }
