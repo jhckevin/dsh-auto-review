@@ -72,6 +72,8 @@
     "CHANGELOG.md",
     "THIRD_PARTY_NOTICES.md",
     "LICENSE",
+    "NOTICE",
+    "licenses/**",
     "docs/ISSUE-032-COMPAT.md"
   ],
   "scripts": {

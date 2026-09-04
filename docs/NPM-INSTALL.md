@@ -3,7 +3,7 @@
 目标安装方式遵循 DeepSeek Harness 官方 Bundle 流程：
 
 ```sh
-dsh plugin --profile web add @jhckevin/dsh-auto-review@rc2
+dsh plugin --profile web add @jhckevin/dsh-auto-review@rc6
 ```
 
 ## 包关系
