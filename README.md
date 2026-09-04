@@ -5,9 +5,9 @@
 
 [原生桥接源码与证据门禁](native-audit/README.md)：公开 runner / verifier 源码和固定第三方材料；独立 Actions 校验真实 rc2 安装包、归档的 11 步 Rust/Bazel 执行证据、源码/负面门禁及同 FD 协议 smoke。它不在 GitHub 重新编译 Rust，也不是完整 DSH/Guardian、法律或生产认证。
 
-受 [Codex-style Auto Review](https://alignment.openai.com/auto-review/) 启发的独立 DSH 插件项目。本项目不是 OpenAI、Codex 或 DeepSeek 的官方产品，也不声称与完整 Codex Guardian 实现等价。
+受 [Codex-style Auto Review](https://alignment.openai.com/auto-review/) 启发的独立 DSH 插件项目。
 
-由 [jhckevin](https://github.com/jhckevin) 维护。自有代码采用 MIT；引用与移植的第三方内容保留原许可证，见 [NOTICE](NOTICE)、[第三方说明](THIRD_PARTY_NOTICES.md) 和 [许可证目录](licenses/)。此版本作为 GitHub **工程预发布**提供，不是稳定生产认证，也尚未发布 npm。完整安装路径、制品范围及已知限制见 [GitHub 预发布说明](docs/GITHUB-PREVIEW.md)。历史审查记录见 [ISSUE-026](docs/ISSUE-026-OPEN-SOURCE.md)；热生命周期和保护目录方案见 [ISSUE-027](docs/ISSUE-027-HOTPLUG.md)。
+自有代码采用 MIT；引用与移植的第三方内容保留原许可证，见 [NOTICE](NOTICE)、[第三方说明](THIRD_PARTY_NOTICES.md) 和 [许可证目录](licenses/)。此版本作为 GitHub **工程预发布**提供，不是稳定生产认证，也尚未发布 npm。完整安装路径、制品范围及已知限制见 [GitHub 预发布说明](docs/GITHUB-PREVIEW.md)。历史审查记录见 [ISSUE-026](docs/ISSUE-026-OPEN-SOURCE.md)；热生命周期和保护目录方案见 [ISSUE-027](docs/ISSUE-027-HOTPLUG.md)。
 
 | DSH 发布通道 | 精确 DSH 版本 | 插件候选版本 |
 |---|---|---|
