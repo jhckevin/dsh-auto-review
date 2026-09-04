@@ -24,4 +24,5 @@
 - [GitHub Actions](https://github.com/jhckevin/dsh-auto-review/actions)
 - [预发布说明](GITHUB-PREVIEW.md)
 - [版本安装详情](INSTALL-CANDIDATE.md)
+- [npm 一条命令安装与发布](NPM-INSTALL.md)
 - [更新记录](../CHANGELOG.md)

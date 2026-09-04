@@ -1,0 +1,52 @@
+name: Publish npm packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type publish to release all three packages
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    if: inputs.confirm == 'publish'
+    runs-on: ubuntu-24.04
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+      - run: npm run build
+      - run: npm run test:types
+      - run: npm test
+      - run: (cd vendor/native-bridge && sha512sum --check SHA512SUMS)
+      - run: node scripts/prepare-npm-release.mjs artifacts/npm
+      - name: Publish platform, host, then DSH bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLATFORM_FILE="$(jq -r .platformFile artifacts/npm/npm-release.json)"
+          HOST_FILE="$(jq -r .hostFile artifacts/npm/npm-release.json)"
+          DIST_TAG="$(jq -r .distTag artifacts/npm/npm-release.json)"
+          npm publish "artifacts/npm/$PLATFORM_FILE" --registry https://registry.npmjs.org --access public --provenance --tag native-rc2
+          npm publish "artifacts/npm/$HOST_FILE" --registry https://registry.npmjs.org --access public --provenance --tag native-rc2
+          npm publish --registry https://registry.npmjs.org --access public --provenance --tag "$DIST_TAG"
+      - name: Verify the public DSH installation path
+        shell: bash
+        run: |
+          set -euo pipefail
+          DSH_VERSION="$(jq -r .dshVersion artifacts/npm/npm-release.json)"
+          DIST_TAG="$(jq -r .distTag artifacts/npm/npm-release.json)"
+          export DSH_HOME="$RUNNER_TEMP/dsh-home"
+          npx --yes "@deepseek-ai/dsh@$DSH_VERSION" plugin --profile web add "@jhckevin/dsh-auto-review@$DIST_TAG"
+          npx --yes "@deepseek-ai/dsh@$DSH_VERSION" --profile web --dump-config | grep '# == @jhckevin/dsh-auto-review'
+          test "$(node -p "require('$DSH_HOME/profiles/web/package.json').dsh.profile.bundles.filter(x => x === '@jhckevin/dsh-auto-review').length")" = 1
