@@ -62,6 +62,8 @@ jobs:
           npm run pack:verify 2>&1 | tee artifacts/packed-consumer.log
       - name: Build versioned distribution and checksum evidence
         run: node scripts/release-artifacts.mjs
+      - name: Verify one-package npm dependency chain
+        run: node scripts/verify-npm-one-command.mjs
       - name: Upload logs and distribution, including failed runs
         if: always()
         uses: actions/upload-artifact@v4
