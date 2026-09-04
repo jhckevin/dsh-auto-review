@@ -72,6 +72,8 @@
     "CHANGELOG.md",
     "THIRD_PARTY_NOTICES.md",
     "LICENSE",
+    "NOTICE",
+    "licenses/**",
     "patches/**/*.patch",
     "docs/ISSUE-025-DSH-COMPAT.md",
     "docs/ISSUE-025-UI-OWNER-PATCHES.md",
