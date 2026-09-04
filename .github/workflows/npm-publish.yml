@@ -1,0 +1,102 @@
+name: Publish npm packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type publish to release all three packages
+        required: true
+        type: string
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    if: inputs.confirm == 'publish'
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    environment: npm
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24.20.0'
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+      - run: npm run build
+      - run: npm run test:types
+      - run: npm test
+      - run: (cd vendor/native-bridge && sha512sum --check SHA512SUMS)
+      - run: node scripts/prepare-npm-release.mjs artifacts/npm
+      - name: Exercise the final bridge tarballs before publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLATFORM_FILE="$(jq -r .platformFile artifacts/npm/npm-release.json)"
+          HOST_FILE="$(jq -r .hostFile artifacts/npm/npm-release.json)"
+          CONSUMER="$RUNNER_TEMP/prepublish-consumer"
+          PROTECTED_RUNTIME="/opt/dsh-auto-review-native/prepublish-$GITHUB_RUN_ID"
+          mkdir -p "$CONSUMER"
+          echo '{"private":true}' > "$CONSUMER/package.json"
+          npm install --prefix "$CONSUMER" --ignore-scripts --legacy-peer-deps --no-audit --no-fund \
+            "$GITHUB_WORKSPACE/artifacts/npm/$PLATFORM_FILE" \
+            "$GITHUB_WORKSPACE/artifacts/npm/$HOST_FILE"
+          sudo install -d -o root -g root -m 0755 "$PROTECTED_RUNTIME"
+          sudo cp -a "$CONSUMER/node_modules/@jhckevin/dsh-auto-review-bridge-linux-x64-gnu/." "$PROTECTED_RUNTIME/"
+          sudo chown -R root:root "$PROTECTED_RUNTIME"
+          sudo chmod -R go-w "$PROTECTED_RUNTIME"
+          DSH_AUTO_REVIEW_NATIVE_RUNTIME="$PROTECTED_RUNTIME" node scripts/smoke-installed-native.mjs "$CONSUMER"
+          sudo rm -rf "$PROTECTED_RUNTIME"
+      - name: Publish platform, host, then DSH bundle
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_TYPE" = tag
+          test "$GITHUB_REF_NAME" = "v$(jq -r .pluginVersion artifacts/npm/npm-release.json)"
+          PLATFORM_FILE="$(jq -r .platformFile artifacts/npm/npm-release.json)"
+          HOST_FILE="$(jq -r .hostFile artifacts/npm/npm-release.json)"
+          MAIN_FILE="$(jq -r .mainFile artifacts/npm/npm-release.json)"
+          DIST_TAG="$(jq -r .distTag artifacts/npm/npm-release.json)"
+          publish_or_verify() {
+            local file="$1" tag="$2" package version remote local_integrity
+            package="$(tar -xOf "$file" package/package.json | jq -r .name)"
+            version="$(tar -xOf "$file" package/package.json | jq -r .version)"
+            local_integrity="sha512-$(openssl dgst -sha512 -binary "$file" | openssl base64 -A)"
+            if remote="$(npm view "$package@$version" dist.integrity --registry https://registry.npmjs.org 2>/dev/null)"; then
+              test "$remote" = "$local_integrity"
+              test "$(npm view "$package" "dist-tags.$tag" --registry https://registry.npmjs.org)" = "$version"
+              echo "verified existing $package@$version"
+            else
+              npm publish "$file" --registry https://registry.npmjs.org --access public --provenance --tag "$tag"
+            fi
+          }
+          publish_or_verify "artifacts/npm/$PLATFORM_FILE" native-rc2
+          publish_or_verify "artifacts/npm/$HOST_FILE" native-rc2
+          publish_or_verify "artifacts/npm/$MAIN_FILE" "$DIST_TAG"
+      - name: Verify the public DSH installation path
+        shell: bash
+        run: |
+          set -euo pipefail
+          DSH_VERSION="$(jq -r .dshVersion artifacts/npm/npm-release.json)"
+          DIST_TAG="$(jq -r .distTag artifacts/npm/npm-release.json)"
+          export DSH_HOME="$RUNNER_TEMP/dsh-home"
+          npm install --global pnpm@10.15.0 --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          npx --yes "@deepseek-ai/dsh@$DSH_VERSION" plugin --profile web add "@jhckevin/dsh-auto-review@$DIST_TAG"
+          npx --yes "@deepseek-ai/dsh@$DSH_VERSION" --profile web --dump-config | grep '# == @jhckevin/dsh-auto-review'
+          test "$(node -p "require('$DSH_HOME/profiles/web/package.json').dsh.profile.bundles.filter(x => x === '@jhckevin/dsh-auto-review').length")" = 1
+          PLATFORM_SOURCE="$DSH_HOME/profiles/web/node_modules/@jhckevin/dsh-auto-review-bridge-linux-x64-gnu"
+          PROTECTED_RUNTIME="/opt/dsh-auto-review-native/$(node -p "require('$PLATFORM_SOURCE/package.json').version")"
+          sudo install -d -o root -g root -m 0755 "$PROTECTED_RUNTIME"
+          sudo cp -a "$PLATFORM_SOURCE/." "$PROTECTED_RUNTIME/"
+          sudo chown -R root:root "$PROTECTED_RUNTIME"
+          sudo chmod -R go-w "$PROTECTED_RUNTIME"
+          DSH_AUTO_REVIEW_NATIVE_RUNTIME="$PROTECTED_RUNTIME" node scripts/smoke-installed-native.mjs "$DSH_HOME/profiles/web"

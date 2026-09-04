@@ -1,9 +1,21 @@
 {
   "name": "@jhckevin/dsh-auto-review",
-  "version": "0.5.5-rc.3",
+  "version": "0.5.5-rc.4",
   "description": "Native Auto Review capability, reviewer provider and tool policy for DeepSeek Harness",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jhckevin/dsh-auto-review.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jhckevin/dsh-auto-review/issues"
+  },
+  "homepage": "https://github.com/jhckevin/dsh-auto-review#readme",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
