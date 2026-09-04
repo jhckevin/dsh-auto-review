@@ -2,7 +2,6 @@
 
 让需要审批的操作先由独立模型审查，减少反复确认，同时保留沙盒和人工审批。
 
-[![CI](https://github.com/jhckevin/dsh-auto-review/actions/workflows/ci.yml/badge.svg)](https://github.com/jhckevin/dsh-auto-review/actions/workflows/ci.yml)
 [下载](https://github.com/jhckevin/dsh-auto-review/releases) · [问题反馈](https://github.com/jhckevin/dsh-auto-review/issues) · [更新记录](CHANGELOG.md)
 
 ## 界面预览
@@ -123,5 +122,3 @@ ssh -N -L 9835:127.0.0.1:9835 用户名@服务器地址
 受 [Codex-style Auto Review](https://alignment.openai.com/auto-review/) 启发，由 [jhckevin](https://github.com/jhckevin) 维护。
 
 项目自有代码采用 [MIT](LICENSE)。第三方代码、策略和图标的来源与许可见 [NOTICE](NOTICE) 和[第三方说明](THIRD_PARTY_NOTICES.md)。
-
-开发者可继续阅读[架构说明](docs/architecture.md)、[工程参考](docs/engineering-notes.md)和 [CI / 发布流程](https://github.com/jhckevin/dsh-auto-review/actions)。
