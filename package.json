@@ -8,6 +8,10 @@
   "repository": { "type": "git", "url": "git+https://github.com/jhckevin/dsh-auto-review.git" },
   "bugs": { "url": "https://github.com/jhckevin/dsh-auto-review/issues" },
   "homepage": "https://github.com/jhckevin/dsh-auto-review#readme",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
