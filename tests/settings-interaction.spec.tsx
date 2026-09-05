@@ -5,16 +5,22 @@ import {describe,it,expect,vi} from 'vitest'
 import {AutoReviewSettingsSection} from '../src/client/index.tsx'
 import {DEFAULT_AUTO_REVIEW_UI_SETTINGS} from '../src/settings.ts'
 type Props=ComponentProps<typeof AutoReviewSettingsSection>
-async function mount(writable=true, update=vi.fn()) {
+async function mount(writable=true, update=vi.fn(), initial: Partial<typeof DEFAULT_AUTO_REVIEW_UI_SETTINGS>={}) {
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true)
  const el=document.createElement('div');document.body.append(el);const root=createRoot(el)
- const value={...DEFAULT_AUTO_REVIEW_UI_SETTINGS}
+ const value={...DEFAULT_AUTO_REVIEW_UI_SETTINGS,...initial}
  const read=vi.fn().mockResolvedValue({value,revision:7,user:{},writable})
  const props={read,update,reset:vi.fn(),metrics:vi.fn().mockResolvedValue(undefined),t:(key:string)=>key} as unknown as Props
  await act(async()=>{root.render(createElement(AutoReviewSettingsSection,props))})
  return {el,root,update,close:async()=>{await act(async()=>root.unmount());el.remove();vi.unstubAllGlobals()}}
 }
 describe('settings interaction state',()=>{
+ it('explains invalid settings instead of only disabling save',async()=>{
+  const x=await mount(true,vi.fn(),{maxAttempts:0});try{
+   expect(x.el.querySelector('[role="alert"]')?.textContent).toBe('invalidSettings')
+   expect(x.el.querySelector<HTMLButtonElement>('.ar-primary')?.disabled).toBe(true)
+  }finally{await x.close()}
+ })
  it('does not offer saving an unchanged form and shows persisted state',async()=>{
   const x=await mount();try{
    expect(x.el.querySelector<HTMLButtonElement>('.ar-primary')?.disabled).toBe(true)

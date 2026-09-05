@@ -19,6 +19,7 @@ interface CompatibleSlots {
 type ClientContext = Context & { readonly slots: CompatibleSlots }
 
 const zh = {
+  invalidSettings: '无法保存：数值须为正整数，尝试次数为 1–3、历史条目最多 64；启用的模型配置必须填写 Provider 和模型 ID。',
   saving: '正在保存…', pending: '有未保存的修改', active: '已启用', inactive: '已关闭', readOnly: '当前连接无设置写入权限', fullAccessNative: 'Full Access：使用原生审批流程。', fullAccessReview: 'Full Access：所有非硬禁动作进入审查。', loading: '正在加载…', badgeCompatibility: '兼容性提示：官方 Harness 尚无逐工具徽章与设置导航图标插槽。设置与审查可用；命令右侧审查/拒绝图标和设置选项卡 SVG 需要配套的 tool.call.badges 与 settings.section.icon 补丁，未安装时保留原生显示。',
   nav: '自动审批审查', title: 'Auto Review', subtitle: '依据权限模式、原生沙盒边界与当前策略，将需要审查的动作交给独立模型。',
   enabled: '启用 Auto Review', enabledHint: '关闭后完全回到 Harness 原生审批链，扩展不再路由、批准或拒绝动作。',
@@ -45,6 +46,7 @@ const zh = {
   behavior: '当前权限组合行为', behaviorDisabled: 'Auto Review 已关闭：所有权限档位均完全使用 Harness 原生审批链。', behaviorDefault: '只读/工作区写入：沙盒内普通动作直接通过；越界、敏感和网络动作进入 Reviewer。', behaviorStrict: '只读/工作区写入：沙盒内动作也进入 Reviewer，但实际执行仍受原生沙盒约束。',
 }
 const en = {
+  invalidSettings: 'Cannot save: use positive integers, 1–3 attempts and at most 64 history entries; active model profiles require both provider and model ID.',
   saving: 'Saving…', pending: 'Unsaved changes', active: 'Enabled', inactive: 'Disabled', readOnly: 'This connection cannot change settings', fullAccessNative: 'Full Access: native approval flow.', fullAccessReview: 'Full Access: all actions except hard denials are reviewed.', loading: 'Loading…', badgeCompatibility: 'Compatibility: official Harness has no per-tool badge or settings-navigation icon slots. Settings and review work; the command reviewing/denied glyph and settings-tab SVG require the accompanying tool.call.badges and settings.section.icon patches. Without them, native display is retained.',
   nav: 'Auto Review', title: 'Auto Review', subtitle: 'Route actions to an isolated reviewer according to the permission mode, native sandbox boundary, and active policy.',
   enabled: 'Enable Auto Review', enabledHint: 'When disabled, the extension leaves routing, approval, and denial entirely to the native Harness chain.',
@@ -358,6 +360,7 @@ export function AutoReviewSettingsSection({ read, update, reset: resetSettings, 
         </div>
       </details>
       </fieldset>
+      {invalid ? <p className="ar-failed ar-validation" role="alert">{t('invalidSettings')}</p> : null}
       <footer className="ar-actions">
         <button type="button" className="ar-secondary" disabled={saving || !snapshot.writable} onClick={reset}>{t('reset')}</button>
         <button type="button" className="ar-primary" disabled={invalid || saving || !snapshot.writable || !dirty} onClick={save}>{t(saving ? 'saving' : 'save')}</button>
