@@ -179,6 +179,7 @@ export interface AutoReviewAuditRecord {
   readonly startedAt: number
   readonly finishedAt: number
   readonly latencyMs: number
+  readonly denialCounted?: boolean
 }
 
 export type AutoReviewIndicatorState = 'reviewing' | 'denied'
@@ -248,6 +249,9 @@ export interface AutoReviewBreakerRecord {
   readonly recentDenials?: number
   readonly recentWindow?: number
   readonly until?: number
+  readonly turn?: number
+  readonly action?: 'turn-interrupted' | 'action-blocked'
+  readonly callId?: ToolCallId
 }
 
 export type TicketGrant = 'inside-boundary' | 'auto-review' | 'native-manual' | 'exact-override'

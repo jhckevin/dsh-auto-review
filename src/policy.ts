@@ -11,6 +11,9 @@ import type {
 import type {} from '@deepseek-ai/dsh-sandbox-policy'
 import { sha256Json, toJsonValue } from './canonical.ts'
 import { ActionRouter } from './router.ts'
+import { denialInterruptionMessage } from './denial-breaker.ts'
+import { snapshotSessionEvents } from './dsh-compat.ts'
+import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type {
   ActionEnvelope,
   AutoReviewApprovalPath,
@@ -81,6 +84,40 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
   const router = new ActionRouter(config)
   const pendingByToken = new Map<ToolExecutionToken, PendingReview>()
   const escalationByCall = new Map<string, PendingReview>()
+  const interruptedTurns = new WeakMap<object, number>()
+  const blockedTokens = new Set<ToolExecutionToken>()
+
+  const stopTrippedTurn = (exec: Readonly<ToolExecution>, action: ActionEnvelope): string | undefined => {
+    const state = ctx.actionReview.denialBreaker(action)
+    if (state === undefined) return undefined
+    const message = denialInterruptionMessage(state)
+    const agent = exec.agent
+    const turn = action.authority.turn
+    // No await: a delayed lookup/callback could cancel replacement work. The
+    // current tool must unwind naturally; waiting for its own agent is a deadlock.
+    const boundary = agent && snapshotSessionEvents<SessionEvent>(agent.session).findLast(event => event.type === 'turn/start' || event.type === 'turn/end')
+    const matches = agent !== undefined && agent.status === 'running'
+      && agent.session.id === action.authority.sessionId
+      && turn !== undefined && boundary?.type === 'turn/start' && boundary.data.turn === turn
+      && !exec.signal.aborted
+    let interrupted = false
+    if (matches && interruptedTurns.get(agent) !== turn) {
+      interruptedTurns.set(agent, turn)
+      // Preserve queued user input. This stops this turn, not the whole session.
+      agent.cancel({ kind: 'hook', reason: message }, { keepInbox: true })
+      interrupted = true
+    }
+    if (!blockedTokens.has(exec.token)) {
+      blockedTokens.add(exec.token)
+      ctx.actionReview.recordAudit('breaker', {
+        state: 'opened', reason: 'denial-rate',
+        action: interrupted ? 'turn-interrupted' : 'action-blocked',
+        turn: turn ?? 0, callId: action.callId,
+        consecutiveDenials: state.consecutive, recentDenials: state.denied, recentWindow: state.window,
+      }, action.authority.sessionId)
+    }
+    return message
+  }
 
   const sandboxFor = (exec: Readonly<ToolExecution>) => {
     const session = exec.agent?.session
@@ -161,7 +198,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
   ctx.tools.guard((exec) => {
     if (!autoReviewActive(exec)) return undefined
     const action = route(exec).action
-    return ctx.actionReview.hardDenyReason(action) ?? ctx.actionReview.consumeTicket(exec.token, action)
+    return stopTrippedTurn(exec, action) ?? ctx.actionReview.hardDenyReason(action) ?? ctx.actionReview.consumeTicket(exec.token, action)
   })
 
   ctx.on('approval/request', async (request: ApprovalRequest, next: () => Promise<ApprovalOutcome>) => {
@@ -182,6 +219,8 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
     if (!autoReviewActive(exec)) return next()
     const pending = route(exec)
     const action = pending.action
+    const interruption = stopTrippedTurn(exec, action)
+    if (interruption !== undefined) throw new HarnessError(interruption, 'AUTO_REVIEW_TURN_INTERRUPTED')
     if (pending.postDenialRelation === 'equivalent-retry') {
       pending.approvalPath = 'native-manual'
       ctx.actionReview.issueTicket({ token: exec.token, action, grant: 'native-manual' })
@@ -214,6 +253,8 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
             })
         const decision = await ctx.actionReview.review(reviewAction, exec.agent?.session, exec.signal)
         pending.reviewOutcome = decision.outcome
+        const interruption = stopTrippedTurn(exec, action)
+        if (interruption !== undefined) throw new HarnessError(interruption, 'AUTO_REVIEW_TURN_INTERRUPTED')
         exec.signal.throwIfAborted()
         switch (decision.outcome) {
           case 'approved': {
@@ -263,6 +304,7 @@ export function apply(ctx: Context, config: RouterConfig = {}): void {
     const pending = pendingByToken.get(exec.token)
     if (pending === undefined) return
     pendingByToken.delete(exec.token)
+    blockedTokens.delete(exec.token)
     ctx.actionReview.discardTicket(exec.token)
     const session = exec.agent?.session
     if (session !== undefined) escalationByCall.delete(callKey(session.id, exec.callId))
