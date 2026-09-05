@@ -1,5 +1,6 @@
+import { ToolCallId } from './compat-fixtures.ts'
 import { describe, expect, it } from 'vitest'
-import { CallId } from '@deepseek-ai/dsh-llm'
+
 import { evaluateAutoReviewAudit } from '../src/eval.ts'
 import type { AutoReviewAuditEnvelope } from '../src/types.ts'
 
@@ -19,7 +20,7 @@ describe('offline Auto Review evaluation', () => {
     const digest = 'd'.repeat(64)
     const records = [
       envelope(1, 'routed', {
-        schemaVersion: 1, actionId: 'a', actionDigest: digest, callId: CallId('c'), rootCallId: CallId('c'),
+        schemaVersion: 1, actionId: 'a', actionDigest: digest, callId: ToolCallId('c'), rootCallId: ToolCallId('c'),
         toolName: 'bash', actionKind: 'process', disposition: 'review', resolverId: 'builtin', sandboxMode: 'workspace-write', pathCount: 0, routedAt: 1,
       }),
       envelope(2, 'decision', {
@@ -28,10 +29,10 @@ describe('offline Auto Review evaluation', () => {
         startedAt: 2, finishedAt: 9, latencyMs: 7,
       }),
       envelope(3, 'ticket', {
-        state: 'consumed', ticketId: 'missing', actionId: 'a', actionDigest: digest, policyDigest: 'p', boundaryDigest: 'b', callId: CallId('c'), grant: 'auto-review', at: 10,
+        state: 'consumed', ticketId: 'missing', actionId: 'a', actionDigest: digest, policyDigest: 'p', boundaryDigest: 'b', callId: ToolCallId('c'), grant: 'auto-review', at: 10,
       }),
       envelope(4, 'result', {
-        schemaVersion: 1, actionId: 'a', actionDigest: digest, callId: CallId('c'), rootCallId: CallId('c'), toolName: 'bash', actionKind: 'process', disposition: 'review',
+        schemaVersion: 1, actionId: 'a', actionDigest: digest, callId: ToolCallId('c'), rootCallId: ToolCallId('c'), toolName: 'bash', actionKind: 'process', disposition: 'review',
         approvalPath: 'auto-review', reviewOutcome: 'approved', finalOutcome: 'success', resultDigest: 'r', routedAt: 1, finishedAt: 11,
       }),
     ]

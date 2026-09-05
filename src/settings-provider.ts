@@ -1,6 +1,6 @@
 /** Explicit Host settings bridge for the Auto Review capability. */
 import { Context } from '@deepseek-ai/cordis'
-import { settingsNamespace, type SettingsScope } from '@deepseek-ai/dsh-settings'
+import { type SettingsScope } from '@deepseek-ai/dsh-settings'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from './service.ts'
 import type { AutoReviewIndicatorSnapshot, AutoReviewMetricsSnapshot, AutoReviewUiSettings } from './types.ts'
@@ -40,7 +40,7 @@ export interface AutoReviewStatusRequest {
   readonly sessionId: string
 }
 
-const SETTINGS_NS = settingsNamespace(AUTO_REVIEW_SETTINGS_NAMESPACE)
+const SETTINGS_NS = AUTO_REVIEW_SETTINGS_NAMESPACE as Parameters<Context['settings']['register']>[0]
 const SETTINGS_FIELDS = new Set<keyof AutoReviewUiSettings>([
   'enabled', 'reviewerModel', 'maxInputBytes', 'maxOutputTokens', 'timeoutMs',
   'sandboxDefaultAllow',

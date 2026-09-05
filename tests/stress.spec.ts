@@ -1,5 +1,6 @@
+import { ToolCallId } from './compat-fixtures.ts'
 import { Context } from '@deepseek-ai/cordis'
-import { CallId } from '@deepseek-ai/dsh-llm'
+
 import { describe, expect, it } from 'vitest'
 import ActionReviewRuntime from '../src/service.ts'
 import type { ActionEnvelope } from '../src/types.ts'
@@ -8,8 +9,8 @@ function action(index: number): ActionEnvelope {
   const digest = index.toString(16).padStart(64, '0')
   return {
     schemaVersion: 1, actionId: `stress:${index}`, actionDigest: digest, effectDigest: digest,
-    policyDigest: 'a'.repeat(64), boundaryDigest: 'b'.repeat(64), callId: CallId(`stress-${index}`),
-    rootCallId: CallId(`stress-${index}`), toolName: 'bash', arguments: { command: `echo ${index}` },
+    policyDigest: 'a'.repeat(64), boundaryDigest: 'b'.repeat(64), callId: ToolCallId(`stress-${index}`),
+    rootCallId: ToolCallId(`stress-${index}`), toolName: 'bash', arguments: { command: `echo ${index}` },
     actionKind: 'process', disposition: 'review', reason: 'stress', resolverId: 'builtin',
     effects: [{ type: 'process.exec', commandDigest: digest }],
     policy: { mode: 'enforcing', sandboxDefaultAllow: false, resolverId: 'builtin', disposition: 'review', ruleIds: ['STRESS'] },

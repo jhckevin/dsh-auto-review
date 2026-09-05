@@ -1,3 +1,4 @@
+import { snapshotSessionEvents } from './dsh-compat.ts'
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
@@ -367,10 +368,10 @@ async function runAttempt(
     }))
     await waitForIdle(handle.agent.whenIdle(), signal)
     signal.throwIfAborted()
-    const policyRetrieval = policyRetrievalStats(handle.agent.session.events)
+    const policyRetrieval = policyRetrievalStats(snapshotSessionEvents<SessionEvent>(handle.agent.session))
     try {
       return Object.freeze({
-        decision: decisionFromSession(handle.agent.session.events),
+        decision: decisionFromSession(snapshotSessionEvents<SessionEvent>(handle.agent.session)),
         reviewerSessionId: handle.agent.session.id,
         policyRetrieval,
         attempts: 1,

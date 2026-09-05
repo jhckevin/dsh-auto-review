@@ -20,6 +20,16 @@
 
 ## 安装
 
+**统一安装版正在 [#26](https://github.com/jhckevin/dsh-auto-review/issues/26) 中验证，尚未替换 npm 的默认版本。** 它将 rc6、rc2、alpha5 适配合并到一个包中，依据实际 DSH 宿主自动选择；不认识的版本或混装依赖会给出错误，不会猜测兼容性。
+
+发布并切换默认通道后的安装入口将简化为：
+
+```sh
+dsh plugin --profile web add @jhckevin/dsh-auto-review
+```
+
+目前仍请使用下面已发布的对应通道。首次安装受保护执行组件的步骤仍然需要管理员完成。
+
 目前支持 **Linux x86_64（glibc 2.31+）**。建议使用 Node.js **24.20.0**，并选择与你的 DSH 完全对应的插件通道。
 
 ### 1. 安装插件

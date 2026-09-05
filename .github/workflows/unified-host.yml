@@ -1,0 +1,33 @@
+name: Unified package host matrix
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        dsh: ['0.1.0-rc.6', '0.1.1-rc.2', '0.1.2-alpha.5']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.20.0'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run build
+      - run: node scripts/prepare-npm-release.mjs artifacts/npm
+      - name: Official installer and exact host selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/test-unified-host.mjs "$(jq -r .main artifacts/npm/npm-release.json)" "${{ matrix.dsh }}" 2>&1 | tee artifacts/host-matrix.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: host-matrix-${{ matrix.dsh }}
+          path: artifacts/

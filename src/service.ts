@@ -6,6 +6,7 @@ import type { SettingsScope } from '@deepseek-ai/dsh-settings'
 import type { Session } from '@deepseek-ai/dsh-session'
 import type { ToolExecutionToken } from '@deepseek-ai/dsh-tools'
 import { canonicalJson, sha256Json, toJsonValue } from './canonical.ts'
+import { assertSupportedDshHost } from './dsh-compat.ts'
 import type {
   ActionExecutionTicket,
   ActionEnvelope,
@@ -131,6 +132,7 @@ export class ActionReviewRuntime extends Service {
 
   constructor(ctx: Context, config: AutoReviewConfig = {}) {
     super(ctx, 'actionReview')
+    assertSupportedDshHost()
     this.deployedConfig = Object.freeze({
       mode: config.mode ?? 'enforcing',
       sandboxDefaultAllow: config.sandboxDefaultAllow ?? true,

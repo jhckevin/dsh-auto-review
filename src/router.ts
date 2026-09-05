@@ -1,7 +1,9 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 import type { SandboxExecutionPolicy } from '@deepseek-ai/dsh-sandbox'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { sha256Json, toJsonValue } from './canonical.ts'
+import { snapshotSessionEvents } from './dsh-compat.ts'
 import type {
   ActionEffect,
   ActionDisposition,
@@ -125,8 +127,11 @@ function transcriptOf(exec: Readonly<ToolExecution>): ActionEnvelope['authority'
   let currentUserRequest: string | undefined
   let turn: number | undefined
   const transcript: Array<ActionEnvelope['authority']['transcript'][number]> = []
-  for (let index = session.events.length - 1; index >= 0; index -= 1) {
-    const event = session.events[index]
+  // The compatibility adapter returns the immutable fork prefix on all supported
+  // DSH cohorts. Capture the log bound without copying the complete log.
+  const events = snapshotSessionEvents<SessionEvent>(session)
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
     if (event?.type === 'turn/start' && turn === undefined) {
       const candidate = (event.data as { turn?: unknown }).turn
       if (typeof candidate === 'number' && Number.isSafeInteger(candidate)) turn = candidate

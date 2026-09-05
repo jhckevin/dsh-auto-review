@@ -13,12 +13,12 @@ const fixtures = [
   { name: '@jhckevin/dsh-auto-review-bridge-host', version: '0.1.0-rc.2', optionalDependencies: { '@jhckevin/dsh-auto-review-bridge-linux-x64-gnu': '0.1.0-rc.2' } },
   ...Object.entries({ '@jhckevin/dsh-auto-review-bridge-linux-x64-gnu': '0.1.0-rc.2', '@deepseek-ai/schemastery': '3.18.2', '@deepseek-ai/cosmokit': '1.8.3', '@standard-schema/spec': '1.1.0', 'node-addon-api': '8.9.2', 'node-gyp-build': '4.8.4', 'tree-sitter': '0.25.1', 'tree-sitter-bash': '0.25.1' }).map(([name, version]) => ({ name, version })),
 ]
-function fixture(t) {
+function fixture(t, plugin = fixtures[0], extraEnv = {}) {
   const root = mkdtempSync(join(tmpdir(), 'auto-review-installer-test-'))
   t.after(() => rmSync(root, { recursive: true, force: true }))
   const artifacts = join(root, 'artifacts'), contents = join(root, 'contents')
   mkdirSync(artifacts); mkdirSync(contents); mkdirSync(join(contents, 'package'))
-  const sums = fixtures.map((pkg, i) => {
+  const sums = [plugin, ...fixtures.slice(1)].map((pkg, i) => {
     writeFileSync(join(contents, 'package/package.json'), JSON.stringify(pkg))
     const name = `artifact-${i}.tgz`
     execFileSync('tar', ['-czf', join(artifacts, name), '-C', contents, 'package'])
@@ -26,7 +26,7 @@ function fixture(t) {
   })
   writeFileSync(join(artifacts, 'SHA256SUMS'), sums.join('\n') + '\n')
   const destination = join(root, 'install')
-  const run = () => spawnSync(process.execPath, [script, artifacts, destination], { encoding: 'utf8' })
+  const run = () => spawnSync(process.execPath, [script, artifacts, destination], { encoding: 'utf8', env: { ...process.env, ...extraEnv } })
   return { root, artifacts, destination, run }
 }
 test('checked artifacts prepare isolated exact peers without running npm', t => {
@@ -65,3 +65,20 @@ test('duplicate checksum entry is refused', t => {
   writeFileSync(file, original + original.split('\n')[0] + '\n')
   assert.notEqual(f.run().status, 0)
 })
+for (const version of ['0.1.0-rc.6', '0.1.1-rc.2', '0.1.2-alpha.5']) {
+  test('unified preview selects exact cohort ' + version, t => {
+    const plugin = { ...fixtures[0], peerDependencies: {
+      '@deepseek-ai/dsh-agent': '0.1.0-rc.6 || 0.1.1-rc.2 || 0.1.2-alpha.5',
+      '@deepseek-ai/dsh-client-runtime': '0.1.0-rc.6 || 0.1.1-rc.2',
+      '@deepseek-ai/dsh-client-store': '0.1.2-alpha.5',
+    } }
+    const f = fixture(t, plugin, { DSH_PREVIEW_VERSION: version })
+    const result = f.run(); assert.equal(result.status, 0, result.stderr)
+    const p = JSON.parse(readFileSync(join(f.destination, 'package.json')))
+    for (const [name, selected] of Object.entries(p.dependencies)) {
+      if (name.startsWith('@deepseek-ai/dsh')) assert.equal(selected, version)
+    }
+    if (version === '0.1.2-alpha.5') assert.equal(p.dependencies['@deepseek-ai/dsh-client-runtime'], undefined)
+    else assert.equal(p.dependencies['@deepseek-ai/dsh-client-store'], undefined)
+  })
+}

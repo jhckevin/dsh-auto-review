@@ -1,11 +1,14 @@
+import { ToolCallId } from './compat-fixtures.ts'
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { CallId } from '@deepseek-ai/dsh-llm'
+
 import { LocalSandboxProvider } from '@deepseek-ai/dsh-sandbox-local'
 import SandboxPolicyService from '@deepseek-ai/dsh-sandbox-policy'
+import SessionStore from '@deepseek-ai/dsh-session'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { defineTool } from '@deepseek-ai/dsh-tools'
 import ApprovalService from '@deepseek-ai/dsh-user-approval'
@@ -37,13 +40,18 @@ describe('Linux x86 native sandbox composition', () => {
     expect(process.arch).toBe('x64')
     prepare()
     ctx = new Context()
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjectionRegistry)
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(LocalSandboxProvider, {})
     await ctx.plugin(SandboxPolicyService, { mode: 'workspace-write', workspaceRoot: workspace })
     await ctx.plugin(ApprovalService)
     await ctx.plugin(ActionReviewRuntime, { sandboxDefaultAllow: false })
-    await ctx.plugin({ inject: policyInject, apply: applyPolicy })
+    const policy = ctx.plugin({ inject: policyInject, apply: applyPolicy })
+    await policy
+    expect(ctx.get('sandboxPolicy')).toBeDefined()
+    expect(policy.state).toBe(2)
     ctx.actionReview.registerReviewer({
       id: 'sandbox-e2e-reviewer',
       review: async () => ({
@@ -68,13 +76,13 @@ describe('Linux x86 native sandbox composition', () => {
 
     const signal = new AbortController().signal
     const allowed = await ctx.tools.execute({
-      callId: CallId('allowed'), name: 'bash', arguments: { command: `printf allowed > ${join(workspace, 'allowed.txt')}` }, signal,
+      callId: ToolCallId('allowed'), name: 'bash', arguments: { command: `printf allowed > ${join(workspace, 'allowed.txt')}` }, signal,
     })
     expect(allowed).toMatchObject({ isError: false })
     expect(readFileSync(join(workspace, 'allowed.txt'), 'utf8')).toBe('allowed')
 
     const escaped = await ctx.tools.execute({
-      callId: CallId('escape'), name: 'bash', arguments: { command: `printf changed > ${join(workspace, 'escape', 'sentinel.txt')}` }, signal,
+      callId: ToolCallId('escape'), name: 'bash', arguments: { command: `printf changed > ${join(workspace, 'escape', 'sentinel.txt')}` }, signal,
     })
     expect(escaped).toMatchObject({ isError: true })
     expect(readFileSync(join(outside, 'sentinel.txt'), 'utf8')).toBe('unchanged')
