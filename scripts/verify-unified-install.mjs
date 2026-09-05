@@ -26,6 +26,10 @@ const report=detectDshHost()
 assert(report.supported,JSON.stringify(report))
 assert.equal(report.profile.version,expected)
 writeFileSync(join(root,'config.yml'),run(['--profile','web','--dump-config']))
-const result={expected,pluginVersion:manifest.version,report,root,status:'PASS',scope:'official plugin add, host selection and configuration composition',native:'NOT_TESTED',browser:'NOT_TESTED',model:'NOT_TESTED'}
+writeFileSync(join(root,'remove.log'),run(['plugin','--profile','web','remove','@jhckevin/dsh-auto-review']))
+const remaining=JSON.parse(readFileSync(join(root,'profiles/web/package.json'),'utf8'))
+assert(!remaining.dependencies?.['@jhckevin/dsh-auto-review'],'remove left dependency')
+assert(!remaining.dsh?.profile?.bundles?.includes('@jhckevin/dsh-auto-review'),'remove left active bundle')
+const result={expected,pluginVersion:manifest.version,report,root,status:'PASS',scope:'official plugin add, host selection, configuration composition and profile removal',native:'NOT_TESTED',browser:'NOT_TESTED',model:'NOT_TESTED'}
 writeFileSync(join(root,'result.json'),JSON.stringify(result,null,2))
 console.log(JSON.stringify(result))
