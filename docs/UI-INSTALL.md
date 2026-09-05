@@ -1,10 +1,10 @@
 # 候选版安装与工具图标
 
-0.6.0-beta.2 尚未发布到 npm。不要把以下本地包安装命令误写成已发布版本。
+0.6.0 尚未发布到 npm。不要把以下本地包安装命令误写成已发布版本。
 取得本分支 CI 的候选 tgz 后，按 DSH 官方插件方式安装：
 
 ```sh
-dsh plugin --profile web add ./jhckevin-dsh-auto-review-0.6.0-beta.2.tgz
+dsh plugin --profile web add ./jhckevin-dsh-auto-review-0.6.0.tgz
 ```
 
 模型凭据仍在 DSH 的模型设置中配置。插件默认使用已配置的 Flash 路由，
@@ -16,7 +16,7 @@ dsh plugin --profile web add ./jhckevin-dsh-auto-review-0.6.0-beta.2.tgz
 候选包附带经过修改的 DSH UI owner，使用原生槽位注册机制，
 不是页面 DOM 注入，也不会替换工具执行、权限或沙盒代码。
 
-目前仅支持 **DSH 0.1.1-rc.2** 的这两个 UI 包。停止 DSH 后执行：
+随包包含 **DSH 0.1.0-rc.6、0.1.1-rc.2、0.1.2-alpha.5** 的匹配 UI 包。停止 DSH 后执行：
 
 ```sh
 # 用实际 profile 和宿主的 node_modules 目录替换下面两个路径。
@@ -36,8 +36,8 @@ node /path/to/profile/node_modules/@jhckevin/dsh-auto-review/scripts/install-ui.
 重复安装不重复修改，出现写入失败会回滚已修改的文件。被其他插件改过的文件不会被覆盖。
 宿主更新后应重新检查版本，不能继续套用旧补丁。只读容器请在镜像构建阶段安装。
 
-核心的 rc6 / alpha5 自动选择不等于这两个版本的 UI 适配也已验收；
-本安装器会拒绝不匹配的版本。也不是完全热安装：宿主 UI owner 更新需要重启。
+三版本官方安装矩阵包括包内 UI 安装、重复安装和还原。未知版本仍拒绝安装。
+宿主 UI owner 更新需要重启，不属于完全热安装。真实浏览器验收范围另见发布验证记录。
 
 ## 终端提示
 
@@ -57,4 +57,6 @@ WebUI 的硬中断提示来自真实的 `turn/end` 事件，刷新后仍可重�
 使用宿主 `packages/client/tsdown.client.ts` 的 `clientBundle` preset
 构建 `ui-tool` 与 `ui-settings-general` 的 client entry。
 不能用其他版本的 workspace 别名替代对应版本的 wire 依赖。
-当前附带构建只针对 rc2；源码路径、许可证和哈希随包一起保留。
+rc6 使用 patches/dsh-rc6-ui-owners.patch；rc2 / alpha5 使用上面的两个补丁。
+使用 node scripts/build-ui-owners.mjs SOURCE HOST_NODE_MODULES OUTPUT LIGHTNINGCSS_ENTRY 重建匹配的 UI 包。
+构建器校验源码与宿主包版本，不允许未解析的依赖悄悄成为浏览器外部模块。
