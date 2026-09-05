@@ -1,0 +1,114 @@
+--- a/packages/client/ui-settings-general/src/client/SettingsRoot.tsx
++++ b/packages/client/ui-settings-general/src/client/SettingsRoot.tsx
+@@ -73,7 +73,7 @@
+                 aria-current={row.id === active ? 'true' : undefined}
+                 onClick={() => { onSelect(row.id) }}
+               >
+-                {navIcon(row.id)}
++                {renderSlot('settings.section.icon', { sectionId: row.id }, { entryKey: row.id, fallback: navIcon(row.id) })}
+                 <span className={css.navLabel}>{row.label}</span>
+               </button>
+             ))}
+--- a/packages/client/ui-settings-general/src/client/index.ts
++++ b/packages/client/ui-settings-general/src/client/index.ts
+@@ -147,6 +147,7 @@
+       'settings.action': { kind: 'list', scope: 'root' },
+       'settings.close': { kind: 'single', scope: 'root' },
+       'settings.section': { kind: 'list', scope: 'root' },
++      'settings.section.icon': { kind: 'keyed', scope: 'root' },
+       'settings.onboarding': { kind: 'list', scope: 'root' },
+     },
+     inject: shellInjected,
+--- a/packages/client/ui-settings-general/src/client/shell-contract.ts
++++ b/packages/client/ui-settings-general/src/client/shell-contract.ts
+@@ -54,6 +54,7 @@
+     | 'settings.action'
+     | 'settings.close'
+     | 'settings.section'
++    | 'settings.section.icon'
+     | 'settings.onboarding'
+   >
+   & InjectFace<SettingsRootInjected>
+--- a/packages/client/ui-tool/src/client/apply.ts
++++ b/packages/client/ui-tool/src/client/apply.ts
+@@ -26,6 +26,7 @@
+     locale: NS,
+     children: {
+       'tool.call.toolview': { kind: 'keyed', scope: 'session' },
++      'tool.call.badges': { kind: 'list', scope: 'session' },
+     },
+   }, ToolCallTree))
+ 
+--- a/packages/client/ui-tool/src/client/contract/slots.ts
++++ b/packages/client/ui-tool/src/client/contract/slots.ts
+@@ -21,6 +21,8 @@
+      * function of what the turn already knows.
+      */
+     'tool.call.toolview': { kind: 'keyed'; scope: 'session'; owner: ToolCallOwnerProps }
++    /** Additive per-call status indicators; never replace the keyed Tool view. */
++    'tool.call.badges': { kind: 'list'; scope: 'session'; owner: Pick<ToolCallOwnerProps, 'callId' | 'toolName'> }
+   }
+ }
+ 
+@@ -45,7 +47,7 @@
+ 
+ /** Full props of the Tool call-tree renderer registered as a `tool-call` Chat Node. */
+ export type ToolTreeProps = PropsRuntime<'conversation.chat.node', 'tool-call'>
+-  & PropsRenderSlots<'tool.call.toolview'>
++  & PropsRenderSlots<'tool.call.toolview' | 'tool.call.badges'>
+   & PropsLocale<'conversation'>
+ 
+ /** Full props of the selected Tool output renderer in the details panel. */
+--- a/packages/client/ui-tool/src/client/tool/ToolCallTree.module.css
++++ b/packages/client/ui-tool/src/client/tool/ToolCallTree.module.css
+@@ -1,5 +1,26 @@
+ .callRow {
+   border-radius: 6px;
++}
++
++.callLine {
++  display: flex;
++  align-items: flex-start;
++}
++
++.callContent {
++  flex: 1;
++  min-width: 0;
++}
++
++.badges {
++  display: flex;
++  align-items: center;
++  gap: 4px;
++  flex: none;
++}
++
++.badges:empty {
++  display: none;
+ }
+ 
+ .subCalls {
+--- a/packages/client/ui-tool/src/client/tool/ToolCallTree.tsx
++++ b/packages/client/ui-tool/src/client/tool/ToolCallTree.tsx
+@@ -35,10 +35,17 @@
+       data-chat-call-id={callId}
+       data-selected={selected || undefined}
+     >
+-      {renderSlot('tool.call.toolview', owner, {
+-        entryKey: toolName,
+-        fallback: <GenericToolCard {...owner} t={t} />,
+-      })}
++      <div className={css.callLine}>
++        <div className={css.callContent}>
++          {renderSlot('tool.call.toolview', owner, {
++            entryKey: toolName,
++            fallback: <GenericToolCard {...owner} t={t} />,
++          })}
++        </div>
++        <div className={css.badges}>
++          {renderSlot('tool.call.badges', { callId, toolName })}
++        </div>
++      </div>
+       {children}
+     </div>
+   )

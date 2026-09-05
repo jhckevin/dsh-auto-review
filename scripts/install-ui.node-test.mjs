@@ -77,3 +77,42 @@ test('CLI rejects unknown arguments without changing UI', async t => {
   assert.match(result.stderr, /Unknown argument/)
   assert.equal(readFileSync(f.target('tool'), 'utf8'), 'original-tool')
 })
+
+test('catalog selects each host cohort and refuses mixed owner versions', async t => {
+  for (const version of ['0.1.0-rc.6', '0.1.1-rc.2', '0.1.2-alpha.5']) {
+    const f = await fixture(t)
+    const manifestPath = join(f.dir, 'ui/manifest.json')
+    const original = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    const versions = ['0.1.0-rc.6', '0.1.1-rc.2', '0.1.2-alpha.5']
+    const cohorts = versions.map(dshVersion => ({
+      ...original, dshVersion,
+      files: original.files.map(file => {
+        const artifact = file.artifact.replace('.js', '-' + dshVersion + '.js')
+        const bytes = 'patched-' + dshVersion + '-' + file.package
+        writeFileSync(join(f.dir, artifact), bytes)
+        return { ...file, artifact, patchedSha256: hash(bytes) }
+      }),
+    }))
+    writeFileSync(manifestPath, JSON.stringify({ schemaVersion: 2, cohorts }))
+    for (const name of ['tool', 'settings']) {
+      writeFileSync(join(f.base, '@deepseek-ai/dsh-client-ui-' + name, 'package.json'), JSON.stringify({ version }))
+    }
+    assert.equal(f.installUi(f.base, { check: true }).version, version)
+    assert.equal(f.installUi(f.base).changed, 2)
+    assert.equal(readFileSync(f.target('tool'), 'utf8'), 'patched-' + version + '-dsh-client-ui-tool')
+    assert.equal(f.installUi(f.base).changed, 0)
+    assert.equal(f.installUi(f.base, { restore: true }).changed, 2)
+    writeFileSync(join(f.base, '@deepseek-ai/dsh-client-ui-settings/package.json'), JSON.stringify({ version: '0.9.9' }))
+    assert.throws(() => f.installUi(f.base), /Unsupported UI version/)
+    assert.equal(readFileSync(f.target('tool'), 'utf8'), 'original-tool')
+  }
+})
+test('unknown first owner in a multi-version catalog fails before backup', async t => {
+  const f = await fixture(t)
+  const manifestPath = join(f.dir, 'ui/manifest.json')
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  writeFileSync(manifestPath, JSON.stringify({ schemaVersion: 2, cohorts: [manifest] }))
+  writeFileSync(join(f.base, '@deepseek-ai/dsh-client-ui-tool/package.json'), JSON.stringify({ version: '0.9.9' }))
+  assert.throws(() => f.installUi(f.base), /Unsupported UI version/)
+  assert.equal(existsSync(f.target('tool') + '.auto-review-original'), false)
+})

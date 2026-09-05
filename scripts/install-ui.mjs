@@ -11,7 +11,13 @@ const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 /** Preflight every known artifact; refuse unknown versions or locally modified UI. */
 export function installUi(hostRoot, { restore = false, check = false } = {}) {
   const base = realpathSync(hostRoot)
-  const manifest = JSON.parse(readFileSync(join(root, 'ui/manifest.json'), 'utf8'))
+  const catalog = JSON.parse(readFileSync(join(root, 'ui/manifest.json'), 'utf8'))
+  const cohorts = catalog.cohorts ?? [catalog]
+  const owner = cohorts[0]?.files[0]?.package
+  if (!owner) throw Error('Packaged UI manifest is empty.')
+  const version = JSON.parse(readFileSync(join(base, '@deepseek-ai', owner, 'package.json'), 'utf8')).version
+  const manifest = cohorts.find(entry => entry.dshVersion === version)
+  if (!manifest) throw Error('Unsupported UI version: ' + version + '. No files changed.')
   const plan = manifest.files.map(file => {
     const pkg = join(base, '@deepseek-ai', file.package)
     const metadata = JSON.parse(readFileSync(join(pkg, 'package.json'), 'utf8'))
@@ -72,7 +78,7 @@ if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.me
       if (!['--help', '--check', '--restore'].includes(arg)) throw Error('Unknown argument: ' + arg)
     }
     if (args.includes('--help')) {
-      console.log('dsh-auto-review-ui [--dsh-root /path/to/node_modules] [--check|--restore]\nStop DSH first. Installs matching, hash-pinned UI owners only; preserves an original backup. Currently supports DSH 0.1.1-rc.2.')
+      console.log('dsh-auto-review-ui [--dsh-root /path/to/node_modules] [--check|--restore]\nStop DSH first. Installs matching, hash-pinned UI owners only; preserves an original backup. Supports DSH 0.1.0-rc.6, 0.1.1-rc.2, 0.1.2-alpha.5.')
     } else {
       const pos = args.indexOf('--dsh-root')
       if (pos >= 0 && (!args[pos + 1] || args[pos + 1].startsWith('--'))) throw Error('--dsh-root requires a directory.')
