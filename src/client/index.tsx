@@ -8,6 +8,34 @@ import type { ActionKind, AutoReviewIndicatorSnapshot, AutoReviewMetricsSnapshot
 import type { AutoReviewSettingsSnapshot } from '../settings-provider.ts'
 import { ReviewStatusClient, type HostObservable } from './review-status.ts'
 
+import { isAutoReviewInterruption } from '../denial-breaker.ts'
+
+interface AutoReviewTurnOwner { readonly turn: { readonly end?: { readonly data: { readonly reason: unknown } } } }
+interface AutoReviewTurnSlots {
+  inject(name: 'conversation.chat.turnTail', register: () => unknown): unknown
+  register(options: { name: 'conversation.chat.turnTail'; priority: number; select: (owner: AutoReviewTurnOwner) => object | null }, component: (props: AutoReviewTurnOwner) => ReactNode): unknown
+}
+
+/** Read only the durable cancellation reason, never assistant/tool text. */
+export function autoReviewInterruptionDetail(reason: unknown): string | null {
+  return isAutoReviewInterruption(reason) ? reason.reason.reason : null
+}
+
+/** Persistent native turn-tail notice; a replay needs no live review RPC. */
+export function AutoReviewTurnInterruption({ turn }: AutoReviewTurnOwner): ReactNode {
+  const detail = autoReviewInterruptionDetail(turn.end?.data.reason)
+  if (detail === null) return null
+  return <div role="status" data-auto-review-turn-interrupted="true" title={detail}
+    style={{ display: 'flex', gap: 8, alignItems: 'flex-start', color: '#b42318', borderLeft: '3px solid currentColor', padding: '8px 12px', margin: '8px 0' }}>
+    <span aria-hidden="true" style={{ display: 'inline-flex', flex: '0 0 18px', width: 18, height: 18 }}>
+      <ReviewerShieldIcon denied width={18} height={18} />
+    </span>
+    <div><strong>本轮操作已被自动审查终止 / This turn was interrupted by Auto Review.</strong>
+      <details><summary>详情 / Details</summary><div style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{detail}</div></details>
+    </div>
+  </div>
+}
+
 const LOCALE_NAMESPACE = 'settings.autoReview'
 const STYLE_ID = '@jhckevin/dsh-auto-review/webui'
 
@@ -21,29 +49,29 @@ type ClientContext = Context & { readonly slots: CompatibleSlots }
 const zh = {
   invalidSettings: '无法保存：数值须为正整数，尝试次数为 1–3、历史条目最多 64；启用的模型配置必须填写 Provider 和模型 ID。',
   saving: '正在保存…', pending: '有未保存的修改', active: '已启用', inactive: '已关闭', readOnly: '当前连接无设置写入权限', fullAccessNative: 'Full Access：使用原生审批流程。', fullAccessReview: 'Full Access：所有非硬禁动作进入审查。', loading: '正在加载…', badgeCompatibility: '兼容性提示：官方 Harness 尚无逐工具徽章与设置导航图标插槽。设置与审查可用；命令右侧审查/拒绝图标和设置选项卡 SVG 需要配套的 tool.call.badges 与 settings.section.icon 补丁，未安装时保留原生显示。',
-  nav: '自动审批审查', title: 'Auto Review', subtitle: '依据权限模式、原生沙盒边界与当前策略，将需要审查的动作交给独立模型。',
-  enabled: '启用 Auto Review', enabledHint: '关闭后完全回到 Harness 原生审批链，扩展不再路由、批准或拒绝动作。',
-  sandboxDefaultAllow: '原生沙盒内默认通过', sandboxDefaultAllowHint: '默认开启。只影响 read-only / workspace-write；关闭后沙盒内动作也进入 reviewer，不会解除原生沙盒约束。Full Access 由下面独立开关控制。',
-  reviewFullAccess: '审查 Full Access 动作', reviewFullAccessHint: '默认开启。Full Access 没有沙盒：除硬禁行为直接拒绝外，所有动作送审，不受沙盒内默认通过影响。关闭后该档位完全使用原生流程。本选项是产品扩展，并非 Codex 原生规则。',
+  nav: '自动审批审查', title: 'Auto Review', subtitle: '独立审查，安全继续。',
+  enabled: '启用 Auto Review', enabledHint: '关闭时使用 Harness 原生审批。',
+  sandboxDefaultAllow: '原生沙盒内默认通过', sandboxDefaultAllowHint: '只读与工作区写入模式：安全动作免审，越界动作仍需审查。',
+  reviewFullAccess: '审查 Full Access 动作', reviewFullAccessHint: 'Full Access 无沙盒。开启时全量审查；关闭时使用原生流程。',
   model: '审查模型', flash: 'Flash（默认）', flashHint: '低延迟，适合动作关键路径。', pro: 'Pro', proHint: '更高审查能力，延迟与成本更高。',
   modelStrategy: '模型策略', single: '单模型', riskTiered: '风险分级', primaryProfile: '常规模型', strongProfile: '高风险模型',
-  modelStrategyHint: '单模型始终使用常规模型；风险分级会让指定高风险类型直接使用高风险模型，并可在结论不确定时升级一次。',
-  primaryProfileHint: '处理日常审查。Provider 路由和模型必须已在 Harness 服务端配置，凭据不会进入浏览器。', strongProfileHint: '仅在风险分级策略命中高风险类型或触发升级时使用。',
-  provider: 'Provider 路由', modelId: '模型 ID', reasoningEffort: 'Reasoning effort（留空使用模型默认）',
-  reasoningEffortHint: '这是可选的 Provider 参数；留空最兼容，填写不受支持的值会由 Provider 报错。',
+  modelStrategyHint: '按风险分级时，可为高风险动作指定另一模型。',
+  primaryProfileHint: '使用 Harness 已配置的模型与凭据。', strongProfileHint: '仅在风险分级策略命中高风险类型或触发升级时使用。',
+  provider: 'Provider 路由', modelId: '模型 ID', reasoningEffort: '推理强度',
+  reasoningEffortHint: '可选；留空使用模型默认。',
   escalateUncertain: '不确定或高风险结论升级到高风险模型', strongKinds: '直接使用高风险模型的动作类型',
   escalateUncertainHint: '升级与重试共享同一总超时，不会绕过拒绝、沙盒或人工审批。', strongKindsHint: '勾选的类型跳过常规模型，直接交给高风险模型。',
-  advanced: '高级参数', maxInputBytes: '最大证据字节', maxOutputTokens: '最大输出 token', timeoutMs: '超时（毫秒）',
+  advanced: '高级参数', maxInputBytes: '最大证据字节', maxOutputTokens: '单次回复 token 上限', timeoutMs: '超时（毫秒）',
   maxAttempts: '最多尝试次数', transcriptMaxEntries: '历史条目上限', transcriptMaxBytes: '历史字节上限',
-  failureThreshold: '熔断失败阈值', breakerCooldownMs: '熔断冷却（毫秒）', save: '保存', reset: '恢复部署默认值',
+  failureThreshold: '熔断失败阈值', breakerCooldownMs: '熔断冷却（毫秒）', save: '保存', reset: '恢复默认',
   advancedHint: '这些值限制单次审查的证据、输出、重试和故障恢复开销；一般建议保留部署默认值。',
-  maxInputBytesHint: '发送给 reviewer 的净化动作证据上限，不是主 Agent 的完整上下文。', maxOutputTokensHint: '仅限制 reviewer 的结构化判定输出。', timeoutMsHint: '单个动作的总审查时限，包含重试和风险升级。', maxAttemptsHint: '仅在调用或协议失败时创建全新 reviewer session 重试，最多 3 次。',
+  maxInputBytesHint: '发送给 reviewer 的净化动作证据上限，不是主 Agent 的完整上下文。', maxOutputTokensHint: '限制每次回复，不是多轮审查总预算。', timeoutMsHint: '单个动作的总审查时限，包含重试和风险升级。', maxAttemptsHint: '仅在调用或协议失败时创建全新 reviewer session 重试，最多 3 次。',
   transcriptMaxEntriesHint: '最多携带多少条与当前动作有关的净化历史证据。', transcriptMaxBytesHint: '历史证据的总字节上限；不会扩张主 Agent 上下文。', failureThresholdHint: '连续 reviewer 故障达到此数时进入失效保护熔断。', breakerCooldownMsHint: '熔断后等待多久才允许再次探测 reviewer。',
   saved: '设置已保存并实时生效。', failed: '设置未能保存，请检查参数或连接。', inherited: '继承', overridden: '用户覆盖',
   reviewing: 'Auto Review 正在审查此工具调用', denied: 'Auto Review 已拒绝此工具调用',
-  funnel: '运行态动作漏斗', totalActions: '全部动作', insideBoundary: '原生沙盒内', autoReviewed: '进入审查', approved: '自动批准', deniedCount: '拒绝', manual: '人工处理',
+  funnel: '运行统计', totalActions: '全部动作', insideBoundary: '原生沙盒内', autoReviewed: '进入审查', approved: '自动批准', deniedCount: '拒绝', manual: '人工处理',
   policyLookups: '策略检索调用', policyBytes: '策略返回字节',
-  behavior: '当前权限组合行为', behaviorDisabled: 'Auto Review 已关闭：所有权限档位均完全使用 Harness 原生审批链。', behaviorDefault: '只读/工作区写入：沙盒内普通动作直接通过；越界、敏感和网络动作进入 Reviewer。', behaviorStrict: '只读/工作区写入：沙盒内动作也进入 Reviewer，但实际执行仍受原生沙盒约束。',
+  behavior: '查看当前权限行为', behaviorDisabled: 'Auto Review 已关闭：所有权限档位均完全使用 Harness 原生审批链。', behaviorDefault: '只读/工作区写入：沙盒内普通动作直接通过；越界、敏感和网络动作进入 Reviewer。', behaviorStrict: '只读/工作区写入：沙盒内动作也进入 Reviewer，但实际执行仍受原生沙盒约束。',
 }
 const en = {
   invalidSettings: 'Cannot save: use positive integers, 1–3 attempts and at most 64 history entries; active model profiles require both provider and model ID.',
@@ -324,15 +352,15 @@ export function AutoReviewSettingsSection({ read, update, reset: resetSettings, 
   return (
     <section className="ar-page" aria-busy={saving}>
       <header className="ar-header"><div className="ar-header-title"><AutoReviewLogo /><div><h2>{t('title')}</h2><p>{t('subtitle')}</p></div></div><span className="ar-live" role="status">{t(saving ? 'saving' : dirty ? 'pending' : snapshot.value?.enabled ? 'active' : 'inactive')}</span></header>
-      <p className="ar-muted" data-auto-review-badge-compatibility="requires-owner-slot">{t('badgeCompatibility')}</p>
-      {snapshot.metrics === undefined ? null : <AutoReviewFunnel metrics={snapshot.metrics} t={t} />}
+      <details className="ar-compat"><summary>工具图标与宿主适配 / UI compatibility</summary><p className="ar-help" data-auto-review-badge-compatibility="requires-owner-slot">{t('badgeCompatibility')}</p></details>
+
       {!snapshot.writable ? <p role="status">{t('readOnly')}</p> : null}
       <fieldset className="ar-controls" disabled={saving || !snapshot.writable}>
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('enabled')}</strong><p>{t('enabledHint')}</p></div>
         <button className="ar-switch" type="button" role="switch" aria-label={t('enabled')} aria-checked={draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, enabled: !draft.enabled }) }}><span /></button>
       </div>
-      <div className="ar-card ar-behavior"><h3>{t('behavior')}</h3><p>{t(!draft.enabled ? 'behaviorDisabled' : draft.sandboxDefaultAllow ? 'behaviorDefault' : 'behaviorStrict')}</p>{draft.enabled ? <p>{t(draft.reviewFullAccess ? 'fullAccessReview' : 'fullAccessNative')}</p> : null}</div>
+      <details className="ar-card ar-behavior"><summary>{t('behavior')}</summary><p>{t(!draft.enabled ? 'behaviorDisabled' : draft.sandboxDefaultAllow ? 'behaviorDefault' : 'behaviorStrict')}</p>{draft.enabled ? <p>{t(draft.reviewFullAccess ? 'fullAccessReview' : 'fullAccessNative')}</p> : null}</details>
       <div className="ar-card ar-toggle-row">
         <div><strong>{t('sandboxDefaultAllow')}</strong><p>{t('sandboxDefaultAllowHint')}</p></div>
         <button className="ar-switch" type="button" role="switch" aria-label={t('sandboxDefaultAllow')} aria-checked={draft.sandboxDefaultAllow} disabled={!draft.enabled} onClick={() => { setNotice(undefined); setDraft({ ...draft, sandboxDefaultAllow: !draft.sandboxDefaultAllow }) }}><span /></button>
@@ -360,6 +388,7 @@ export function AutoReviewSettingsSection({ read, update, reset: resetSettings, 
         </div>
       </details>
       </fieldset>
+      {snapshot.metrics === undefined ? null : <details className="ar-statistics"><summary>{t('funnel')}</summary><AutoReviewFunnel metrics={snapshot.metrics} t={t} /></details>}
       {invalid ? <p className="ar-failed ar-validation" role="alert">{t('invalidSettings')}</p> : null}
       <footer className="ar-actions">
         <button type="button" className="ar-secondary" disabled={saving || !snapshot.writable} onClick={reset}>{t('reset')}</button>
@@ -382,6 +411,38 @@ const CSS = `
 .ar-call-badge[data-auto-review-state=reviewing]{animation:ar-review-pulse 1.15s ease-in-out infinite}
 .ar-call-badge[data-auto-review-state=denied]{color:var(--dsw-alias-state-error-primary);background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 8%,var(--dsw-alias-bg-layer-1))}
 @keyframes ar-review-pulse{0%,100%{opacity:.52}50%{opacity:1}}@media(prefers-reduced-motion:reduce){.ar-call-badge{animation:none!important}}
+
+/* Compact settings: controls first; diagnostics and metrics are progressive disclosure. */
+.ar-page{max-width:680px;margin:0 auto;padding:4px 0 20px;font-size:13px}
+.ar-header{align-items:center;gap:12px;margin:0 0 20px}
+.ar-header-title{align-items:center;min-width:0}
+.ar-header h2{font-size:20px;line-height:1.3;letter-spacing:-.3px;margin:0}
+.ar-header p{font-size:12px;margin-top:4px}
+.ar-live{flex:0 0 auto;white-space:nowrap;min-width:48px;text-align:center;padding:2px 8px}
+.ar-compat{font-size:11px;color:var(--dsw-alias-label-secondary);margin:0 0 14px}
+.ar-controls>.ar-card{background:transparent;border:0;border-bottom:1px solid var(--dsw-alias-border-l1);border-radius:0;margin:0;padding:18px 0}
+.ar-controls>.ar-toggle-row:first-child{padding-top:0}
+.ar-toggle-row{gap:16px}
+.ar-toggle-row>div{min-width:0}
+.ar-toggle-row strong{font-size:13px;font-weight:550;margin-bottom:4px}
+.ar-toggle-row p{font-size:12px;line-height:1.55;max-width:48em}
+.ar-switch{flex:0 0 36px;width:36px;height:22px;padding:3px;background:var(--dsw-alias-border-l2,#64646c)}
+.ar-switch span{width:16px;height:16px}
+.ar-switch[aria-checked=true]{background:var(--dsw-alias-brand-primary,#6788ef)}
+.ar-switch[aria-checked=true] span{transform:translateX(14px)}
+.ar-switch[aria-checked=true] span{background:var(--dsw-alias-bg-base,#202024)}
+.ar-controls>.ar-behavior{font-size:12px;padding:10px 0;color:var(--dsw-alias-label-secondary)}
+.ar-behavior p{font-size:12px;margin:8px 0 0}
+.ar-profile-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.ar-profile-grid fieldset{min-width:0;padding:12px;border-radius:8px;background:var(--dsw-alias-bg-layer-1)}
+.ar-profile-grid input,.ar-select-row select,.ar-field-grid input{min-width:0;width:100%;height:34px;padding:6px 9px}
+.ar-select-row select{width:auto;max-width:65%}
+.ar-profile-grid label{margin:10px 0}
+.ar-advanced summary,.ar-statistics>summary{font-size:12px;font-weight:500;cursor:pointer}
+.ar-statistics{margin-top:18px;color:var(--dsw-alias-label-secondary)}
+.ar-actions{margin-top:12px;border-top:1px solid var(--dsw-alias-border-l1);padding:12px 0 0}
+.ar-actions button{font-size:12px;padding:7px 14px}
+@media(max-width:600px){.ar-profile-grid,.ar-field-grid{grid-template-columns:1fr}.ar-header{gap:8px}.ar-header h2{font-size:18px}.ar-page{padding-inline:0}.ar-kind-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 `
 
 /** Client services required by settings scopes and the settings slot. */
@@ -423,6 +484,13 @@ export function apply(ctx: ClientContext): void {
       ...(sessionId === undefined ? {} : { hooks: { reviewStatus: reviewStatus.source(sessionId) } }),
     }),
   }, AutoReviewCallBadge))
+  const turnSlots = ctx.slots as unknown as AutoReviewTurnSlots
+  turnSlots.inject('conversation.chat.turnTail', () => turnSlots.register({
+    name: 'conversation.chat.turnTail',
+    // Native turnTail is first-match: the safety notice precedes ordinary deliverables.
+    priority: -100,
+    select: owner => autoReviewInterruptionDetail(owner.turn.end?.data.reason) === null ? null : {},
+  }, AutoReviewTurnInterruption))
 }
 
 function createSettingsRemote(connection: ConnectionHandle): AutoReviewSettingsInjected {

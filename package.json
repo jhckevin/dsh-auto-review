@@ -1,6 +1,6 @@
 {
   "name": "@jhckevin/dsh-auto-review",
-  "version": "0.6.0-beta.1",
+  "version": "0.6.0-beta.2",
   "description": "Native Auto Review for DeepSeek Harness with automatic host compatibility selection",
   "type": "module",
   "license": "MIT",
@@ -16,12 +16,17 @@
     "access": "public",
     "provenance": true
   },
+  "bin": { "dsh-auto-review-ui": "./scripts/install-ui.mjs" },
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
+    },
+    "./terminal": {
+      "types": "./lib/terminal.d.ts",
+      "default": "./lib/terminal.js"
     },
     "./policy": {
       "types": "./lib/policy.d.ts",
@@ -67,6 +72,9 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "scripts/install-ui.mjs",
+    "ui/**/*.js",
+    "ui/manifest.json",
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "lib/client.js.map",
@@ -82,13 +90,14 @@
     "docs/ISSUE-025-DSH-COMPAT.md",
     "docs/ISSUE-025-UI-OWNER-PATCHES.md",
     "docs/ISSUE-032-COMPAT.md",
-    "docs/ISSUE-033-UNIVERSAL-DSH.md"
+    "docs/ISSUE-033-UNIVERSAL-DSH.md",
+    "docs/UI-INSTALL.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json && tsdown --config tsdown.client.config.ts",
     "test": "vitest run",
     "test:types": "tsc -p tsconfig.tests.json",
-    "check": "npm run build && npm run test:types && npm run test",
+    "check": "npm run build && npm run test:types && npm run test && node --test scripts/install-ui.node-test.mjs",
     "pack:check": "npm pack --dry-run",
     "policy:check": "node scripts/check-policy-provenance.mjs",
     "pack:verify": "node scripts/check-pack.mjs",

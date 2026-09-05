@@ -43,6 +43,7 @@ jobs:
           npm run build 2>&1 | tee artifacts/build.log
           npm run test:types 2>&1 | tee artifacts/types.log
           node --test scripts/tests/install-preview.node.mjs 2>&1 | tee artifacts/installer-tests.log
+          node --test scripts/install-ui.node-test.mjs 2>&1 | tee artifacts/ui-installer-tests.log
       - name: Behavior tests and JUnit report
         shell: bash
         run: |

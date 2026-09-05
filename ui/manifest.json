@@ -1,0 +1,18 @@
+{
+  "dshVersion": "0.1.1-rc.2",
+  "sourceCommit": "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e",
+  "files": [
+    {
+      "package": "dsh-client-ui-tool",
+      "artifact": "ui/rc2/ui-tool.js",
+      "originalSha256": "da1f011ba65411ac08a4145cb72fb3170bf5940fed04ebe7e2f45ceb523edefd",
+      "patchedSha256": "78856cc8d91457f9d92fc3879221f31832575c6de2818fca8e62d370d02129a5"
+    },
+    {
+      "package": "dsh-client-ui-settings-general",
+      "artifact": "ui/rc2/ui-settings-general.js",
+      "originalSha256": "9298ac5b087056555498550e0e0e6dd9d3202dce48bb07b2a2c4bfeed1d63da5",
+      "patchedSha256": "4135e470504a31393c81cfa9fc7a7ad98b0ae332699501adceb7549ac92e8176"
+    }
+  ]
+}

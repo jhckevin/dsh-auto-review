@@ -112,3 +112,11 @@ the upstream project license in `licenses/DSH-LICENSE`. The rc.2 hot-install
 series starts at `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e` and ends at
 `b9d1317287dd122188210cf7775017462f45cd86`. These are downstream changes, not
 upstream endorsement or a claim that unmodified DSH already has these seams.
+# DSH UI owner bundles
+
+The two version-pinned files under `ui/rc2/` contain modified DeepSeek Harness
+UI code from commit `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`.
+Copyright (c) 2026 DeepSeek. MIT license: [licenses/DSH-UI-MIT.txt](licenses/DSH-UI-MIT.txt).
+The modifications add the tool badge and settings icon extension slots;
+source diffs are included under `patches/`. Original and replacement hashes
+are recorded in `ui/manifest.json`. These are not official DeepSeek builds.

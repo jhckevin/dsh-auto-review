@@ -20,7 +20,7 @@ it('registers the rc.2 navigation glyph and session badge through additive child
   }
   apply(ctx as unknown as Parameters<typeof apply>[0])
   try {
-    expect(entries.map(x => x.options['name'])).toEqual(['settings.section', 'settings.section.icon', 'tool.call.badges'])
+    expect(entries.map(x => x.options['name'])).toEqual(['settings.section', 'settings.section.icon', 'tool.call.badges', 'conversation.chat.turnTail'])
     expect(entries[0]!.options).not.toHaveProperty('icon')
     expect(entries[1]!.options['key']).toBe('auto-review')
     expect(entries[1]!.component).toBe(AutoReviewNavIcon)
