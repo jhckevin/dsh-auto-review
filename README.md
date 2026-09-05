@@ -8,7 +8,7 @@
 
 ![DeepSeek Harness 中的 Auto Review 设置界面](docs/images/auto-review-settings.jpg)
 
-<sub>真实 WebUI 截图，来自 rc.5 开发版。下方安装流程使用已发布的 rc.4。</sub>
+<sub>真实 WebUI 截图，来自 DSH 0.1.1-rc.2 兼容版。</sub>
 
 ## 它能做什么
 
@@ -20,82 +20,43 @@
 
 ## 安装
 
-支持 **Linux x86_64，glibc 2.31 或更新版本**。准备 Node.js **24.20.0**、npm、tar、sha256sum；下面的下载命令还需要 [GitHub CLI](https://cli.github.com/)。
+目前支持 **Linux x86_64（glibc 2.31+）**。建议使用 Node.js **24.20.0**，并选择与你的 DSH 完全对应的插件通道。
 
-插件目前通过 GitHub Release 分发，尚未发布到 npm。第一次安装需要管理员放置受保护的执行组件；后续启动 DSH 使用普通用户。
+### 1. 安装插件
 
-### 1. 选择版本并下载
+已有 DSH CLI 时，执行其中一条：
 
-| 你的 DSH 版本 | 下载的插件版本 |
+| DSH 版本 | 安装命令 |
 | --- | --- |
-| 0.1.0-rc.6 | [v0.5.5-rc.3](https://github.com/jhckevin/dsh-auto-review/releases/tag/v0.5.5-rc.3) |
-| 0.1.1-rc.2 | [v0.5.6-rc.4](https://github.com/jhckevin/dsh-auto-review/releases/tag/v0.5.6-rc.4) |
-| 0.1.2-alpha.5 | [v0.5.7-alpha.3](https://github.com/jhckevin/dsh-auto-review/releases/tag/v0.5.7-alpha.3) |
+| 0.1.0-rc.6 | `dsh plugin --profile web add @jhckevin/dsh-auto-review@rc6` |
+| 0.1.1-rc.2 | `dsh plugin --profile web add @jhckevin/dsh-auto-review@rc2` |
+| 0.1.2-alpha.5 | `dsh plugin --profile web add @jhckevin/dsh-auto-review@alpha5` |
 
-以下以 **DSH 0.1.1-rc.2** 为例，会安装到一个新目录，不覆盖已有 DSH 配置。其他两版请使用对应 Release 的安装脚本，并阅读[版本差异](docs/INSTALL-CANDIDATE.md#各版本的安装差异)。
+通常推荐 DSH 0.1.1-rc.2 对应的 `rc2` 通道。安装命令会自动把 Auto Review 和两个桥接依赖加入 `web` profile，不需要下载 Release 附件或手写 patch。
 
-```sh
-TAG=v0.5.6-rc.4
-mkdir "auto-review-$TAG-downloads"
-cd "auto-review-$TAG-downloads"
+### 2. 初始化受保护的执行组件
 
-gh release download "$TAG" --repo jhckevin/dsh-auto-review
-sha256sum --check SHA256SUMS
-```
-
-首次使用 GitHub CLI 时，先运行 `gh auth login` 登录。也可以在上面的 Release 页面手动下载**全部附件**到同一个空目录，再运行校验命令。校验失败时不要继续安装。
-
-### 2. 放置受保护的执行组件
-
-在刚才的下载目录执行。此步骤需要 sudo，让运行 DSH 的用户无法修改审查后的执行组件。
+这一步每台机器只做一次。它需要管理员权限，以保证运行 Agent 的普通用户不能修改审查后的执行组件。
 
 ```sh
-sudo install -d -o root -g root -m 0755 /opt/dsh-auto-review-native/0.1.0-rc.2
 sudo npm install --prefix /opt/dsh-auto-review-native/0.1.0-rc.2 \
-  --offline --ignore-scripts --no-audit --no-fund \
-  "$PWD/jhckevin-dsh-auto-review-bridge-linux-x64-gnu-0.1.0-rc.2.tgz"
-```
+  --ignore-scripts --no-audit --no-fund \
+  @jhckevin/dsh-auto-review-bridge-linux-x64-gnu@0.1.0-rc.2
 
-没有 sudo 权限时，请让管理员完成这一步，不要改成以 root 运行 DSH。
-
-### 3. 安装 DSH 和插件
-
-回到普通用户终端，仍从下载目录执行：
-
-```sh
-node prepare-preview-install.mjs "$PWD" "$PWD/../dsh-auto-review"
-cd ../dsh-auto-review
-npm install
-```
-
-安装脚本会准备匹配的 DSH、插件和依赖，默认使用 npm 镜像源。目标目录必须尚不存在；不用再执行全局安装，也不要混入其他版本的安装包。
-
-### 4. 启动 WebUI
-
-```sh
-export DSH_HOME="$PWD/home/.dsh"
 export DSH_AUTO_REVIEW_NATIVE_RUNTIME=/opt/dsh-auto-review-native/0.1.0-rc.2/node_modules/@jhckevin/dsh-auto-review-bridge-linux-x64-gnu
-
-node node_modules/@deepseek-ai/dsh/lib/bin.js --profile web \
-  --patch node_modules/@jhckevin/dsh-auto-review/cordis.patch.yml \
-  --host 127.0.0.1 --port 9835
 ```
 
-打开 **http://127.0.0.1:9835**。以后启动时，进入同一安装目录，执行本步骤的命令即可。
+请在启动 DSH 的同一终端、服务配置或容器环境中保留这个环境变量。没有 sudo 权限时，让管理员完成本步骤；不要改成以 root 身份运行整个 DSH。
 
-如果装在远程服务器，在自己电脑的终端建立转发，然后打开同一地址：
+### 3. 启动并配置
+
+照常启动你的 `web` profile，然后打开 **设置 → 自动审批审查**：
 
 ```sh
-ssh -N -L 9835:127.0.0.1:9835 用户名@服务器地址
+dsh --profile web
 ```
 
-### 5. 配置模型，开始使用
-
-1. 首次打开 WebUI 时，按提示输入 DeepSeek API Key；也可稍后在 **设置 → 模型** 中配置。
-2. 打开 **设置 → 自动审批审查**，确认插件已启用。默认 Reviewer 为 `deepseek-official / deepseek-v4-flash`。
-3. 选择工作区，新建会话，像平常一样给 Agent 布置任务。
-
-插件复用 DSH 的模型配置，不会自动读取其他应用的 Key。如果已有服务端 `DEEPSEEK_API_KEY` 环境变量，也可以让 DSH 使用它；不要把密钥写进聊天、安装命令或提交到仓库。
+首次使用时，先在 **设置 → 模型** 中配置 Provider 和 API Key。Auto Review 默认使用 Flash，也可以选择 DSH 中已经配置好的其他模型。插件不会读取其他应用保存的密钥。
 
 ## 常用设置
 
