@@ -6,21 +6,24 @@
 
 ## 界面预览
 
-![DeepSeek Harness 中的 Auto Review 设置界面](docs/images/auto-review-settings.jpg)
+![Auto Review 设置：开关、沙盒行为和模型策略](docs/images/auto-review-settings-native.png)
 
-<sub>真实 WebUI 截图，来自 DSH 0.1.1-rc.2 兼容版。</sub>
+<sub>真实 DSH 0.1.1-rc.2 WebUI，使用本分支候选版与配套 UI 适配。不是模拟页面。</sub>
+
+![真实模型调用期间，Bash 工具行右侧的审查中盾牌](docs/images/auto-review-reviewing-native.png)
 
 ## 它能做什么
 
 - **减少确认打断**：默认让原生沙盒内的普通操作直接执行，需要扩大权限的操作交给 Reviewer。
 - **独立审查**：Reviewer 根据用户授权和风险规则判断是否允许，不替主 Agent 执行命令。
 - **拒绝后继续找办法**：主 Agent 可以尝试更安全的方案；无法继续时，再向你请求授权。
+- **防止反复申请**：同一回合连续 3 次拒绝，或最近 50 次审查累计 10 次拒绝，终止当前回合。不会删除整个会话。
 - **自行选择模型**：默认 Flash，也可使用 DSH 已配置的其他模型，或为高风险操作单独指定模型。
 - **在界面中管理**：开关、模型设置和动作统计都在“设置 → 自动审批审查”中。
 
 ## 安装
 
-**统一安装版正在 [#26](https://github.com/jhckevin/dsh-auto-review/issues/26) 中验证，尚未替换 npm 的默认版本。** 它将 rc6、rc2、alpha5 适配合并到一个包中，依据实际 DSH 宿主自动选择；不认识的版本或混装依赖会给出错误，不会猜测兼容性。
+**本分支为 0.6.0-beta.2 候选版，尚未替换 npm 默认版本。** 核心适配合并为一个包，自动识别 rc6、rc2、alpha5；逐工具图标的一键适配目前只覆盖 rc2。未知版本或混装依赖会明确报错。[候选版安装与图标适配](docs/UI-INSTALL.md)
 
 发布并切换默认通道后的安装入口将简化为：
 
@@ -83,7 +86,7 @@ dsh --profile web
 
 - **端口被占用**：换一个空闲端口，浏览器地址和 SSH 转发端口一起调整；不必停止其他服务。
 - **提示找不到执行组件或目录不安全**：检查第 2 步，以及 `DSH_AUTO_REVIEW_NATIVE_RUNTIME` 的路径和权限。
-- **设置页存在，但工具旁没有图标**：部分 DSH 版本需要配套 UI 补丁；设置页可用不代表命令徽标已支持。[查看适配说明](docs/ISSUE-025-UI-OWNER-PATCHES.md)。
+- **设置页存在，但工具旁没有图标**：需要安装匹配宿主版本的 UI 适配，再重启 DSH。候选版提供带完整性检查和还原功能的安装命令。[操作步骤](docs/UI-INSTALL.md)。
 - **想装进已有 DSH**：请按[已有环境安装说明](docs/INSTALL-CANDIDATE.md#新增插件的热安装路径)操作，不要重复叠加插件入口。
 
 当前发布的是预览版本。Auto Review 不能替代沙盒；Reviewer 出错时不会自动放行。
