@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path'
 
 const root = process.cwd()
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
-assert.match(pkg.version, /^\d+\.\d+\.\d+-(rc|alpha)\.\d+$/)
+assert.match(pkg.version, /^\d+\.\d+\.\d+(-(rc|alpha|beta)\.\d+)?$/)
 const distribution = resolve('artifacts/distribution')
 mkdirSync(distribution, { recursive: true })
 assert.equal(readdirSync(distribution).length, 0, 'refuse to mix distribution generations')

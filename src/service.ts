@@ -5,6 +5,7 @@ import z from '@deepseek-ai/schemastery'
 import type { SettingsScope } from '@deepseek-ai/dsh-settings'
 import type { Session } from '@deepseek-ai/dsh-session'
 import type { ToolExecutionToken } from '@deepseek-ai/dsh-tools'
+import { assertSupportedDshHost } from './dsh-compat.ts'
 import { canonicalJson, sha256Json, toJsonValue } from './canonical.ts'
 import type {
   ActionExecutionTicket,
@@ -131,6 +132,7 @@ export class ActionReviewRuntime extends Service {
 
   constructor(ctx: Context, config: AutoReviewConfig = {}) {
     super(ctx, 'actionReview')
+    assertSupportedDshHost()
     this.deployedConfig = Object.freeze({
       mode: config.mode ?? 'enforcing',
       sandboxDefaultAllow: config.sandboxDefaultAllow ?? true,
@@ -354,7 +356,6 @@ export class ActionReviewRuntime extends Service {
           const data = record.data as AutoReviewAuditPayloadMap['decision']
           const turn = data.turn ?? 0
           const key = `${sessionId}\u0000${turn}`
-          if (data.decision.outcome === 'unavailable') break
           if (data.callId !== undefined && data.rootCallId !== undefined) {
             const restoredAction: Pick<ActionEnvelope, 'actionId' | 'callId' | 'rootCallId' | 'toolName'> = {
               actionId: data.actionId,
@@ -370,7 +371,9 @@ export class ActionReviewRuntime extends Service {
               data.finishedAt,
             )
           }
+          if (data.mode !== 'enforcing' || data.denialCounted === false) break
           const state = this.denialStates.get(key) ?? { consecutive: 0, recent: [], paused: false }
+          if (state.paused) break
           const denied = data.decision.outcome === 'denied'
           state.consecutive = denied ? state.consecutive + 1 : 0
           state.recent.push(denied)
@@ -388,7 +391,7 @@ export class ActionReviewRuntime extends Service {
               turn,
               saferAlternativeSuggested: data.decision.saferAlternative !== undefined,
             })
-          } else {
+          } else if (data.decision.outcome !== 'unavailable') {
             this.lastDenied.delete(sessionId)
             this.pendingDenials.delete(sessionId)
           }
@@ -629,7 +632,18 @@ export class ActionReviewRuntime extends Service {
   }
 
   reviewPaused(action: ActionEnvelope): boolean {
-    return this.denialStates.get(this.denialKey(action))?.paused ?? false
+    return this.denialBreaker(action) !== undefined
+  }
+
+  /** A latched per-turn stop, never a request for another manual approval. */
+  denialBreaker(action: ActionEnvelope): { consecutive: number; denied: number; window: number } | undefined {
+    if (this.config.mode !== 'enforcing') return undefined
+    const state = this.denialStates.get(this.denialKey(action))
+    return state?.paused ? Object.freeze({
+      consecutive: state.consecutive,
+      denied: state.recent.filter(Boolean).length,
+      window: state.recent.length,
+    }) : undefined
   }
 
   observeRoutedAction(action: ActionEnvelope): 'none' | 'exact-retry' | 'equivalent-retry' | 'different' {
@@ -686,11 +700,11 @@ export class ActionReviewRuntime extends Service {
     if (this.reviewPaused(action)) {
       return Object.freeze({
         schemaVersion: 1,
-        outcome: 'manual',
+        outcome: 'denied',
         riskLevel: 'high',
-        rationale: 'Automatic review is paused for this turn after repeated denials.',
+        rationale: 'Auto Review interrupted this turn after repeated denials. No further actions may execute in this turn.',
         policyRuleIds: Object.freeze(['AR-DENIAL-BREAKER']),
-        uncertainty: 'A human must approve an exact action digest or continue without the denied capability.',
+        uncertainty: 'Review the denied actions and ask the user before starting a new turn when authorization is missing.',
       })
     }
     const reviewer = this.reviewer
@@ -738,7 +752,9 @@ export class ActionReviewRuntime extends Service {
         uncertainty: decision.uncertainty,
       })
       : decision
-    this.recordReviewOutcome(action, decision, session)
+    // Cancelled/obsolete completions cannot change the active turn's counters.
+    const denialCounted = !signal.aborted && this.reviewerGeneration === generation
+      ? this.recordReviewOutcome(action, decision, session) : false
     const finishedAt = Date.now()
     if (indicatorEligible && reviewerInvoked) {
       this.setReviewIndicator(
@@ -766,6 +782,7 @@ export class ActionReviewRuntime extends Service {
       startedAt,
       finishedAt,
       latencyMs: finishedAt - startedAt,
+      denialCounted,
     }, session?.id)
     return effective
   }
@@ -790,10 +807,12 @@ export class ActionReviewRuntime extends Service {
     return `${action.authority.sessionId ?? '<unscoped>'}\u0000${action.authority.turn ?? 0}`
   }
 
-  private recordReviewOutcome(action: ActionEnvelope, decision: ReviewDecision, session: Session | undefined): void {
-    if (decision.outcome === 'unavailable') return
+  private recordReviewOutcome(action: ActionEnvelope, decision: ReviewDecision, session: Session | undefined): boolean {
+    // Shadow observations must not stop work or contaminate enforcing counters.
+    if (this.config.mode !== 'enforcing') return false
     const key = this.denialKey(action)
     const state = this.denialStates.get(key) ?? { consecutive: 0, recent: [], paused: false }
+    if (state.paused) return false
     const denied = decision.outcome === 'denied'
     if (denied && action.authority.sessionId !== undefined) {
       this.lastDenied.set(action.authority.sessionId, {
@@ -807,7 +826,7 @@ export class ActionReviewRuntime extends Service {
         turn: action.authority.turn ?? 0,
         saferAlternativeSuggested: decision.saferAlternative !== undefined,
       })
-    } else if (action.authority.sessionId !== undefined) {
+    } else if (decision.outcome !== 'unavailable' && action.authority.sessionId !== undefined) {
       this.lastDenied.delete(action.authority.sessionId)
       this.pendingDenials.delete(action.authority.sessionId)
     }
@@ -817,14 +836,20 @@ export class ActionReviewRuntime extends Service {
     const recentDenials = state.recent.filter(Boolean).length
     const mustPause = state.consecutive >= this.config.denialConsecutiveLimit
       || recentDenials >= this.config.denialWindowLimit
-    if (mustPause && !state.paused) {
+    const opened = mustPause && !state.paused
+    if (opened) {
       state.paused = true
+    }
+    // Latch before notifying any synchronous observer, including audit sinks.
+    this.denialStates.set(key, state)
+    if (opened) {
       this.recordAudit('breaker', {
         state: 'opened', reason: 'denial-rate', consecutiveDenials: state.consecutive,
         recentDenials, recentWindow: state.recent.length,
+        turn: action.authority.turn ?? 0,
       }, session?.id)
     }
-    this.denialStates.set(key, state)
+    return true
   }
 
   private applyMetrics(state: MutableMetrics, record: AutoReviewAuditEnvelope): void {

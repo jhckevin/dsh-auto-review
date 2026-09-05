@@ -1,6 +1,7 @@
+import { ToolCallId, sessionEvents } from './compat-fixtures.ts'
 import { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { createAssistantMessage, createToolResultMessage, createUserMessage, CallId } from '@deepseek-ai/dsh-llm'
+import { createAssistantMessage, createToolResultMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import SessionStore, { Session, SessionId } from '@deepseek-ai/dsh-session'
 import type { ToolExecution, ToolExecutionToken } from '@deepseek-ai/dsh-tools'
 import { describe, expect, it } from 'vitest'
@@ -13,7 +14,7 @@ function action(session: Session) {
   // The router reads only agent.session; the Session itself is upstream's real implementation.
   const agent = { session } as Agent
   const exec: ToolExecution = {
-    agent, callId: CallId('review-call'), rootCallId: CallId('review-call'),
+    agent, callId: ToolCallId('review-call'), rootCallId: ToolCallId('review-call'),
     token: Symbol('review') as ToolExecutionToken, name: 'bash', arguments: { command: 'printf ok' }, signal: new AbortController().signal,
   }
   return new ActionRouter().route(exec, sandbox)
@@ -34,11 +35,11 @@ function assistant(session: Session, text: string) {
 
 function tool(session: Session, text: string) {
   session.append('tool/result', { turn: 1, step: 1, message: createToolResultMessage({
-    callId: CallId('fixture-tool'), content: [{ type: 'text', text }], isError: false,
+    callId: ToolCallId('fixture-tool'), content: [{ type: 'text', text }], isError: false,
   }) }, placement)
 }
 
-describe('rc.2 router evidence from actual Sessions', () => {
+describe('alpha.5 router evidence from actual Sessions', () => {
   it('extracts message.content including nested tool results without elevating provenance', () => {
     const session = Session.create(SessionId('real-session'))
     session.append('turn/start', { turn: 1 })
@@ -67,7 +68,7 @@ describe('rc.2 router evidence from actual Sessions', () => {
     tool(parent, 'Earlier tool evidence.')
     parent.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
     const child = ctx.sessions.fork(parent, undefined, SessionId('child'))
-    expect(child.firstLiveSeq).toBeGreaterThan(0)
+    expect(sessionEvents(child).length).toBeGreaterThan(0)
     user(parent, 'Later parent permission must not leak into child.')
     child.append('turn/start', { turn: 2 })
     user(child, 'Recalled context is not new authorization.', false)

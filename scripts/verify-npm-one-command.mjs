@@ -21,7 +21,7 @@ try {
   const preparedDir = join(temporary, 'prepared')
   mkdirSync(preparedDir)
   const prepared = JSON.parse(run('node', ['scripts/prepare-npm-release.mjs', preparedDir], root).split('\n').at(-1))
-  assert(['rc6', 'rc2', 'alpha5'].includes(prepared.distTag))
+  assert(['rc6', 'rc2', 'alpha5', 'beta', 'latest'].includes(prepared.distTag))
   const hostDir = join(temporary, 'host')
   unpack(prepared.host, hostDir)
   const host = JSON.parse(readFileSync(join(hostDir, 'package.json'), 'utf8'))

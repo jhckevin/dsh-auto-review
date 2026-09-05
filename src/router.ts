@@ -1,7 +1,9 @@
 import { isAbsolute, relative, resolve } from 'node:path'
 import type { SandboxExecutionPolicy } from '@deepseek-ai/dsh-sandbox'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { sha256Json, toJsonValue } from './canonical.ts'
+import { snapshotSessionEvents } from './dsh-compat.ts'
 import type {
   ActionEffect,
   ActionDisposition,
@@ -115,6 +117,8 @@ function contentText(value: unknown, depth = 0): string {
   if (Array.isArray(value)) return value.map(entry => contentText(entry, depth + 1)).filter(Boolean).join('\n')
   if (typeof value !== 'object') return ''
   const record = value as Record<string, unknown>
+  // Private model reasoning is not user-visible authority or tool evidence.
+  if (record.type === 'reasoning' || record.type === 'thinking') return ''
   if (typeof record.text === 'string') return record.text
   return 'content' in record ? contentText(record.content, depth + 1) : ''
 }
@@ -125,11 +129,20 @@ function transcriptOf(exec: Readonly<ToolExecution>): ActionEnvelope['authority'
   let currentUserRequest: string | undefined
   let turn: number | undefined
   const transcript: Array<ActionEnvelope['authority']['transcript'][number]> = []
-  for (let index = session.events.length - 1; index >= 0; index -= 1) {
-    const event = session.events[index]
+  // The compatibility adapter returns the immutable fork prefix on all supported
+  // DSH cohorts. Capture the log bound without copying the complete log.
+  const events = snapshotSessionEvents<SessionEvent>(session)
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
     if (event?.type === 'turn/start' && turn === undefined) {
       const candidate = (event.data as { turn?: unknown }).turn
       if (typeof candidate === 'number' && Number.isSafeInteger(candidate)) turn = candidate
+    }
+    // Recover the latest direct user request even when recent tool output fills
+    // the transcript budget. An absent request must not silently erase scope.
+    if (currentUserRequest === undefined && event?.type === 'user/message' && event.data.source.kind === 'user') {
+      const request = contentText(event.data.content).trim()
+      if (request.length > 0) currentUserRequest = request.slice(-8192)
     }
     if (transcript.length >= 12) continue
     if (event?.type === 'user/message') {

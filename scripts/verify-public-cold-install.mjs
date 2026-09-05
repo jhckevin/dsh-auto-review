@@ -3,11 +3,11 @@ import assert from 'node:assert/strict'
 import {spawn,spawnSync,execFileSync} from 'node:child_process'
 import {existsSync,mkdirSync,readdirSync,readFileSync,writeFileSync,copyFileSync,lstatSync} from 'node:fs'
 import {resolve,join,dirname,isAbsolute} from 'node:path'
-const channels={rc6:['0.1.0-rc.6','0.5.5-rc.2'],rc2:['0.1.1-rc.2','0.5.6-rc.3'],alpha5:['0.1.2-alpha.5','0.5.7-alpha.2']}
+const channels={rc6:['0.1.0-rc.6'],rc2:['0.1.1-rc.2'],alpha5:['0.1.2-alpha.5']}
 const [channel,artifactArg,rootArg]=process.argv.slice(2)
 assert.ok(channels[channel]&&artifactArg&&rootArg,'Usage: node verify-public-cold-install.mjs rc6|rc2|alpha5 ARTIFACT_DIR NEW_ROOT')
 assert.equal(process.platform,'linux');assert.equal(process.arch,'x64')
-const [dsh,version]=channels[channel],artifacts=resolve(artifactArg),root=resolve(rootArg)
+const [dsh]=channels[channel],artifacts=resolve(artifactArg),root=resolve(rootArg)
 const family=JSON.parse(readFileSync(new URL('./public-dsh-family.json',import.meta.url)))[dsh]
 assert.ok(Array.isArray(family)&&family.length>0)
 const maxKiB=Number(process.env.DSH_COLD_MAX_KIB??409600)
@@ -16,14 +16,14 @@ const resume=process.argv[5]==='--resume-fixture'
 assert.ok(isAbsolute(root)&&(!existsSync(root)||resume),'NEW_ROOT must not exist')
 if(resume){const p=JSON.parse(readFileSync(join(root,'package.json')));assert.equal(p.name,'private-autoreview-public-cold');assert.equal(p.dependencies['@deepseek-ai/dsh'],dsh)}
 const packages=readdirSync(artifacts).filter(n=>n.endsWith('.tgz')).map(file=>({file,pkg:JSON.parse(execFileSync('tar',['-xOf',join(artifacts,file),'package/package.json'],{encoding:'utf8'}))}))
-const plugin=packages.find(p=>p.pkg.name==='@jhckevin/dsh-auto-review');assert.equal(plugin?.pkg.version,version)
+const plugin=packages.find(p=>p.pkg.name==='@jhckevin/dsh-auto-review');assert.ok(plugin);const version=plugin.pkg.version;assert.ok(plugin.pkg.peerDependencies['@deepseek-ai/dsh-agent'].split(' || ').includes(dsh))
 assert.ok(packages.some(p=>p.pkg.name==='@jhckevin/dsh-auto-review-bridge-host'))
 assert.ok(packages.some(p=>p.pkg.name==='@jhckevin/dsh-auto-review-bridge-linux-x64-gnu'))
 mkdirSync(join(root,'vendor'),{recursive:true});mkdirSync(join(root,'home'),{recursive:true})
 const dependencies={'@deepseek-ai/dsh':dsh,'@deepseek-ai/cordis':'4.0.2',react:'18.3.1'}
 for(const name of family)dependencies[name]=dsh
 for(const [name,range]of Object.entries(plugin.pkg.peerDependencies??{})){
- if(name.startsWith('@deepseek-ai/dsh-'))dependencies[name]=dsh
+ if(name.startsWith('@deepseek-ai/dsh-')){if(family.includes(name)&&range.split(' || ').includes(dsh))dependencies[name]=dsh}
  else if(!(name in dependencies))dependencies[name]=range
 }
 const overrides={}

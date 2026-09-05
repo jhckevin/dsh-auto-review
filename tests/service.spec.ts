@@ -1,6 +1,7 @@
+import { ToolCallId } from './compat-fixtures.ts'
 import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
-import { CallId } from '@deepseek-ai/dsh-llm'
+
 import ActionReviewRuntime from '../src/service.ts'
 import type { ActionEnvelope, ActionReviewer } from '../src/types.ts'
 
@@ -11,8 +12,8 @@ const action = Object.freeze<ActionEnvelope>({
   effectDigest: 'c'.repeat(64),
   policyDigest: 'e'.repeat(64),
   boundaryDigest: 'f'.repeat(64),
-  callId: CallId('call'),
-  rootCallId: CallId('call'),
+  callId: ToolCallId('call'),
+  rootCallId: ToolCallId('call'),
   toolName: 'bash',
   arguments: { command: 'echo ok' },
   actionKind: 'process',
@@ -270,7 +271,7 @@ describe('ActionReviewRuntime', () => {
       .toEqual(['issued', 'consumed'])
   })
 
-  it('pauses automatic review after three consecutive denials in one turn', async () => {
+  it('latches a denial stop after three consecutive denials in one turn', async () => {
     const ctx = new Context()
     await ctx.plugin(ActionReviewRuntime)
     ctx.actionReview.registerReviewer({
@@ -289,13 +290,13 @@ describe('ActionReviewRuntime', () => {
     await ctx.actionReview.review(action, undefined, signal)
     await ctx.actionReview.review(action, undefined, signal)
     await expect(ctx.actionReview.review(action, undefined, signal)).resolves.toMatchObject({
-      outcome: 'manual', policyRuleIds: ['AR-DENIAL-BREAKER'],
+      outcome: 'denied', policyRuleIds: ['AR-DENIAL-BREAKER'],
     })
     expect(ctx.actionReview.auditRecords().find(record => record.kind === 'breaker')?.data)
       .toMatchObject({ state: 'opened', reason: 'denial-rate', consecutiveDenials: 3 })
   })
 
-  it('pauses after ten interleaved denials within the rolling last-fifty window', async () => {
+  it('latches a denial stop after ten interleaved denials within the rolling last-fifty window', async () => {
     const ctx = new Context()
     await ctx.plugin(ActionReviewRuntime)
     let calls = 0
@@ -318,7 +319,7 @@ describe('ActionReviewRuntime', () => {
     const signal = new AbortController().signal
     for (let index = 0; index < 19; index += 1) await ctx.actionReview.review(scoped, undefined, signal)
     await expect(ctx.actionReview.review(scoped, undefined, signal)).resolves.toMatchObject({
-      outcome: 'manual', policyRuleIds: ['AR-DENIAL-BREAKER'],
+      outcome: 'denied', policyRuleIds: ['AR-DENIAL-BREAKER'],
     })
     expect(ctx.actionReview.auditRecords().find(record => record.kind === 'breaker')?.data)
       .toMatchObject({ state: 'opened', reason: 'denial-rate', recentDenials: 10, recentWindow: 19 })

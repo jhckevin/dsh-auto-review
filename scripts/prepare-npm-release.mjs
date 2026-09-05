@@ -51,16 +51,27 @@ try {
   assert.equal(main.dependencies['@jhckevin/dsh-auto-review-bridge-host'], '0.1.0-rc.2')
   assert.deepEqual(main.dsh?.bundle, { patch: './cordis.patch.yml' })
   const mainArtifact = pack(root, output)
-  const dshVersion = main.peerDependencies['@deepseek-ai/dsh-agent']
-  const distTag = new Map([
+  const dshVersions = main.peerDependencies['@deepseek-ai/dsh-agent'].split(' || ')
+  const channels = new Map([
     ['0.1.0-rc.6', 'rc6'],
     ['0.1.1-rc.2', 'rc2'],
     ['0.1.2-alpha.5', 'alpha5'],
-  ]).get(dshVersion)
-  assert(distTag, `unsupported DSH release channel: ${dshVersion}`)
+  ])
+  assert(dshVersions.length > 0 && dshVersions.every(version => channels.has(version)), 'unsupported DSH release cohort')
+  if (dshVersions.length > 1) {
+    const core = ['agent', 'llm', 'sandbox', 'sandbox-policy', 'session', 'settings', 'tools', 'user-approval', 'commands', 'api-remotes', 'client-connection', 'client-locale', 'client-ui-settings', 'client-ui-slots', 'typert-protocol', 'system-prompt']
+    for (const suffix of core) {
+      assert.deepEqual(main.peerDependencies['@deepseek-ai/dsh-' + suffix]?.split(' || '), dshVersions, 'peer cohort differs: ' + suffix)
+    }
+    assert.equal(main.peerDependencies['@deepseek-ai/dsh-client-runtime'], '0.1.0-rc.6 || 0.1.1-rc.2')
+    for (const suffix of ['client-store', 'client-ui-renderer']) assert.equal(main.peerDependencies['@deepseek-ai/dsh-' + suffix], '0.1.2-alpha.5')
+  }
+  const distTag = dshVersions.length === 1 ? channels.get(dshVersions[0])
+    : main.version.includes('-') ? 'beta' : 'latest'
   const release = {
     pluginVersion: main.version,
-    dshVersion,
+    dshVersion: dshVersions.at(-1),
+    dshVersions,
     distTag,
     platform: prepared.platform,
     platformFile: prepared.platform.split('/').at(-1),

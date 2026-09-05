@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing immutable prerelease tag; must match package.json'
+        description: 'Existing immutable version tag; must match package.json'
         required: true
         type: string
 
@@ -30,7 +30,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          [[ "$REQUESTED_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-(rc|alpha)\.[0-9]+$ ]] || exit 1
+          [[ "$REQUESTED_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-(rc|alpha|beta)\.[0-9]+)?$ ]] || exit 1
           echo "ref=refs/tags/$REQUESTED_TAG" >> "$GITHUB_OUTPUT"
           commit="$(gh api "repos/$GH_REPO/commits/refs%2Ftags%2F$REQUESTED_TAG" --jq .sha)"
           [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || exit 1
@@ -63,6 +63,7 @@ jobs:
           npm run build 2>&1 | tee artifacts/build.log
           npm run test:types 2>&1 | tee artifacts/types.log
           node --test scripts/tests/install-preview.node.mjs 2>&1 | tee artifacts/installer-tests.log
+          node --test scripts/install-ui.node-test.mjs 2>&1 | tee artifacts/ui-installer-tests.log
           npm test -- --reporter=default --reporter=junit --outputFile.junit=artifacts/tests.xml 2>&1 | tee artifacts/tests.log
           npm run policy:check 2>&1 | tee artifacts/policy.log
           npm run pack:verify 2>&1 | tee artifacts/packed-consumer.log

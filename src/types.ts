@@ -1,5 +1,4 @@
-import type { CallId } from '@deepseek-ai/dsh-llm'
-import type { JsonValue } from '@deepseek-ai/dsh-session'
+import type { JsonValue, ReviewCallId as ToolCallId } from './dsh-compat.ts'
 import type { SandboxMode } from '@deepseek-ai/dsh-sandbox'
 import type { ToolExecution, ToolExecutionToken } from '@deepseek-ai/dsh-tools'
 
@@ -70,8 +69,8 @@ export interface ActionEnvelope {
   readonly effectDigest: string
   readonly policyDigest: string
   readonly boundaryDigest: string
-  readonly callId: CallId
-  readonly rootCallId: CallId
+  readonly callId: ToolCallId
+  readonly rootCallId: ToolCallId
   readonly toolName: string
   readonly arguments: JsonValue
   readonly actionKind: ActionKind
@@ -168,8 +167,8 @@ export interface AutoReviewAuditRecord {
   readonly actionDigest: string
   /** Missing only on pre-ISSUE-016 persisted records; replay falls back to actionDigest. */
   readonly effectDigest?: string
-  readonly callId?: CallId
-  readonly rootCallId?: CallId
+  readonly callId?: ToolCallId
+  readonly rootCallId?: ToolCallId
   readonly toolName: string
   readonly actionKind: ActionKind
   readonly disposition: ActionDisposition
@@ -180,6 +179,7 @@ export interface AutoReviewAuditRecord {
   readonly startedAt: number
   readonly finishedAt: number
   readonly latencyMs: number
+  readonly denialCounted?: boolean
 }
 
 export type AutoReviewIndicatorState = 'reviewing' | 'denied'
@@ -188,8 +188,8 @@ export type AutoReviewIndicatorState = 'reviewing' | 'denied'
 export interface AutoReviewIndicator {
   readonly schemaVersion: 1
   readonly sessionId: string
-  readonly callId: CallId
-  readonly rootCallId: CallId
+  readonly callId: ToolCallId
+  readonly rootCallId: ToolCallId
   readonly actionId: string
   readonly toolName: string
   readonly state: AutoReviewIndicatorState
@@ -206,8 +206,8 @@ export interface AutoReviewRouteRecord {
   readonly schemaVersion: 1
   readonly actionId: string
   readonly actionDigest: string
-  readonly callId: CallId
-  readonly rootCallId: CallId
+  readonly callId: ToolCallId
+  readonly rootCallId: ToolCallId
   readonly toolName: string
   readonly actionKind: ActionKind
   readonly disposition: ActionDisposition
@@ -227,8 +227,8 @@ export interface AutoReviewResultRecord {
   readonly schemaVersion: 1
   readonly actionId: string
   readonly actionDigest: string
-  readonly callId: CallId
-  readonly rootCallId: CallId
+  readonly callId: ToolCallId
+  readonly rootCallId: ToolCallId
   readonly toolName: string
   readonly actionKind: ActionKind
   readonly disposition: ActionDisposition
@@ -249,6 +249,9 @@ export interface AutoReviewBreakerRecord {
   readonly recentDenials?: number
   readonly recentWindow?: number
   readonly until?: number
+  readonly turn?: number
+  readonly action?: 'turn-interrupted' | 'action-blocked'
+  readonly callId?: ToolCallId
 }
 
 export type TicketGrant = 'inside-boundary' | 'auto-review' | 'native-manual' | 'exact-override'
@@ -261,7 +264,7 @@ export interface ActionExecutionTicket {
   readonly policyDigest: string
   readonly boundaryDigest: string
   readonly sessionId?: string
-  readonly callId: CallId
+  readonly callId: ToolCallId
   readonly grant: TicketGrant
   readonly issuedAt: number
   readonly expiresAt: number
@@ -276,7 +279,7 @@ export interface AutoReviewTicketRecord {
   readonly actionDigest: string
   readonly policyDigest: string
   readonly boundaryDigest: string
-  readonly callId: CallId
+  readonly callId: ToolCallId
   readonly grant: TicketGrant
   readonly at: number
   readonly reason?: string

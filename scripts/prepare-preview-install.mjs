@@ -35,9 +35,10 @@ const packages = names.map(file => {
 })
 assert.equal(expected.size, 0)
 const plugin = packages.find(item => item.manifest.name === '@jhckevin/dsh-auto-review').manifest
-const versions = new Set(Object.entries(plugin.peerDependencies).filter(([name]) => name.startsWith('@deepseek-ai/dsh-')).map(([, version]) => version))
-assert.equal(versions.size, 1, 'mixed DSH peer graph is forbidden')
-const [dshVersion] = versions
+const versions = plugin.peerDependencies['@deepseek-ai/dsh-agent'].split(' || ')
+// 新建隔离预览环境没有既有宿主；默认稳定候选通道，也允许验收指定通道。
+const dshVersion = process.env.DSH_PREVIEW_VERSION ?? (versions.includes('0.1.1-rc.2') ? '0.1.1-rc.2' : versions[0])
+assert(versions.includes(dshVersion), 'preview host is not supported by this artifact')
 assert(['0.1.0-rc.6', '0.1.1-rc.2', '0.1.2-alpha.5'].includes(dshVersion))
 const families = JSON.parse(readFileSync(fileURLToPath(new URL('./public-dsh-family.json', import.meta.url)), 'utf8'))
 const family = families[dshVersion]
@@ -53,7 +54,14 @@ mkdirSync(destination, { mode: 0o700 })
 mkdirSync(join(destination, 'vendor'))
 mkdirSync(join(destination, 'home'))
 mkdirSync(join(destination, 'workspace'))
-const dependencies = { '@deepseek-ai/dsh': dshVersion, ...plugin.peerDependencies, '@deepseek-ai/cordis': '4.0.1', react: '18.3.1' }
+const dependencies = { '@deepseek-ai/dsh': dshVersion, '@deepseek-ai/cordis': '4.0.1', react: '18.3.1' }
+for (const [name, range] of Object.entries(plugin.peerDependencies)) {
+  if (!name.startsWith('@deepseek-ai/dsh-')) {
+    if (!(name in dependencies)) dependencies[name] = range
+  } else if (family.includes(name) && range.split(' || ').includes(dshVersion)) {
+    dependencies[name] = dshVersion
+  }
+}
 // 锁定完整公开 DSH 家族，阻止上游 ^ prerelease 范围悄悄拉入其他通道。
 for (const name of family) dependencies[name] = dshVersion
 dependencies['@deepseek-ai/cordis-plugin-group'] = '1.0.2'

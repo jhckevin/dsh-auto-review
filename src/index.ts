@@ -6,6 +6,12 @@ export { redactJson, type RedactionOptions } from './redaction.ts'
 export { ActionRouter, resolveRouterConfig } from './router.ts'
 export { evaluateAutoReviewAudit } from './eval.ts'
 export {
+  assertSupportedDshHost,
+  classifyDshHost,
+  detectDshHost,
+  SUPPORTED_DSH_PROFILES,
+} from './dsh-compat.ts'
+export {
   AUTO_REVIEW_SETTINGS_NAMESPACE,
   AutoReviewUiSettingsSchema,
   DEFAULT_AUTO_REVIEW_UI_SETTINGS,

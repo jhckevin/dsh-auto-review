@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 2,
+  "cohorts": [
+    {
+      "dshVersion": "0.1.1-rc.2",
+      "sourceCommit": "b150a551b8d465e31e418e1b2eaf5e79bbb7d28e",
+      "files": [
+        {
+          "package": "dsh-client-ui-tool",
+          "artifact": "ui/rc2/ui-tool.js",
+          "originalSha256": "da1f011ba65411ac08a4145cb72fb3170bf5940fed04ebe7e2f45ceb523edefd",
+          "patchedSha256": "78856cc8d91457f9d92fc3879221f31832575c6de2818fca8e62d370d02129a5"
+        },
+        {
+          "package": "dsh-client-ui-settings-general",
+          "artifact": "ui/rc2/ui-settings-general.js",
+          "originalSha256": "9298ac5b087056555498550e0e0e6dd9d3202dce48bb07b2a2c4bfeed1d63da5",
+          "patchedSha256": "4135e470504a31393c81cfa9fc7a7ad98b0ae332699501adceb7549ac92e8176"
+        }
+      ]
+    },
+    {
+      "dshVersion": "0.1.0-rc.6",
+      "sourceCommit": "15148dbd9a1d1f1ef1a26e5749b32af0cd663935",
+      "sourceVersion": "0.1.0-rc.6",
+      "files": [
+        {
+          "package": "dsh-client-ui-tool",
+          "artifact": "ui/rc6/ui-tool.js",
+          "originalSha256": "854069ecfd300f64225421952dff463a72bb34d6cd568130675b1addadd2ef2d",
+          "patchedSha256": "87457b9c9e936e70b9c55d6dd28435088eeae2784f0d6d3d5ed35c5f14897149"
+        },
+        {
+          "package": "dsh-client-ui-settings-general",
+          "artifact": "ui/rc6/ui-settings-general.js",
+          "originalSha256": "ffd5b564493b3469dc1cd615a9540ce1b0980841322a8ac84dba1d6e4802aebb",
+          "patchedSha256": "4b97641bb6413e04721fd16682d9eeb24654fb453ab190bb80403e7403f14f5f"
+        }
+      ]
+    },
+    {
+      "dshVersion": "0.1.2-alpha.5",
+      "sourceCommit": "db6bdc3576c2d4e7c965e8e3ed0c2a731eed87f5",
+      "sourceVersion": "0.1.2-alpha.5",
+      "files": [
+        {
+          "package": "dsh-client-ui-tool",
+          "artifact": "ui/alpha5/ui-tool.js",
+          "originalSha256": "e373b7ecdd24099c1622cd5e1e731d16238bb44e20b807750393eddbda2a1be7",
+          "patchedSha256": "81f80ae9eafe674b964b31d360f149f0496017f3d75287ba2ec27ba01cf26f26"
+        },
+        {
+          "package": "dsh-client-ui-settings-general",
+          "artifact": "ui/alpha5/ui-settings-general.js",
+          "originalSha256": "903bb84407104d5511f38eac13fc740ad147bab6a9c8d51bde52d90cfd996aff",
+          "patchedSha256": "4afeeef8163e2786dce24011f6b7d1c39ec1f3cf0fdd44c890d1ad2d970e607c"
+        }
+      ]
+    }
+  ]
+}

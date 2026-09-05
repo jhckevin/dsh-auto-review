@@ -1,5 +1,6 @@
+import { ToolCallId } from './compat-fixtures.ts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CallId } from '@deepseek-ai/dsh-llm'
+
 import { ReviewStatusClient } from '../src/client/review-status.ts'
 import type { AutoReviewIndicatorSnapshot } from '../src/types.ts'
 
@@ -8,6 +9,61 @@ afterEach(() => {
 })
 
 describe('ReviewStatusClient', () => {
+  it('keeps a new session poller tracked after repeated stale cleanup', async () => {
+    vi.useFakeTimers()
+    const read = vi.fn(async () => ({revision: 3, indicators: []}))
+    const client = new ReviewStatusClient({read}, 50)
+    const old = client.subscribe('same', vi.fn())
+    await vi.advanceTimersByTimeAsync(0)
+    old()
+    const listener = vi.fn()
+    const current = client.subscribe('same', listener)
+    old()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(client.snapshot('same').revision).toBe(3)
+    expect(listener).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(50)
+    expect(read).toHaveBeenCalledTimes(3)
+    client.dispose()
+    expect(vi.getTimerCount()).toBe(0)
+    current()
+    current()
+  })
+
+  it('makes existing-source subscriptions inert after dispose and rejects new sources', async () => {
+    vi.useFakeTimers()
+    const read = vi.fn(async () => ({revision: 1, indicators: []}))
+    const client = new ReviewStatusClient({read}, 50)
+    const source = client.source('same')
+    client.dispose()
+    source.subscribe(vi.fn())()
+    client.subscribe('new', vi.fn())()
+    client.dispose()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(read).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBe(0)
+    expect(source.getSnapshot().revision).toBe(0)
+    expect(() => client.source('new')).toThrow('disposed')
+  })
+
+  it('provides one stable bare observable for renderer-made hooks', async () => {
+    vi.useFakeTimers()
+    const current = Object.freeze({ revision: 2, indicators: Object.freeze([]) })
+    const client = new ReviewStatusClient({ read: async () => current }, 50)
+    const source = client.source('s1')
+    expect(client.source('s1')).toBe(source)
+    expect('useStore' in source).toBe(false)
+    const listener = vi.fn()
+    const off = source.subscribe(listener)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(source.getSnapshot().revision).toBe(2)
+    expect(source.getSnapshot()).toBe(source.getSnapshot())
+    expect(listener).toHaveBeenCalledOnce()
+    off()
+    client.dispose()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('shares one bounded poller across visible call badges and stops after unmount', async () => {
     vi.useFakeTimers()
     let current: AutoReviewIndicatorSnapshot = Object.freeze({ revision: 0, indicators: Object.freeze([]) })
@@ -25,8 +81,8 @@ describe('ReviewStatusClient', () => {
       indicators: Object.freeze([Object.freeze({
         schemaVersion: 1,
         sessionId: 's1',
-        callId: CallId('c1'),
-        rootCallId: CallId('c1'),
+        callId: ToolCallId('c1'),
+        rootCallId: ToolCallId('c1'),
         actionId: 'a1',
         toolName: 'bash',
         state: 'reviewing',

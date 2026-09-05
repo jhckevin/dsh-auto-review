@@ -1,19 +1,16 @@
+import { ToolCallId } from './compat-fixtures.ts'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { CallId } from '@deepseek-ai/dsh-llm'
+
 import { AutoReviewCallBadge, AutoReviewLogo, AutoReviewNavIcon } from '../src/client/index.tsx'
 import type { AutoReviewIndicatorSnapshot } from '../src/types.ts'
 
 function renderBadge(snapshot: AutoReviewIndicatorSnapshot, callId = 'call-reviewed'): string {
-  const reviewStatus = {
-    subscribe: () => () => {},
-    snapshot: () => snapshot,
-  }
   return renderToStaticMarkup(createElement(AutoReviewCallBadge as never, {
     sessionId: 'session-1',
     callId,
-    reviewStatus,
+    useReviewStatus: (select: (value: AutoReviewIndicatorSnapshot) => unknown) => select(snapshot),
     t: (key: string) => key,
   }))
 }
@@ -24,8 +21,8 @@ function snapshot(state?: 'reviewing' | 'denied'): AutoReviewIndicatorSnapshot {
     indicators: state === undefined ? Object.freeze([]) : Object.freeze([Object.freeze({
       schemaVersion: 1,
       sessionId: 'session-1',
-      callId: CallId('call-reviewed'),
-      rootCallId: CallId('call-reviewed'),
+      callId: ToolCallId('call-reviewed'),
+      rootCallId: ToolCallId('call-reviewed'),
       actionId: 'action-1',
       toolName: 'bash',
       state,

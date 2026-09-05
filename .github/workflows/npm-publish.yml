@@ -86,10 +86,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          DSH_VERSION="$(jq -r .dshVersion artifacts/npm/npm-release.json)"
           DIST_TAG="$(jq -r .distTag artifacts/npm/npm-release.json)"
-          export DSH_HOME="$RUNNER_TEMP/dsh-home"
           npm install --global pnpm@10.15.0 --ignore-scripts --no-audit --no-fund --registry=https://registry.npmmirror.com
+          for DSH_VERSION in $(jq -r '.dshVersions[]' artifacts/npm/npm-release.json); do
+          export DSH_HOME="$RUNNER_TEMP/dsh-home-$DSH_VERSION"
           npx --yes "@deepseek-ai/dsh@$DSH_VERSION" plugin --profile web add "@jhckevin/dsh-auto-review@$DIST_TAG"
           npx --yes "@deepseek-ai/dsh@$DSH_VERSION" --profile web --dump-config | grep '# == @jhckevin/dsh-auto-review'
           test "$(node -p "require('$DSH_HOME/profiles/web/package.json').dsh.profile.bundles.filter(x => x === '@jhckevin/dsh-auto-review').length")" = 1
@@ -100,3 +100,4 @@ jobs:
           sudo chown -R root:root "$PROTECTED_RUNTIME"
           sudo chmod -R go-w "$PROTECTED_RUNTIME"
           DSH_AUTO_REVIEW_NATIVE_RUNTIME="$PROTECTED_RUNTIME" node scripts/smoke-installed-native.mjs "$DSH_HOME/profiles/web"
+          done
