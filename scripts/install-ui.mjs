@@ -9,7 +9,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 
 /** Preflight every known artifact; refuse unknown versions or locally modified UI. */
-export function installUi(hostRoot, { restore = false, check = false } = {}) {
+export function installUi(hostRoot, { restore = false, check = false, artifacts } = {}) {
   const base = realpathSync(hostRoot)
   const catalog = JSON.parse(readFileSync(join(root, 'ui/manifest.json'), 'utf8'))
   const cohorts = catalog.cohorts ?? [catalog]
@@ -25,8 +25,9 @@ export function installUi(hostRoot, { restore = false, check = false } = {}) {
     const target = realpathSync(join(pkg, 'lib/client.js'))
     if (!target.startsWith(base + sep)) throw Error('UI resolves outside the selected installation. No files changed.')
     const bytes = readFileSync(target), hash = digest(bytes)
-    const replacement = readFileSync(join(root, file.artifact))
-    if (digest(replacement) !== file.patchedSha256) throw Error('Packaged UI integrity check failed.')
+    // 还原和宿主预检不应依赖网络或已清理的发行制品。
+    const replacement = restore || check ? bytes : (artifacts?.get(file.artifact) ?? readFileSync(join(root, file.artifact)))
+    if (!restore && !check && digest(replacement) !== file.patchedSha256) throw Error('Packaged UI integrity check failed.')
     const backup = target + '.auto-review-original'
     if (hash !== file.originalSha256 && hash !== file.patchedSha256) throw Error('Locally modified UI: ' + file.package + '. Refusing to overwrite.')
     if (existsSync(backup) && digest(readFileSync(backup)) !== file.originalSha256) throw Error('Backup integrity check failed.')
@@ -56,7 +57,7 @@ export function installUi(hostRoot, { restore = false, check = false } = {}) {
   return { changed: changed.length, checked: plan.length, version: manifest.dshVersion }
 }
 
-function detectHost() {
+export function detectHost() {
   for (const dir of (process.env.PATH ?? '').split(delimiter)) {
     const bin = join(dir, 'dsh')
     if (!existsSync(bin)) continue
@@ -82,7 +83,8 @@ if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.me
     } else {
       const pos = args.indexOf('--dsh-root')
       if (pos >= 0 && (!args[pos + 1] || args[pos + 1].startsWith('--'))) throw Error('--dsh-root requires a directory.')
-      const result = installUi(pos >= 0 ? args[pos + 1] : detectHost(), { restore: args.includes('--restore'), check: args.includes('--check') })
+      const { prepareUi } = await import('./prepare-ui.mjs')
+      const result = await prepareUi(pos >= 0 ? args[pos + 1] : detectHost(), { restore: args.includes('--restore'), check: args.includes('--check') })
       console.log(JSON.stringify(result))
       console.log('Restart DSH and refresh the browser. Backend permissions are unchanged.')
     }

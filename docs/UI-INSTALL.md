@@ -60,3 +60,9 @@ WebUI 的硬中断提示来自真实的 `turn/end` 事件，刷新后仍可重�
 rc6 使用 patches/dsh-rc6-ui-owners.patch；rc2 / alpha5 使用上面的两个补丁。
 使用 node scripts/build-ui-owners.mjs SOURCE HOST_NODE_MODULES OUTPUT LIGHTNINGCSS_ENTRY 重建匹配的 UI 包。
 构建器校验源码与宿主包版本，不允许未解析的依赖悄悄成为浏览器外部模块。
+
+## 0.6.1 按需下载
+
+统一主包不再包含三套 UI JavaScript。安装器先核对两个宿主 UI 包的版本与原文件哈希，仅获取匹配版本的两个文件（固定 v0.6.0 源制品与 SHA-256）。设置界面本身由主包更新。下载失败、内容不符或宿主混装时不替换文件。重复安装和恢复原文件不需要网络。`--check` 仅做宿主预检，不保证网络可用。
+
+同名包在当前 profile 中由官方 `dsh plugin add` 升级替换；不删除其他 profile 或 npm 缓存中的版本，也不删除原生桥接依赖。新包不会再产生未选中的 UI 版本残留。
