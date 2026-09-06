@@ -13,3 +13,4 @@ for(const name of families[version]){dependencies[name]=version;overrides[name]=
 writeFileSync(join(root,'package.json'),JSON.stringify({name:'private-auto-review-host',private:true,dependencies,overrides}))
 execFileSync('npm',['install','--prefix',root,'--ignore-scripts','--legacy-peer-deps','--no-audit','--no-fund','--registry=https://registry.npmjs.org'],{stdio:'inherit',timeout:300000})
 execFileSync(process.execPath,[new URL('./verify-unified-install.mjs',import.meta.url).pathname,artifact,root,version],{stdio:'inherit',timeout:120000})
+execFileSync(process.execPath,[new URL('./test-runtime-cohort.mjs',import.meta.url).pathname,root],{stdio:'inherit',timeout:450000})
