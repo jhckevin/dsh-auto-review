@@ -32,9 +32,9 @@ export function installUi(hostRoot, { restore = false, check = false, artifacts 
     if (hash !== file.originalSha256 && hash !== file.patchedSha256) throw Error('Locally modified UI: ' + file.package + '. Refusing to overwrite.')
     if (existsSync(backup) && digest(readFileSync(backup)) !== file.originalSha256) throw Error('Backup integrity check failed.')
     if (restore && hash === file.patchedSha256 && !existsSync(backup)) throw Error('Original UI backup is missing.')
-    return { target, backup, bytes, mode: statSync(target).mode, next: restore ? (existsSync(backup) ? readFileSync(backup) : bytes) : replacement }
+    return { target, backup, bytes, adapted: hash === file.patchedSha256, mode: statSync(target).mode, next: restore ? (existsSync(backup) ? readFileSync(backup) : bytes) : replacement }
   })
-  if (check) return { changed: 0, checked: plan.length, version: manifest.dshVersion }
+  if (check) return { changed: 0, checked: plan.length, version: manifest.dshVersion, uiAdapted: plan.every(file => file.adapted) }
   const changed = []
   function atomic(target, bytes, mode) {
     const tmp = target + '.auto-review-' + process.pid + '.tmp'
@@ -86,6 +86,7 @@ if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.me
       const { prepareUi } = await import('./prepare-ui.mjs')
       const result = await prepareUi(pos >= 0 ? args[pos + 1] : detectHost(), { restore: args.includes('--restore'), check: args.includes('--check') })
       console.log(JSON.stringify(result))
+      if (args.includes('--check') && result.uiAdapted === false) console.warn('WARNING: host UI is not adapted; tool badges and settings icons are unavailable. Run without --check while DSH is stopped.')
       console.log('Restart DSH and refresh the browser. Backend permissions are unchanged.')
     }
   } catch (error) { console.error(error.message); process.exitCode = 1 }

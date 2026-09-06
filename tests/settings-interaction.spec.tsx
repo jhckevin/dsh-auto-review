@@ -17,7 +17,7 @@ async function mount(writable=true, update=vi.fn(), initial: Partial<typeof DEFA
 describe('settings interaction state',()=>{
  it('explains invalid settings instead of only disabling save',async()=>{
   const x=await mount(true,vi.fn(),{maxAttempts:0});try{
-   expect(x.el.querySelector('[role="alert"]')?.textContent).toBe('invalidSettings')
+   expect(x.el.querySelector('.ar-validation[role="alert"]')?.textContent).toBe('invalidSettings')
    expect(x.el.querySelector<HTMLButtonElement>('.ar-primary')?.disabled).toBe(true)
   }finally{await x.close()}
  })
