@@ -1,3 +1,4 @@
+import type { ReviewerUsage } from './reviewer-usage.ts'
 import type { JsonValue, ReviewCallId as ToolCallId } from './dsh-compat.ts'
 import type { SandboxMode } from '@deepseek-ai/dsh-sandbox'
 import type { ToolExecution, ToolExecutionToken } from '@deepseek-ai/dsh-tools'
@@ -136,6 +137,7 @@ export interface ReviewDecision {
   readonly saferAlternative?: string
   readonly uncertainty: string
   readonly reviewerExecution?: {
+    readonly accountingSource?: 'reviewer-usage-v1'
     readonly tier: AutoReviewModelTier
     readonly provider: string
     readonly model: string
@@ -305,6 +307,7 @@ export interface AutoReviewPostDenialRecord {
 }
 
 export interface AutoReviewMetricsSnapshot {
+  readonly reviewerUsage?: ReviewerUsage
   readonly totalActions: number
   readonly insideBoundary: number
   readonly autoReviewed: number
@@ -333,6 +336,15 @@ export interface AutoReviewMetricsSnapshot {
 }
 
 export interface AutoReviewAuditPayloadMap {
+  readonly 'reviewer-usage': {
+    readonly reviewerSessionId: string
+    readonly provider: string
+    readonly model: string
+    readonly status: 'complete' | 'failed'
+    readonly cleanupFailed: boolean
+    readonly usage: ReviewerUsage
+    readonly policyRetrieval: { readonly outlineCalls: number; readonly searchCalls: number; readonly getCalls: number; readonly resultBytes: number }
+  }
   readonly 'native-protocol': {
     readonly status: 'preflight' | 'validated' | 'error'
     readonly method: 'parse_core_review_decision'

@@ -81,6 +81,19 @@ const object = (value: unknown): value is Record<string, unknown> => (
   value !== null && typeof value === 'object' && !Array.isArray(value)
 )
 
+/** 无副作用的拒绝报文握手；不产生执行授权，也不调用付费模型。 */
+export async function preflightNativeApproval(
+  ctx: Context, scope: NativeApprovalScope, signal: AbortSignal,
+  phase: 'startup' | 'before-model', parentSessionId?: string,
+): Promise<void> {
+  await validateNativeApprovalDecision(ctx, {
+    schemaVersion: 1, outcome: 'denied', riskLevel: 'low',
+    rationale: 'Auto Review capability probe; no action requested.',
+    policyRuleIds: [], uncertainty: '',
+  }, `capability-probe:${phase}`, parentSessionId,
+  AbortSignal.any([signal, scope.signal, AbortSignal.timeout(10000)]), scope)
+}
+
 export async function validateNativeApprovalDecision(
   ctx: Context,
   decision: ReviewDecision,

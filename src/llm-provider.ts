@@ -1,3 +1,4 @@
+import { collectReviewerUsage } from './reviewer-usage.ts'
 import { snapshotSessionEvents } from './dsh-compat.ts'
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
@@ -11,7 +12,7 @@ import {
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import { guardianBootstrapPrompt } from './policy-corpus.ts'
 import { parseReviewDecision, ReviewProtocolError } from './protocol.ts'
-import { NativeApprovalScope, validateNativeApprovalDecision } from './native-approval-protocol.ts'
+import { NativeApprovalScope, preflightNativeApproval, validateNativeApprovalDecision } from './native-approval-protocol.ts'
 import { redactJson } from './redaction.ts'
 import { installReviewerPolicyTools } from './reviewer-policy-tools.ts'
 import { STRONG_REVIEW_KINDS } from './settings.ts'
@@ -327,6 +328,7 @@ async function runAttempt(
   payload: string,
   workspaceRoot: string,
   signal: AbortSignal,
+  parentSessionId?: string,
 ): Promise<ReviewerAttempt> {
   const selection = {
     current: {
@@ -361,6 +363,7 @@ async function runAttempt(
     },
   })
   const unmarkReviewer = ctx.actionReview.registerReviewerSession(handle.agent.session)
+  let completed = false
   try {
     handle.agent.followup(createUserMessage({
       content: [{ type: 'text', text: payload }],
@@ -370,8 +373,10 @@ async function runAttempt(
     signal.throwIfAborted()
     const policyRetrieval = policyRetrievalStats(snapshotSessionEvents<SessionEvent>(handle.agent.session))
     try {
+      const decision = decisionFromSession(snapshotSessionEvents<SessionEvent>(handle.agent.session))
+      completed = true
       return Object.freeze({
-        decision: decisionFromSession(snapshotSessionEvents<SessionEvent>(handle.agent.session)),
+        decision,
         reviewerSessionId: handle.agent.session.id,
         policyRetrieval,
         attempts: 1,
@@ -381,11 +386,19 @@ async function runAttempt(
       throw new ReviewerAttemptError(error, policyRetrieval)
     }
   } finally {
+    // 保留 session 引用；等待取消/处置完成后再读取最后 usage，避免漏掉尾包。
+    const session = handle.agent.session
+    let cleanupFailed = false
+    try { await handle.dispose() } catch { cleanupFailed = true }
     try {
-      await handle.dispose()
-    } finally {
-      unmarkReviewer()
-    }
+      const events = snapshotSessionEvents<SessionEvent>(session)
+      ctx.actionReview.recordAudit('reviewer-usage', {
+        reviewerSessionId: session.id, provider: config.provider, model: config.model,
+        status: completed ? 'complete' : 'failed', cleanupFailed,
+        usage: collectReviewerUsage(events), policyRetrieval: policyRetrievalStats(events),
+      }, parentSessionId)
+    } finally { unmarkReviewer() }
+    if (cleanupFailed) throw new Error('Reviewer cleanup failed; automatic approval prohibited.')
   }
 }
 
@@ -412,6 +425,7 @@ function withReviewerExecution(
   return Object.freeze({
     ...decision,
     reviewerExecution: Object.freeze({
+      accountingSource: 'reviewer-usage-v1',
       tier,
       provider: config.provider,
       model: config.model,
@@ -467,13 +481,14 @@ async function reviewWithProfile(
   workspaceRoot: string,
   requestSignal: AbortSignal,
   timeoutSignal: AbortSignal,
+  parentSessionId?: string,
 ): Promise<ReviewerAttempt> {
   const signal = AbortSignal.any([requestSignal, timeoutSignal])
   let policyRetrieval: PolicyRetrievalStats = { outlineCalls: 0, searchCalls: 0, getCalls: 0, resultBytes: 0 }
   const failureCategories: ReviewerFailureCategory[] = []
   for (let attempt = 1; attempt <= config.maxAttempts; attempt += 1) {
     try {
-      const result = await runAttempt(ctx, config, payload, workspaceRoot, signal)
+      const result = await runAttempt(ctx, config, payload, workspaceRoot, signal, parentSessionId)
       return Object.freeze({
         ...result,
         policyRetrieval: combinePolicyRetrieval(policyRetrieval, result.policyRetrieval),
@@ -528,6 +543,11 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
   const deployed = validateConfig(input)
   const nativeScope = new NativeApprovalScope()
   ctx.effect(() => () => nativeScope.dispose(), 'auto-review: provider activation lifetime')
+  // 启动握手失败已记录 native-protocol/error；不放行、不触发付费请求。
+  // 每个动作再次握手，允许管理员修复环境后恢复，不缓存永久成功状态。
+  const startup = deployed.approvalProtocol === 'codex-native'
+    ? preflightNativeApproval(ctx, nativeScope, nativeScope.signal, 'startup').catch(() => undefined)
+    : Promise.resolve()
   ctx.actionReview.configureReviewerSettingsDefaults(deployed)
   const reviewer: ActionReviewer = {
     get id() {
@@ -538,6 +558,11 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
       request = { ...request, signal: AbortSignal.any([request.signal, nativeScope.signal]) }
       request.signal.throwIfAborted()
       const config = configFromSettings(deployed, ctx.actionReview.uiSettings())
+      if (config.approvalProtocol === 'codex-native') {
+        await waitForIdle(startup, request.signal)
+        await preflightNativeApproval(ctx, nativeScope, request.signal, 'before-model', request.action.authority.sessionId)
+        request.signal.throwIfAborted()
+      }
       const payload = reviewerPayload(config, request.action)
       const timeoutSignal = AbortSignal.timeout(config.timeoutMs)
       const directStrong = config.modelStrategy === 'risk-tiered'
@@ -545,7 +570,7 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
       const firstTier = directStrong ? 'strong' as const : 'primary' as const
       const firstConfig = selectedProfile(config, firstTier)
       const first = await reviewWithProfile(
-        ctx, firstConfig, payload, request.action.sandbox.workspaceRoot, request.signal, timeoutSignal,
+        ctx, firstConfig, payload, request.action.sandbox.workspaceRoot, request.signal, timeoutSignal, request.action.authority.sessionId,
       )
       let selected: ReviewDecision
       let reviewerSessionId = first.reviewerSessionId
@@ -553,11 +578,12 @@ export function apply(ctx: Context, input: LlmReviewerConfig): void {
         config.modelStrategy === 'risk-tiered'
         && firstTier === 'primary'
         && config.escalateUncertainToStrong
+        && first.attempts < config.maxAttempts
         && needsStrongReview(first.decision)
       ) {
-        const strong = selectedProfile(config, 'strong')
+        const strong = { ...selectedProfile(config, 'strong'), maxAttempts: config.maxAttempts - first.attempts }
         const decision = await reviewWithProfile(
-          ctx, strong, payload, request.action.sandbox.workspaceRoot, request.signal, timeoutSignal,
+          ctx, strong, payload, request.action.sandbox.workspaceRoot, request.signal, timeoutSignal, request.action.authority.sessionId,
         )
         selected = withReviewerExecution(
           decision.decision, strong, 'strong', firstConfig,

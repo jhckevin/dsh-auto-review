@@ -131,6 +131,7 @@ async function fixture(outputs: string[], fixtureOptions: {
   runtimeMode?: 'enforcing' | 'shadow'
   createError?: unknown
   lifecycle?: boolean
+  lateUsage?: boolean
 } = {}) {
   const ctx = new Context()
   await ctx.plugin(SystemPrompt, {})
@@ -164,7 +165,10 @@ async function fixture(outputs: string[], fixtureOptions: {
       } as unknown as Agent
       return {
         agent,
-        dispose: async () => { disposes += 1 },
+        dispose: async () => {
+          disposes += 1
+          if (fixtureOptions.lateUsage) events.push({...assistantEvent(output), data: {...assistantEvent(output).data, usage: {inputTokens: 10, cacheReadTokens: 30, cacheWriteTokens: 0, outputTokens: 5, totalTokens: 45}}} as SessionEvent)
+        },
       }
     },
   }
@@ -188,6 +192,44 @@ async function fixture(outputs: string[], fixtureOptions: {
 }
 
 describe('isolated reviewer agent provider', () => {
+  it('collects the final usage after disposal even when the reviewer times out', async () => {
+    const {ctx, stats} = await fixture([approved], {hang: true, lateUsage: true, timeoutMs: 20})
+    const result = await ctx.actionReview.review(action, undefined, new AbortController().signal)
+    expect(result.outcome).toBe('unavailable')
+    expect(stats().disposes).toBe(1)
+    const ledger = ctx.actionReview.auditRecords().filter(record => record.kind === 'reviewer-usage')
+    expect(ledger).toHaveLength(1)
+    expect(ledger[0]?.data).toMatchObject({status: 'failed', cleanupFailed: false, usage: {modelCalls: 1, knownTokens: 45, missingUsageCalls: 0}})
+    expect(ctx.actionReview.metrics('parent').reviewerUsage?.knownTokens).toBe(45)
+    await ctx.fiber.dispose()
+  })
+  it('shares the attempt budget across primary retries and strong escalation', async () => {
+    const {ctx, stats} = await fixture(['not json', uncertainHigh, approved], {reviewerConfig: {modelStrategy: 'risk-tiered', strongReviewKinds: [], maxAttempts: 2}})
+    const result = await ctx.actionReview.review(action, undefined, new AbortController().signal)
+    expect(result.outcome).toBe('denied')
+    expect(result.reviewerExecution?.attempts).toBe(2)
+    expect(stats().creates).toBe(2)
+    const ledger = ctx.actionReview.auditRecords().filter(record => record.kind === 'reviewer-usage')
+    expect(ledger).toHaveLength(2)
+    expect(ledger[0]?.data).toMatchObject({status: 'failed'})
+    expect(ctx.actionReview.metrics('parent').reviewerUsage?.missingUsageCalls).toBe(2)
+    await ctx.fiber.dispose()
+  })
+  it('preflights startup and refuses paid model creation until native capability recovers', async () => {
+    const probe = vi.spyOn(NativeProtocol, 'preflightNativeApproval').mockRejectedValue(new NativeProtocol.NativeApprovalProtocolError('artifact'))
+    const gate = vi.spyOn(NativeProtocol, 'validateNativeApprovalDecision').mockImplementation(async (_ctx, decision) => decision)
+    try {
+      const {ctx, stats} = await fixture([approved], {reviewerConfig: {approvalProtocol: 'codex-native'}})
+      expect((await ctx.actionReview.review(action, undefined, new AbortController().signal)).outcome).toBe('unavailable')
+      expect(stats().creates).toBe(0)
+      expect(probe.mock.calls.map(call => call[3])).toEqual(['startup', 'before-model'])
+      expect(gate).not.toHaveBeenCalled()
+      probe.mockResolvedValue(undefined)
+      expect((await ctx.actionReview.review(action, undefined, new AbortController().signal)).outcome).toBe('approved')
+      expect(stats().creates).toBe(1)
+      await ctx.fiber.dispose()
+    } finally {probe.mockRestore(); gate.mockRestore()}
+  })
   it('hot-disposes a real Cordis provider fiber while a reviewer is pending and can reactivate', async () => {
     const options = {hang: true, lifecycle: true, timeoutMs: 5000}
     const {ctx, providerFiber, remount, stats} = await fixture([approved], options)
@@ -205,6 +247,7 @@ describe('isolated reviewer agent provider', () => {
     await ctx.fiber.dispose()
   })
   it.each(['enforcing', 'shadow'] as const)('does not retry, upgrade or approve a failed native gate in %s mode', async mode => {
+    const probe = vi.spyOn(NativeProtocol, 'preflightNativeApproval').mockResolvedValue(undefined)
     const gate = vi.spyOn(NativeProtocol, 'validateNativeApprovalDecision')
       .mockRejectedValue(new NativeProtocol.NativeApprovalProtocolError('artifact'))
     try {
@@ -215,7 +258,7 @@ describe('isolated reviewer agent provider', () => {
       expect(decision.outcome).toBe('unavailable')
       expect(stats().creates).toBe(1)
       expect(gate).toHaveBeenCalledTimes(1)
-    } finally { gate.mockRestore() }
+    } finally { gate.mockRestore(); probe.mockRestore() }
   })
   it('creates and disposes a dedicated policy-tool-only Agent/Session for one review', async () => {
     const { ctx, stats } = await fixture([approved])
