@@ -1,3 +1,4 @@
+import { UiCapabilities } from './capabilities.ts'
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode, type SVGProps } from 'react'
 import type { Context } from '@deepseek-ai/cordis'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
@@ -110,6 +111,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 interface AutoReviewSettingsInjected {
+  readonly uiCapabilities?: UiCapabilities
   read: (signal?: AbortSignal) => Promise<AutoReviewSettingsSnapshot>
   update: (patch: Partial<AutoReviewUiSettings>, expectedRevision: number, signal?: AbortSignal) => Promise<AutoReviewSettingsSnapshot>
   reset: (expectedRevision: number, signal?: AbortSignal) => Promise<AutoReviewSettingsSnapshot>
@@ -254,11 +256,18 @@ export function AutoReviewFunnel({ metrics, t }: { metrics: AutoReviewMetricsSna
   return (
     <div className="ar-card"><h3>{t('funnel')}</h3><div className="ar-funnel" aria-label={t('funnel')}>
       {values.map(([label, value]) => <div key={label}><strong>{value}</strong><span>{t(label)}</span></div>)}
-    </div><p className="ar-funnel-meta">{t('policyLookups')}: {metrics.policyRetrieval.outlineCalls + metrics.policyRetrieval.searchCalls + metrics.policyRetrieval.getCalls} · {t('policyBytes')}: {metrics.policyRetrieval.resultBytes}</p></div>
+    </div><p className="ar-funnel-meta">{t('policyLookups')}: {metrics.policyRetrieval.outlineCalls + metrics.policyRetrieval.searchCalls + metrics.policyRetrieval.getCalls} · {t('policyBytes')}: {metrics.policyRetrieval.resultBytes}</p>
+    {metrics.reviewerUsage ? <p className="ar-funnel-meta" data-auto-review-usage="native-events">
+      Reviewer 新版账本（不含升级前用量）：{metrics.reviewerUsage.modelCalls} 次模型尝试 · 已知 {metrics.reviewerUsage.knownTokens} tokens
+      {' · '}缓存读取 {metrics.reviewerUsage.cacheReadTokens} · 缓存写入 {metrics.reviewerUsage.cacheWriteTokens}
+      {' · '}未缓存输入 {metrics.reviewerUsage.uncachedInputTokens} · 输出 {metrics.reviewerUsage.outputTokens}
+      {metrics.reviewerUsage.incompleteTotalCalls > 0 ? ` · ${metrics.reviewerUsage.incompleteTotalCalls} 次用量不完整（总数仅为已知下界）` : ''}
+      {metrics.reviewerUsage.unknownCacheCalls > 0 ? ' · 部分调用未报告缓存明细' : ''}
+    </p> : null}</div>
   )
 }
 
-export function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics: readMetrics, t }: Props): ReactNode {
+export function AutoReviewSettingsSection({ read, update, reset: resetSettings, metrics: readMetrics, uiCapabilities, t }: Props): ReactNode {
   const [snapshot, setSnapshot] = useState<PageSnapshot>({ status: 'loading', revision: 0, writable: false })
   const [draft, setDraft] = useState<AutoReviewUiSettings | undefined>()
   const [saving, setSaving] = useState(false)
@@ -352,7 +361,7 @@ export function AutoReviewSettingsSection({ read, update, reset: resetSettings, 
   return (
     <section className="ar-page" aria-busy={saving}>
       <header className="ar-header"><div className="ar-header-title"><AutoReviewLogo /><div><h2>{t('title')}</h2><p>{t('subtitle')}</p></div></div><span className="ar-live" role="status">{t(saving ? 'saving' : dirty ? 'pending' : snapshot.value?.enabled ? 'active' : 'inactive')}</span></header>
-      <details className="ar-compat"><summary>工具图标与宿主适配 / UI compatibility</summary><p className="ar-help" data-auto-review-badge-compatibility="requires-owner-slot">{t('badgeCompatibility')}</p></details>
+      <AutoReviewCapabilities capabilities={uiCapabilities} />
 
       {!snapshot.writable ? <p role="status">{t('readOnly')}</p> : null}
       <fieldset className="ar-controls" disabled={saving || !snapshot.writable}>
@@ -446,6 +455,16 @@ const CSS = `
 @media(max-width:600px){.ar-profile-grid,.ar-field-grid{grid-template-columns:1fr}.ar-header{gap:8px}.ar-header h2{font-size:18px}.ar-page{padding-inline:0}.ar-kind-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 `
 
+export function AutoReviewCapabilities({ capabilities }: { capabilities?: UiCapabilities | undefined }): ReactNode {
+  const missing = useSyncExternalStore(capabilities?.subscribe ?? (() => () => {}), capabilities?.snapshot ?? (() => 'unknown'), () => 'unknown')
+  if (!missing) return <p className="ar-help" data-auto-review-ui-capabilities="ready">界面适配已就绪 / UI integration ready</p>
+  return <div role="alert" className="ar-compat" data-auto-review-ui-capabilities="missing">
+    <strong>界面适配未就绪 / UI integration unavailable</strong>
+    <p className="ar-help">{missing === 'unknown' ? '无法检测宿主插槽。' : `缺少或尚未加载：${missing}`}</p>
+    <p className="ar-help">停止 DSH，运行 dsh-auto-review-ui 后重启并刷新。后端审查不因此停用，但对应图标或中断提示无法显示。</p>
+  </div>
+}
+
 /** Client services required by settings scopes and the settings slot. */
 export const inject = ['slots', 'locale', 'connection', 'remote']
 
@@ -466,19 +485,25 @@ export function apply(ctx: ClientContext): void {
   const api = createSettingsRemote(connection)
   const reviewStatus = createReviewStatusClient(connection)
   ctx.effect(() => () => { reviewStatus.dispose() }, 'auto-review webui: review status client')
+  const capabilities = new UiCapabilities()
+  const watchSlot = (name: string, register: () => unknown): unknown => ctx.slots.inject(name, () => {
+    const undo = register()
+    capabilities.set(name, true)
+    return () => { try { if (typeof undo === 'function') undo() } finally { capabilities.set(name, false) } }
+  })
   const t = ctx.locale.bind(LOCALE_NAMESPACE)
   const sectionRegistration = {
     name: 'settings.section', id: 'auto-review', order: 17, label: () => t('nav'), locale: LOCALE_NAMESPACE,
-    inject: (): AutoReviewSettingsInjected => api,
+    inject: (): AutoReviewSettingsInjected => ({ ...api, uiCapabilities: capabilities }),
   } as const
   ctx.slots.inject('settings.section', () => ctx.slots.register(sectionRegistration, AutoReviewSettingsSection))
   const navSlots = ctx.slots as unknown as AutoReviewNavSlots
-  navSlots.inject('settings.section.icon', () => navSlots.register({ name: 'settings.section.icon', key: 'auto-review' }, AutoReviewNavIcon))
+  watchSlot('settings.section.icon', () => navSlots.register({ name: 'settings.section.icon', key: 'auto-review' }, AutoReviewNavIcon))
   // The badge slot is absent from the official alpha.5 catalog. Its additive
   // owner patch is shipped separately; keep this compatibility
   // adapter local instead of globally augmenting SlotMap with a duplicate owner.
   const badgeSlots = ctx.slots as unknown as AutoReviewBadgeSlots
-  badgeSlots.inject('tool.call.badges', () => badgeSlots.register({
+  watchSlot('tool.call.badges', () => badgeSlots.register({
     name: 'tool.call.badges', id: 'auto-review', order: 20, locale: LOCALE_NAMESPACE,
     inject: (sessionId): AutoReviewBadgeInjected => ({
       reviewStatus,
@@ -486,7 +511,7 @@ export function apply(ctx: ClientContext): void {
     }),
   }, AutoReviewCallBadge))
   const turnSlots = ctx.slots as unknown as AutoReviewTurnSlots
-  turnSlots.inject('conversation.chat.turnTail', () => turnSlots.register({
+  watchSlot('conversation.chat.turnTail', () => turnSlots.register({
     name: 'conversation.chat.turnTail',
     // Native turnTail is first-match: the safety notice precedes ordinary deliverables.
     priority: -100,

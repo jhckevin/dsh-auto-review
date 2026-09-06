@@ -1,3 +1,4 @@
+import { emptyReviewerUsage, type ReviewerUsage } from './reviewer-usage.ts'
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { Context, Service } from '@deepseek-ai/cordis'
@@ -48,6 +49,7 @@ function freezeJson<T>(value: T): T {
 }
 
 interface MutableMetrics {
+  reviewerUsage: ReviewerUsage
   totalActions: number
   insideBoundary: number
   autoReviewed: number
@@ -75,6 +77,7 @@ interface MutableMetrics {
 
 function newMetrics(): MutableMetrics {
   return {
+    reviewerUsage: emptyReviewerUsage(),
     totalActions: 0, insideBoundary: 0, autoReviewed: 0, approved: 0, denied: 0,
     manual: 0, unavailable: 0, hardDenied: 0, successfulActions: 0, failedActions: 0,
     ticketRejected: 0, retriedDeniedAction: 0, retriedEquivalentEffect: 0, continuedWithDifferentAction: 0,
@@ -425,6 +428,7 @@ export class ActionReviewRuntime extends Service {
       ? 0
       : (state.insideBoundary + state.approved) / state.totalActions
     return freezeJson({
+      reviewerUsage: { ...state.reviewerUsage },
       totalActions: state.totalActions,
       insideBoundary: state.insideBoundary,
       autoReviewed: state.autoReviewed,
@@ -854,6 +858,15 @@ export class ActionReviewRuntime extends Service {
 
   private applyMetrics(state: MutableMetrics, record: AutoReviewAuditEnvelope): void {
     switch (record.kind) {
+      case 'reviewer-usage': {
+        const data = record.data as AutoReviewAuditPayloadMap['reviewer-usage']
+        for (const key of Object.keys(state.reviewerUsage) as Array<keyof ReviewerUsage>) state.reviewerUsage[key] += data.usage[key]
+        state.policyOutlineCalls += data.policyRetrieval.outlineCalls
+        state.policySearchCalls += data.policyRetrieval.searchCalls
+        state.policyGetCalls += data.policyRetrieval.getCalls
+        state.policyResultBytes += data.policyRetrieval.resultBytes
+        break
+      }
       case 'routed': {
         const data = record.data as AutoReviewAuditPayloadMap['routed']
         state.totalActions += 1
@@ -878,7 +891,7 @@ export class ActionReviewRuntime extends Service {
         state.reviewerLatencySum += data.latencyMs
         state.reviewerLatencyMax = Math.max(state.reviewerLatencyMax, data.latencyMs)
         const policy = data.decision.reviewerExecution?.policyRetrieval
-        if (policy !== undefined) {
+        if (policy !== undefined && data.decision.reviewerExecution?.accountingSource !== 'reviewer-usage-v1') {
           state.policyOutlineCalls += policy.outlineCalls
           state.policySearchCalls += policy.searchCalls
           state.policyGetCalls += policy.getCalls
