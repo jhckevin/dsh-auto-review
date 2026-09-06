@@ -67,7 +67,7 @@ try {
     for (const suffix of ['client-store', 'client-ui-renderer']) assert.equal(main.peerDependencies['@deepseek-ai/dsh-' + suffix], '0.1.2-alpha.5')
   }
   const distTag = dshVersions.length === 1 ? channels.get(dshVersions[0])
-    : main.version.includes('-') ? 'beta' : 'latest'
+    : main.version.includes('-rc.') ? 'next' : main.version.includes('-') ? 'beta' : 'latest'
   const release = {
     pluginVersion: main.version,
     dshVersion: dshVersions.at(-1),
