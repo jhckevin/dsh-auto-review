@@ -1,6 +1,6 @@
 {
   "name": "@jhckevin/dsh-auto-review",
-  "version": "0.6.1",
+  "version": "0.6.2-rc.1",
   "keywords": ["dsh-plugin", "deepseek-harness", "deepseek", "auto-review", "agent-security", "cordis", "sandbox"],
   "description": "Native Auto Review for DeepSeek Harness with automatic host compatibility selection",
   "type": "module",

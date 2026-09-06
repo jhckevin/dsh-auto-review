@@ -32,13 +32,17 @@
 
 **请留意额外的 token 费用。** 每次审查都需要发送操作、相关上下文与策略。以此前反馈的小样本为例，约 8 次较高频审查可能累计数万输入 token，输入缓存命中约 50%；这不是固定开销或命中率保证，实际取决于模型、上下文和请求前缀是否重复。缓存命中的输入通常也并非免费，请以 Provider 的用量与价格为准。
 
+![真实 Reviewer 用量统计](docs/images/auto-review-usage-native.png)
+
+<sub>新版账本单独统计 Reviewer 的未缓存输入、缓存和输出；缺失用量显示为未知或下界。截图中的动作累计包含历史记录，用量账本不包含升级前数据。</sub>
+
 ## 安装
 
 支持 **Linux x86_64 / glibc 2.31+**，建议 Node.js **24.20.0**。
 
 一个 npm 包共用后端，安装时只下载当前宿主需要的界面适配。自动匹配 **DSH 0.1.0-rc.6、0.1.1-rc.2、0.1.2-alpha.5**，不用选择插件的 rc6 / rc2 / alpha5 通道。不识别的宿主版本会明确报错，不会强行安装旧适配。
 
-> 此分支为 0.6.1 发布准备。npm 发布完成前，请从本分支 Actions 取得候选 tgz，通过 `dsh plugin --profile web add ./候选包.tgz` 安装。
+> 当前为 **0.6.2-rc.1 候选版**，发布到 npm 的 `next` 通道，不替换 `latest`。三版本 Loop 回归已通过；完整自主拒绝与跨版本浏览器验证仍在补齐。详见[本版说明](docs/ISSUE-032-RUNTIME-HARDENING.md)。
 > DSH 的 `latest` 目前已到 0.1.2-rc.1，尚不在上述兼容范围。新环境请先安装下面的固定宿主版本。
 
 ### 1. 安装 DSH 和插件
@@ -47,7 +51,7 @@
 
 ```sh
 npm install -g @deepseek-ai/dsh@0.1.1-rc.2
-dsh plugin --profile web add @jhckevin/dsh-auto-review
+dsh plugin --profile web add @jhckevin/dsh-auto-review@next
 ```
 
 ### 2. 初始化执行组件
@@ -69,11 +73,13 @@ export DSH_AUTO_REVIEW_NATIVE_RUNTIME=/opt/dsh-auto-review-native/0.1.0-rc.2/nod
 停止 DSH 后运行；会自动识别宿主版本，只下载对应适配，校验内容并保留原文件备份：
 
 ```sh
-npx --yes --package=@jhckevin/dsh-auto-review dsh-auto-review-ui
+npx --yes --package=@jhckevin/dsh-auto-review@next dsh-auto-review-ui
 dsh --profile web
 ```
 
 无法直连 GitHub 时，可在安装界面图标前设置 `export DSH_AUTO_REVIEW_DOWNLOAD_MIRROR=https://ghfast.top/`；仍会核对固定内容哈希。
+
+启动和每次付费审查前都会检查执行组件；不可用时不会先花费 Reviewer token。设置页会显示界面适配是否就绪；缺槽时给出具体名称。
 
 若没有找到宿主，增加 `--dsh-root /实际的/node_modules`。需要还原时运行同一安装器并加 `--restore`。界面适配需要重启 DSH；它不修改工具执行、权限或沙盒代码。[详细说明](docs/UI-INSTALL.md)
 
@@ -94,7 +100,7 @@ dsh --profile web
 | 审查 Full Access 动作 | 默认开启；Full Access 没有沙盒，除硬禁动作外全量送审。关闭后该档位使用原生流程。 |
 | 模型策略 | 单模型用于日常审查；风险分级可为高风险动作指定另一模型。 |
 
-Auto Review 不能替代沙盒。Reviewer 故障不会自动放行，也不能保证模型永远判断正确。
+Auto Review 不能替代沙盒。Reviewer 故障不会自动放行，也不能保证模型永远判断正确。若原生沙盒报告 `partial enforcement`，不要将其视为完整隔离；先核验宿主环境，候选版不承诺所有部署都达到完整沙盒保护。
 
 ## 项目与许可
 
