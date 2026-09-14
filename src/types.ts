@@ -90,6 +90,7 @@ export interface ActionEnvelope {
     readonly sessionId?: string
     readonly turn?: number
     readonly currentUserRequest?: string
+    readonly sourceWindow?: { readonly entryLimit: number; readonly olderMessageEventsOmitted: number }
     readonly transcript: readonly ReviewTranscriptEntry[]
     readonly exactApproval?: {
       readonly actionDigest: string

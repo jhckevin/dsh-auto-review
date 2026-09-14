@@ -192,6 +192,45 @@ async function fixture(outputs: string[], fixtureOptions: {
 }
 
 describe('isolated reviewer agent provider', () => {
+  it('fits whole transcript entries after reserving complete action and authority', async () => {
+    const { ctx, stats } = await fixture([approved], { reviewerConfig: { maxInputBytes: 4096, transcriptMaxBytes: 32768 } })
+    const large: ActionEnvelope = { ...action, authority: { ...action.authority, transcript: Array.from({ length: 12 }, (_, n) =>
+      ({ role: 'assistant', trust: 'untrusted-model', text: `entry-${n} ` + '内容'.repeat(200) })) } }
+    const result = await ctx.actionReview.review(large, undefined, new AbortController().signal)
+    expect(result.outcome).toBe('approved')
+    const prompt = stats().prompts[0]!
+    expect(Buffer.byteLength(prompt, 'utf8')).toBeLessThanOrEqual(4096)
+    const payload = JSON.parse(prompt)
+    expect(payload.action.arguments.command).toBe(action.arguments.command)
+    expect(payload.action.authority.currentUserRequest).toBe(action.authority.currentUserRequest)
+    expect(payload.action.authority.evidenceWindow.omittedEntries).toBeGreaterThan(0)
+    expect(payload.action.authority.transcript.at(-1)).toEqual(large.authority.transcript.at(-1))
+    expect(payload.evidenceTrustPolicy.incompleteHistory).toContain('not evidence of permission')
+    await ctx.fiber.dispose()
+  })
+  it('never truncates an oversized action to make an approving model call', async () => {
+    const { ctx, stats } = await fixture([approved], { reviewerConfig: { maxInputBytes: 16384 } })
+    const result = await ctx.actionReview.review({ ...action, arguments: { command: 'x'.repeat(12000), data: 'y'.repeat(8000) } }, undefined, new AbortController().signal)
+    expect(result.outcome).toBe('unavailable')
+    expect(result.rationale).toContain('essential reviewer input')
+    expect(stats().creates).toBe(0)
+    await ctx.fiber.dispose()
+  })
+  it('retains long command tails, item 65 and deep non-secret arguments at the default input budget', async () => {
+    const { ctx, stats } = await fixture([approved], { reviewerConfig: { maxInputBytes: 16384 } })
+    const command = 'echo '.repeat(1200) + '; rm important-file'
+    const arguments_ = { command, items: Array.from({ length: 65 }, (_, n) => `operation-${n}`),
+      nested: { a: { b: { c: { d: { e: { f: { g: { h: { i: { action: 'deep-action' } } } } } } } } } },
+      token: 'synthetic-secret' }
+    const result = await ctx.actionReview.review({ ...action, arguments: arguments_ }, undefined, new AbortController().signal)
+    expect(result.outcome).toBe('approved')
+    const payload = JSON.parse(stats().prompts[0]!)
+    expect(payload.action.arguments.command).toBe(command)
+    expect(payload.action.arguments.items).toEqual(arguments_.items)
+    expect(payload.action.arguments.nested).toEqual(arguments_.nested)
+    expect(payload.action.arguments.token).toBe('[REDACTED]')
+    await ctx.fiber.dispose()
+  })
   it('collects the final usage after disposal even when the reviewer times out', async () => {
     const {ctx, stats} = await fixture([approved], {hang: true, lateUsage: true, timeoutMs: 20})
     const result = await ctx.actionReview.review(action, undefined, new AbortController().signal)

@@ -12,6 +12,7 @@ export interface RedactionOptions {
   readonly maxDepth?: number
   readonly maxArrayItems?: number
   readonly maxObjectKeys?: number
+  readonly rejectTruncation?: boolean
 }
 
 function trimUtf8(value: string, maxBytes: number): string {
@@ -33,16 +34,22 @@ export function redactJson(value: JsonValue, options: RedactionOptions = {}): Js
     if (typeof candidate === 'string') {
       let redacted = candidate
       for (const pattern of SECRET_TEXT) redacted = redacted.replace(pattern, '[REDACTED]')
+      if (options.rejectTruncation && Buffer.byteLength(redacted, 'utf8') > maxStringBytes) throw new Error('auto-review: action redaction would truncate a string')
       return trimUtf8(redacted, maxStringBytes)
     }
-    if (depth >= maxDepth) return '[MAX_DEPTH]'
+    if (depth >= maxDepth) {
+      if (options.rejectTruncation) throw new Error('auto-review: action redaction would truncate nested structure')
+      return '[MAX_DEPTH]'
+    }
     if (Array.isArray(candidate)) {
+      if (options.rejectTruncation && candidate.length > maxArrayItems) throw new Error('auto-review: action redaction would omit array items')
       const result = candidate.slice(0, maxArrayItems).map(entry => visit(entry, depth + 1))
       if (candidate.length > maxArrayItems) result.push(`[${candidate.length - maxArrayItems} items omitted]`)
       return result
     }
-    const result: Record<string, JsonValue> = {}
+    const result: Record<string, JsonValue> = Object.create(null)
     const entries = Object.entries(candidate)
+    if (options.rejectTruncation && entries.length > maxObjectKeys) throw new Error('auto-review: action redaction would omit object keys')
     for (const [entryKey, entry] of entries.slice(0, maxObjectKeys)) {
       result[entryKey] = visit(entry, depth + 1, entryKey)
     }
