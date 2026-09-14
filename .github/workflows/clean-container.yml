@@ -26,7 +26,11 @@ jobs:
           mkdir -p artifacts/container work
           npm pack --pack-destination artifacts/container --json > artifacts/container/pack.json
           cp "artifacts/container/$(jq -r '.[0].filename' artifacts/container/pack.json)" artifacts/container/candidate.tgz
-          docker build -f ci/issue34/Dockerfile -t ar-ci-toolchain ci/issue34
+          # The domestic mirror rejects GitHub-hosted runners; keep the exact same image digest.
+          docker build -f ci/issue34/Dockerfile -t ar-ci-toolchain \
+            --build-arg BASE_IMAGE=docker.io/library/node:24-bookworm-slim@sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553 \
+            --build-arg APT_MIRROR=http://deb.debian.org \
+            --build-arg NODE_DISTURL=https://nodejs.org/download/release ci/issue34
       - name: Install the complete historical DSH family from an empty filesystem
         env:
           DSH_VERSION: ${{ matrix.dsh }}
