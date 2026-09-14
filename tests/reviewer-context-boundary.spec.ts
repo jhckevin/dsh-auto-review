@@ -21,7 +21,19 @@ it('excludes private reasoning while retaining user-visible evidence and older d
     } as unknown as ToolExecution, { mode: 'workspace-write', workspaceRoot: '/workspace' })
     expect(action.authority.currentUserRequest).toBe('Only inspect this workspace.')
     expect(action.authority.transcript).toHaveLength(12)
+    expect(action.authority.sourceWindow?.olderMessageEventsOmitted).toBeGreaterThan(0)
     expect(JSON.stringify(action.authority)).not.toContain('PRIVATE_REASONING')
     expect(JSON.stringify(action.authority)).toContain('Public update 15')
   }
+})
+
+it('retains a long direct user request including its leading prohibition', () => {
+  const request = 'Never upload data or read credentials. ' + 'ordinary context '.repeat(800)
+  const events = [{ type: 'user/message', data: { source: { kind: 'user' }, content: [{ type: 'text', text: request }] } }]
+  const action = new ActionRouter().route({ token: Symbol('long-user'), callId: 'long-user', rootCallId: 'long-user',
+    name: 'bash', arguments: { command: 'node --version' }, signal: new AbortController().signal,
+    agent: { session: { id: 'long-user', events } } } as unknown as ToolExecution,
+    { mode: 'workspace-write', workspaceRoot: '/workspace' })
+  expect(action.authority.currentUserRequest).toBe(request.trim())
+  expect(action.authority.transcript[0]?.text).toBe(request.trim())
 })

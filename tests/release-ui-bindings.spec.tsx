@@ -6,6 +6,22 @@ import { ReviewStatusClient } from '../src/client/review-status.ts'
 
 afterEach(() => vi.useRealTimers())
 
+it('stops badge polling after three unavailable responses and permits a new subscription', async () => {
+  vi.useFakeTimers()
+  const read = vi.fn(async () => { throw new Error('method unavailable') })
+  const client = new ReviewStatusClient({ read }, 50)
+  const off = client.subscribe('unsupported', () => {})
+  await vi.advanceTimersByTimeAsync(1000)
+  expect(read).toHaveBeenCalledTimes(3)
+  expect(vi.getTimerCount()).toBe(0)
+  off()
+  const again = client.subscribe('unsupported', () => {})
+  await vi.advanceTimersByTimeAsync(0)
+  expect(read).toHaveBeenCalledTimes(4)
+  again(); client.dispose()
+  expect(vi.getTimerCount()).toBe(0)
+})
+
 it('registers the rc.2 navigation glyph and session badge through additive child slots', async () => {
   vi.useFakeTimers()
   const entries: Array<{options: Record<string, unknown>; component: unknown}> = []

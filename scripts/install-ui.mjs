@@ -4,6 +4,8 @@ import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve, sep, delimiter } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { prepareUi } from './prepare-ui.mjs'
+import { prepareProfileUi } from './prepare-profile-ui.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const digest = bytes => createHash('sha256').update(bytes).digest('hex')
@@ -75,7 +77,7 @@ if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.me
     const args = process.argv.slice(2)
     for (let index = 0; index < args.length; index++) {
       const arg = args[index]
-      if (arg === '--dsh-root') { index++; continue }
+      if (arg === '--dsh-root' || arg === '--profile-root') { index++; continue }
       if (!['--help', '--check', '--restore'].includes(arg)) throw Error('Unknown argument: ' + arg)
     }
     if (args.includes('--help')) {
@@ -83,10 +85,18 @@ if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.me
     } else {
       const pos = args.indexOf('--dsh-root')
       if (pos >= 0 && (!args[pos + 1] || args[pos + 1].startsWith('--'))) throw Error('--dsh-root requires a directory.')
-      const { prepareUi } = await import('./prepare-ui.mjs')
-      const result = await prepareUi(pos >= 0 ? args[pos + 1] : detectHost(), { restore: args.includes('--restore'), check: args.includes('--check') })
+      const profilePos = args.indexOf('--profile-root')
+      if (profilePos >= 0 && (!args[profilePos + 1] || args[profilePos + 1].startsWith('--'))) throw Error('--profile-root requires a directory.')
+      const hostRoot = pos >= 0 ? args[pos + 1] : detectHost()
+      const options = { restore: args.includes('--restore'), check: args.includes('--check'), profileRoot: profilePos >= 0 ? args[profilePos + 1] : undefined }
+      const preflight = installUi(hostRoot, { check: true })
+      prepareProfileUi(preflight.version, { ...options, check: true })
+      const result = await prepareUi(hostRoot, options)
+      const profileUi = prepareProfileUi(preflight.version, options)
+      result.profileUi = profileUi
       console.log(JSON.stringify(result))
       if (args.includes('--check') && result.uiAdapted === false) console.warn('WARNING: host UI is not adapted; tool badges and settings icons are unavailable. Run without --check while DSH is stopped.')
+      if (profileUi.applicable && !profileUi.adapted) console.warn('WARNING: alpha5 client discovery is not adapted. Run the UI installer without --check after installing the plugin.')
       console.log('Restart DSH and refresh the browser. Backend permissions are unchanged.')
     }
   } catch (error) { console.error(error.message); process.exitCode = 1 }

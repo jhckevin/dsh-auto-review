@@ -1,0 +1,3 @@
+- insert:
+    - id: issue34-observer
+      name: /ci/ci-issue34-observer.mjs

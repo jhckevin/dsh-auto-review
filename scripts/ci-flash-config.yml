@@ -1,0 +1,8 @@
+- id: llm-deepseek
+  config:
+    baseURL: http://127.0.0.1:8099
+    thinking: disabled
+    reasoningEffort: off
+    maxTokens: 16384
+- id: session-title-llm
+  disabled: true

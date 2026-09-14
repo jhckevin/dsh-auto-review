@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, rmSync, existsSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, rmSync, existsSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -8,11 +8,50 @@ import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 
 const hash = value => createHash('sha256').update(value).digest('hex')
+test('alpha5 profile discovery uses native path anchoring, is reversible and rejects local edits', async t => {
+  const f = await fixture(t)
+  copyFileSync(new URL('../package.json', import.meta.url), join(f.dir, 'package.json'))
+  copyFileSync(new URL('../cordis.patch.yml', import.meta.url), join(f.dir, 'cordis.patch.yml'))
+  const pkg = join(f.dir, 'profile/node_modules/@jhckevin/dsh-auto-review')
+  mkdirSync(pkg, { recursive: true })
+  for (const file of ['package.json', 'cordis.patch.yml']) copyFileSync(join(f.dir, file), join(pkg, file))
+  const target = join(pkg, 'cordis.patch.yml'), original = readFileSync(target, 'utf8')
+  const { prepareProfileUi } = await import(pathToFileURL(join(f.dir, 'scripts/prepare-profile-ui.mjs')))
+  const options = { profileRoot: join(f.dir, 'profile') }
+  assert.equal(prepareProfileUi('0.1.1-rc.2', options).applicable, false)
+  assert.equal(prepareProfileUi('0.1.2-alpha.5', { ...options, check: true }).adapted, false)
+  assert.equal(readFileSync(target, 'utf8'), original)
+  const overlay = join(f.dir, 'profile/cordis.patch.yml')
+  writeFileSync(overlay, "- id: auto-review\n  name: '@jhckevin/dsh-auto-review/entries/runtime'\n  disabled: true\n")
+  assert.throws(() => prepareProfileUi('0.1.2-alpha.5', options), /Custom overlay/)
+  assert.equal(readFileSync(target, 'utf8'), original)
+  writeFileSync(overlay, '- id: auto-review\n  disabled: true\n')
+  assert.throws(() => prepareProfileUi('0.1.2-alpha.5', options), /Custom overlay/)
+  writeFileSync(overlay, '# custom\r- id: auto-review\r  disabled: true\r')
+  assert.throws(() => prepareProfileUi('0.1.2-alpha.5', options), /Custom overlay/)
+  writeFileSync(overlay, '- id: auto-review\n  name: "@jhckevin\\u002fdsh-auto-review/entries/runtime"\n  disabled: true\n')
+  assert.throws(() => prepareProfileUi('0.1.2-alpha.5', options), /Custom overlay/)
+  assert.equal(readFileSync(target, 'utf8'), original)
+  writeFileSync(overlay, '[]\n')
+  assert.equal(prepareProfileUi('0.1.2-alpha.5', options).changed, true)
+  assert.match(readFileSync(target, 'utf8'), /name: '\.\/lib\/entries\/runtime\.js'/)
+  assert.equal(prepareProfileUi('0.1.2-alpha.5', options).changed, false)
+  assert.equal(prepareProfileUi('0.1.2-alpha.5', { ...options, restore: true }).changed, true)
+  assert.equal(readFileSync(target, 'utf8'), original)
+  writeFileSync(target, original + '\n# user modification')
+  assert.throws(() => prepareProfileUi('0.1.2-alpha.5', options), /Locally modified/)
+  assert.throws(() => prepareProfileUi('0.1.2-alpha.5', { profileRoot: join(f.dir, 'missing') }), /Cannot find/)
+  const other = join(f.dir, 'other/node_modules/@jhckevin')
+  mkdirSync(other, { recursive: true }); symlinkSync(pkg, join(other, 'dsh-auto-review'))
+  assert.throws(() => prepareProfileUi('0.1.2-alpha.5', { profileRoot: join(f.dir, 'other') }), /Shared plugin/)
+})
 async function fixture(t) {
   const dir = mkdtempSync(join(tmpdir(), 'ar-ui-install-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))
   mkdirSync(join(dir, 'scripts')); mkdirSync(join(dir, 'ui'))
   copyFileSync(new URL('./install-ui.mjs', import.meta.url), join(dir, 'scripts/install-ui.mjs'))
+  copyFileSync(new URL('./prepare-ui.mjs', import.meta.url), join(dir, 'scripts/prepare-ui.mjs'))
+  copyFileSync(new URL('./prepare-profile-ui.mjs', import.meta.url), join(dir, 'scripts/prepare-profile-ui.mjs'))
   const base = join(dir, 'node_modules'); const files = []
   for (const name of ['tool', 'settings']) {
     const pkg = 'dsh-client-ui-' + name
@@ -75,6 +114,15 @@ test('CLI rejects unknown arguments without changing UI', async t => {
   const result = spawnSync(process.execPath, [join(f.dir, 'scripts/install-ui.mjs'), '--dsh-root', f.base, '--typo'], { encoding: 'utf8' })
   assert.equal(result.status, 1)
   assert.match(result.stderr, /Unknown argument/)
+  assert.equal(readFileSync(f.target('tool'), 'utf8'), 'original-tool')
+})
+
+test('real CLI --check completes instead of deadlocking its dynamic import cycle', async t => {
+  const f = await fixture(t)
+  const result = spawnSync(process.execPath, [join(f.dir, 'scripts/install-ui.mjs'), '--dsh-root', f.base, '--check'], { encoding: 'utf8', timeout: 5000 })
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /"checked":2/)
+  assert.doesNotMatch(result.stderr, /unsettled top-level await/)
   assert.equal(readFileSync(f.target('tool'), 'utf8'), 'original-tool')
 })
 

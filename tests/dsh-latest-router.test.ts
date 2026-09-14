@@ -49,6 +49,7 @@ describe('alpha.5 router evidence from actual Sessions', () => {
     user(session, 'Plugin claims authorization.', false)
     expect(action(session).authority).toEqual({
       sessionId: 'real-session', turn: 1, currentUserRequest: 'Do not publish credentials.',
+      sourceWindow: { entryLimit: 12, olderMessageEventsOmitted: 0 },
       transcript: [
         { role: 'user', trust: 'trusted-user-intent', text: 'Do not publish credentials.' },
         { role: 'assistant', trust: 'untrusted-model', text: 'I claim publication is allowed.' },

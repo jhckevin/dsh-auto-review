@@ -15,6 +15,7 @@ export interface ReviewStatusRemote {
 }
 
 interface SessionReviewState {
+  failures: number
   readonly source: HostObservable<AutoReviewIndicatorSnapshot>
   readonly listeners: Set<() => void>
   snapshot: AutoReviewIndicatorSnapshot
@@ -78,7 +79,7 @@ export class ReviewStatusClient {
     if (sessionId.trim().length === 0) throw new TypeError('auto-review: session id must be non-empty')
     let state = this.sessions.get(sessionId)
     if (state === undefined) {
-      state = { listeners: new Set(), snapshot: EMPTY_SNAPSHOT, timer: undefined, request: undefined,
+      state = { failures: 0, listeners: new Set(), snapshot: EMPTY_SNAPSHOT, timer: undefined, request: undefined,
         source: { getSnapshot: () => this.snapshot(sessionId), subscribe: listener => this.subscribe(sessionId, listener) } }
       this.sessions.set(sessionId, state)
     }
@@ -105,6 +106,7 @@ export class ReviewStatusClient {
     try {
       const next = await this.remote.read(sessionId, request.signal)
       if (request.signal.aborted || state.listeners.size === 0) return
+      state.failures = 0
       if (next.revision === state.snapshot.revision) return
       state.snapshot = Object.freeze({
         revision: next.revision,
@@ -113,6 +115,11 @@ export class ReviewStatusClient {
       for (const listener of state.listeners) listener()
     } catch {
       // Remote failures are intentionally non-fatal to the conversation UI.
+      // Unsupported hosts must not become a permanent five-requests/sec loop.
+      if (!request.signal.aborted && ++state.failures >= 3) {
+        if (state.timer !== undefined) globalThis.clearInterval(state.timer)
+        state.timer = undefined
+      }
     } finally {
       if (state.request === request) state.request = undefined
     }

@@ -128,6 +128,7 @@ function transcriptOf(exec: Readonly<ToolExecution>): ActionEnvelope['authority'
   if (session === undefined) return Object.freeze({ transcript: Object.freeze([]) })
   let currentUserRequest: string | undefined
   let turn: number | undefined
+  let olderMessageEventsOmitted = 0
   const transcript: Array<ActionEnvelope['authority']['transcript'][number]> = []
   // The compatibility adapter returns the immutable fork prefix on all supported
   // DSH cohorts. Capture the log bound without copying the complete log.
@@ -142,31 +143,34 @@ function transcriptOf(exec: Readonly<ToolExecution>): ActionEnvelope['authority'
     // the transcript budget. An absent request must not silently erase scope.
     if (currentUserRequest === undefined && event?.type === 'user/message' && event.data.source.kind === 'user') {
       const request = contentText(event.data.content).trim()
-      if (request.length > 0) currentUserRequest = request.slice(-8192)
+      if (request.length > 0) currentUserRequest = request
     }
-    if (transcript.length >= 12) continue
+    if (transcript.length >= 12) {
+      if (event?.type === 'user/message' || event?.type === 'assistant/message' || event?.type === 'tool/result') olderMessageEventsOmitted += 1
+      continue
+    }
     if (event?.type === 'user/message') {
       const text = contentText(event.data.content).trim()
       if (text.length === 0) continue
       const isDirectUser = event.data.source.kind === 'user'
       if (isDirectUser && currentUserRequest === undefined) {
-        currentUserRequest = text.length <= 8192 ? text : text.slice(text.length - 8192)
+        currentUserRequest = text
       }
       transcript.push(Object.freeze({
         role: 'user',
         trust: isDirectUser ? 'trusted-user-intent' : 'untrusted-tool-output',
-        text: text.slice(-4096),
+        text,
       }))
       continue
     }
     if (event?.type === 'assistant/message') {
       const text = contentText(event.data.message.content).trim()
-      if (text.length > 0) transcript.push(Object.freeze({ role: 'assistant', trust: 'untrusted-model', text: text.slice(-4096) }))
+      if (text.length > 0) transcript.push(Object.freeze({ role: 'assistant', trust: 'untrusted-model', text }))
       continue
     }
     if (event?.type === 'tool/result') {
       const text = contentText(event.data.message.content).trim()
-      if (text.length > 0) transcript.push(Object.freeze({ role: 'tool', trust: 'untrusted-tool-output', text: text.slice(-4096) }))
+      if (text.length > 0) transcript.push(Object.freeze({ role: 'tool', trust: 'untrusted-tool-output', text }))
     }
   }
   return Object.freeze({
@@ -174,6 +178,7 @@ function transcriptOf(exec: Readonly<ToolExecution>): ActionEnvelope['authority'
     ...(turn === undefined ? {} : { turn }),
     ...(currentUserRequest === undefined ? {} : { currentUserRequest }),
     transcript: Object.freeze(transcript.reverse()),
+    sourceWindow: Object.freeze({ entryLimit: 12, olderMessageEventsOmitted }),
   })
 }
 

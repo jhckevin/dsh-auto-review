@@ -1,8 +1,6 @@
 import type { UserConfig } from 'tsdown'
 
-const id = '@jhckevin/dsh-auto-review'
-
-export default {
+const client = (id: string, filename: string): UserConfig => ({
   name: `${id}/client`,
   entry: { client: 'lib/client/index.js' },
   outDir: 'lib',
@@ -17,9 +15,14 @@ export default {
     '@deepseek-ai/dsh-client-ui-slots',
   ],
   outputOptions: {
-    entryFileNames: 'client.js',
+    entryFileNames: filename,
     banner: `window.__ModuleLoader__.load({ id: ${JSON.stringify(id)}, factory: (require) => {`,
     footer: 'return module.exports; } });',
     intro: 'var module = { exports: {} }; var exports = module.exports;',
   },
-} satisfies UserConfig
+})
+
+export default [
+  client('@jhckevin/dsh-auto-review', 'client.js'),
+  client('@jhckevin/dsh-auto-review/entries/runtime', 'client-guarded.js'),
+] satisfies UserConfig[]
