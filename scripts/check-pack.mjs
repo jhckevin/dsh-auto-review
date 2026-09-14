@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -58,6 +58,11 @@ try {
     artifact, ...dependencyArtifacts,
   ], { cwd: installRoot, env: offlineEnv, maxBuffer: 10 * 1024 * 1024 })
   const packageRoot = join(installRoot, 'node_modules/@jhckevin/dsh-auto-review')
+  for (const path of await readdir(join(packageRoot, 'lib'), {recursive: true})) {
+    if (!path.endsWith('.js')) continue
+    const code = await readFile(join(packageRoot, 'lib', path), 'utf8')
+    assert(!/import\s*\(\s*['"][^'"]+\.tsx?['"]/.test(code), `packed dynamic import points to source: ${path}`)
+  }
   const packedRuntime = await import(new URL(`file://${join(packageRoot, 'lib/policy-corpus.js').replaceAll('\\', '/')}`))
   if (packedRuntime.GUARDIAN_POLICY_SECTIONS.length < 10) throw new Error('packed runtime failed to load Guardian policy corpus')
   const parityRuntime = await import(new URL(`file://${join(packageRoot, 'lib/codex-parity/index.js').replaceAll('\\\\', '/')}`))

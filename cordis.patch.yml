@@ -1,16 +1,16 @@
 # DeepSeek Harness native Auto Review bundle.
-# The capability service, reviewer provider and policy consumer remain separate
-# rows so profile overlays can replace or disable one role without forking code.
+# Guarded entries keep unknown hosts and disabled roots from aborting Loader.
+# Internal children follow actionReview through scoped dependency injection.
 - insert:
     - id: auto-review
-      name: '@jhckevin/dsh-auto-review'
+      name: '@jhckevin/dsh-auto-review/entries/runtime'
       config:
         mode: enforcing
         failureThreshold: 3
         breakerCooldownMs: 60000
 
     - id: auto-review-llm
-      name: '@jhckevin/dsh-auto-review/llm-provider'
+      name: '@jhckevin/dsh-auto-review/entries/llm'
       config:
         approvalProtocol: codex-native
         provider: deepseek-official
@@ -25,19 +25,17 @@
         transcriptMaxBytes: 32768
 
     - id: auto-review-settings
-      name: '@jhckevin/dsh-auto-review/settings-provider'
-      inject: [actionReview, settings]
+      name: '@jhckevin/dsh-auto-review/entries/settings'
 
     - id: auto-review-audit
-      name: '@jhckevin/dsh-auto-review/audit-jsonl'
-      inject: [actionReview]
+      name: '@jhckevin/dsh-auto-review/entries/audit'
       config:
         root: !!js dshHomePath('auto-review/audit')
         fsync: true
         replayMaxBytes: 268435456
 
     - id: auto-review-policy
-      name: '@jhckevin/dsh-auto-review/policy'
+      name: '@jhckevin/dsh-auto-review/entries/policy'
       config:
         unknownTool: manual
         allowWorkspaceReads: true
@@ -53,5 +51,4 @@
           - .env
 
     - id: auto-review-command
-      name: '@jhckevin/dsh-auto-review/command'
-      inject: [actionReview, commands]
+      name: '@jhckevin/dsh-auto-review/entries/command'

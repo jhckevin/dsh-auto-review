@@ -1,4 +1,5 @@
 import { emptyReviewerUsage, type ReviewerUsage } from './reviewer-usage.ts'
+import { activationHealthy, ACTIVATION_DENIAL } from './activation-health.ts'
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { isDeepStrictEqual } from 'node:util'
 import { Context, Service } from '@deepseek-ai/cordis'
@@ -541,6 +542,7 @@ export class ActionReviewRuntime extends Service {
   }
 
   issueTicket(request: TicketIssueRequest): ActionExecutionTicket {
+    if (!activationHealthy(this.ctx)) throw new Error(ACTIVATION_DENIAL)
     if (this.tickets.has(request.token)) throw new Error('auto-review: execution token already has a ticket')
     const issuedAt = Date.now()
     const unsigned = {
@@ -571,6 +573,7 @@ export class ActionReviewRuntime extends Service {
   }
 
   consumeTicket(token: ToolExecutionToken, action: ActionEnvelope): string | undefined {
+    if (!activationHealthy(this.ctx)) return ACTIVATION_DENIAL
     const ticket = this.tickets.get(token)
     if (ticket === undefined) return 'Auto Review denied dispatch: no execution ticket was issued.'
     this.tickets.delete(token)
@@ -697,6 +700,7 @@ export class ActionReviewRuntime extends Service {
         uncertainty: '',
       })
     }
+    if (!activationHealthy(this.ctx)) return unavailableDecision(ACTIVATION_DENIAL)
     const startedAt = Date.now()
     const indicatorSessionId = action.authority.sessionId ?? session?.id
     const indicatorEligible = action.disposition === 'review' && indicatorSessionId !== undefined

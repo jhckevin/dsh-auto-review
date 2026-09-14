@@ -143,6 +143,7 @@ interface AutoReviewBadgeSlots {
 }
 
 interface PageSnapshot {
+  readonly activation?: AutoReviewSettingsSnapshot['activation']
   readonly status: 'loading' | 'ready' | 'unavailable'
   readonly value?: AutoReviewUiSettings
   readonly user?: Partial<AutoReviewUiSettings>
@@ -288,13 +289,15 @@ export function AutoReviewSettingsSection({ read, update, reset: resetSettings, 
   useEffect(() => {
     const abort = new AbortController()
     const refresh = (): void => {
-      void readMetrics(abort.signal).then(metrics => {
-        if (!abort.signal.aborted) setSnapshot(current => ({ ...current, metrics }))
-      }, () => undefined)
+      void Promise.all([readMetrics(abort.signal), read(abort.signal)]).then(([metrics, status]) => {
+        if (!abort.signal.aborted) setSnapshot(current => ({ ...current, metrics, activation: status.activation }))
+      }, () => {
+        if (!abort.signal.aborted) setSnapshot(current => ({ ...current, activation: [{name: 'runtime', state: 'failed', reason: 'Status unavailable'}] }))
+      })
     }
     const timer = setInterval(refresh, 5000)
     return () => { clearInterval(timer); abort.abort() }
-  }, [readMetrics])
+  }, [readMetrics, read])
 
   const invalid = useMemo(() => draft === undefined || NUMERIC_FIELDS.some(field => {
     const value = draft[field]
@@ -362,6 +365,11 @@ export function AutoReviewSettingsSection({ read, update, reset: resetSettings, 
     <section className="ar-page" aria-busy={saving}>
       <header className="ar-header"><div className="ar-header-title"><AutoReviewLogo /><div><h2>{t('title')}</h2><p>{t('subtitle')}</p></div></div><span className="ar-live" role="status">{t(saving ? 'saving' : dirty ? 'pending' : snapshot.value?.enabled ? 'active' : 'inactive')}</span></header>
       <AutoReviewCapabilities capabilities={uiCapabilities} />
+      {snapshot.value?.enabled && snapshot.activation?.some(item => item.state !== 'active')
+        ? <div role="alert" className="ar-compat" data-auto-review-activation="unavailable">
+          审查组件未就绪，自动执行已暂停 / Review components unavailable.
+          <small>{snapshot.activation.filter(item => item.state !== 'active').map(item => `${item.name}: ${item.state}`).join(' · ')}</small>
+        </div> : null}
 
       {!snapshot.writable ? <p role="status">{t('readOnly')}</p> : null}
       <fieldset className="ar-controls" disabled={saving || !snapshot.writable}>

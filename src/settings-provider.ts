@@ -1,5 +1,6 @@
 /** Explicit Host settings bridge for the Auto Review capability. */
 import { Context } from '@deepseek-ai/cordis'
+import { activationStatus, type ActivationStatus } from './activation-health.ts'
 import { type SettingsScope } from '@deepseek-ai/dsh-settings'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from './service.ts'
@@ -18,6 +19,7 @@ declare module '@deepseek-ai/cordis' {
 export const name = 'auto-review-settings'
 
 export interface AutoReviewSettingsSnapshot {
+  readonly activation?: readonly ActivationStatus[]
   readonly value: AutoReviewUiSettings
   readonly base: AutoReviewUiSettings
   readonly user: Partial<AutoReviewUiSettings>
@@ -77,6 +79,7 @@ export class AutoReviewSettingsBridge extends TypertRemoteService {
     const descriptor = this.ctx.settings.describe().find(item => item.ns === SETTINGS_NS)
     if (descriptor === undefined) throw new Error('auto-review: settings namespace is unavailable')
     return Object.freeze({
+      activation: activationStatus(this.ctx),
       value: Object.freeze({ ...this.scope.get() }),
       base: Object.freeze({ ...((descriptor.base as AutoReviewUiSettings | undefined) ?? this.ctx.actionReview.settingsDefaults()) }),
       user: Object.freeze({ ...((descriptor.user as Partial<AutoReviewUiSettings> | undefined) ?? {}) }),

@@ -40,10 +40,9 @@
 
 支持 **Linux x86_64 / glibc 2.31+**，建议 Node.js **24.20.0**。
 
-一个 npm 包共用后端，安装时只下载当前宿主需要的界面适配。自动匹配 **DSH 0.1.0-rc.6、0.1.1-rc.2、0.1.2-alpha.5**，不用选择插件的 rc6 / rc2 / alpha5 通道。不识别的宿主版本会明确报错，不会强行安装旧适配。
+一个 npm 包共用后端，界面安装器只下载当前宿主需要的适配。兼容 **DSH 0.1.0-rc.6、0.1.1-rc.2、0.1.2-alpha.5** 的配套组件，不用选择插件的 rc6 / rc2 / alpha5 通道。未知或混合版本不会强行启用旧适配。
 
-> 当前为 **0.6.2-rc.1 候选版**，发布到 npm 的 `next` 通道，不替换 `latest`。三版本 Loop 回归已通过；完整自主拒绝与跨版本浏览器验证仍在补齐。详见[本版说明](docs/ISSUE-032-RUNTIME-HARDENING.md)。
-> DSH 的 `latest` 目前已到 0.1.2-rc.1，尚不在上述兼容范围。新环境请先安装下面的固定宿主版本。
+> 新环境推荐下面的 **0.1.1-rc.2**。不要直接使用 DSH 的 `latest`：它可能超出兼容范围。另两个历史版本需要锁定整套依赖；只固定启动器版本，npm 仍可能下载较新的内部组件。
 
 ### 1. 安装 DSH 和插件
 
@@ -51,7 +50,7 @@
 
 ```sh
 npm install -g @deepseek-ai/dsh@0.1.1-rc.2
-dsh plugin --profile web add @jhckevin/dsh-auto-review@next
+dsh plugin --profile web add @jhckevin/dsh-auto-review@latest
 ```
 
 ### 2. 初始化执行组件
@@ -61,6 +60,7 @@ dsh plugin --profile web add @jhckevin/dsh-auto-review@next
 ```sh
 sudo npm install --prefix /opt/dsh-auto-review-native/0.1.0-rc.2 \
   --ignore-scripts --no-audit --no-fund \
+  --registry=https://registry.npmjs.org \
   @jhckevin/dsh-auto-review-bridge-linux-x64-gnu@0.1.0-rc.2
 
 export DSH_AUTO_REVIEW_NATIVE_RUNTIME=/opt/dsh-auto-review-native/0.1.0-rc.2/node_modules/@jhckevin/dsh-auto-review-bridge-linux-x64-gnu
@@ -68,12 +68,14 @@ export DSH_AUTO_REVIEW_NATIVE_RUNTIME=/opt/dsh-auto-review-native/0.1.0-rc.2/nod
 
 在启动 DSH 的终端或服务配置中保留这个环境变量。不要用 root 运行整个 DSH。
 
+原生执行包请与插件使用同一发布渠道。部分 npm 镜像会返回 404；上面的命令明确使用官方源。不要混用 GitHub 离线包和 npm 的桥接组件，否则严格校验可能拒绝启动审查。
+
 ### 3. 安装界面图标
 
 停止 DSH 后运行；会自动识别宿主版本，只下载对应适配，校验内容并保留原文件备份：
 
 ```sh
-npx --yes --package=@jhckevin/dsh-auto-review@next dsh-auto-review-ui
+npx --yes --package=@jhckevin/dsh-auto-review@latest dsh-auto-review-ui
 dsh --profile web
 ```
 

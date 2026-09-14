@@ -1,5 +1,6 @@
 /** DeepSeek Harness native Auto Review capability definition. */
-export { ActionReviewRuntime as default, ActionReviewRuntime, name } from './service.ts'
+export { ActionReviewRuntime as default } from './service.ts'
+export { ActionReviewRuntime, name } from './service.ts'
 export { canonicalJson, sha256Json, toJsonValue } from './canonical.ts'
 export { parseReviewDecision } from './protocol.ts'
 export { redactJson, type RedactionOptions } from './redaction.ts'
