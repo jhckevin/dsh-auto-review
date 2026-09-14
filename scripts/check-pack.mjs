@@ -58,6 +58,15 @@ try {
     artifact, ...dependencyArtifacts,
   ], { cwd: installRoot, env: offlineEnv, maxBuffer: 10 * 1024 * 1024 })
   const packageRoot = join(installRoot, 'node_modules/@jhckevin/dsh-auto-review')
+  // DSH scans the complete Loader entry name, not its npm package root.
+  const { createRequire } = await import('node:module')
+  const consumerRequire = createRequire(join(installRoot, 'package.json'))
+  const dualPath = consumerRequire.resolve('@jhckevin/dsh-auto-review/entries/runtime/package.json')
+  const dual = JSON.parse(await readFile(dualPath, 'utf8'))
+  assert.deepEqual(dual.dsh.client, sourceManifest.dsh.client)
+  const { dirname } = await import('node:path')
+  const guardedClient = await readFile(join(dirname(dualPath), dual.exports['./client']), 'utf8')
+  assert(guardedClient.includes('id: "@jhckevin/dsh-auto-review/entries/runtime"'))
   for (const path of await readdir(join(packageRoot, 'lib'), {recursive: true})) {
     if (!path.endsWith('.js')) continue
     const code = await readFile(join(packageRoot, 'lib', path), 'utf8')

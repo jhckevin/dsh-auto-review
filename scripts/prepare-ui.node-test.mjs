@@ -11,7 +11,7 @@ async function fixture(t, version = '0.1.1-rc.2') {
   const root = mkdtempSync(join(tmpdir(), 'ar-selective-'))
   t.after(() => rmSync(root, { recursive: true, force: true }))
   mkdirSync(join(root, 'scripts')); mkdirSync(join(root, 'ui'))
-  for (const name of ['install-ui.mjs', 'prepare-ui.mjs']) copyFileSync(new URL(name, import.meta.url), join(root, 'scripts', name))
+  for (const name of ['install-ui.mjs', 'prepare-ui.mjs', 'prepare-profile-ui.mjs']) copyFileSync(new URL(name, import.meta.url), join(root, 'scripts', name))
   const host = join(root, 'host'), payloads = new Map()
   const cohorts = [['0.1.0-rc.6','rc6'], ['0.1.1-rc.2','rc2'], ['0.1.2-alpha.5','alpha5']].map(([dshVersion, channel]) => ({
     dshVersion, files: ['tool','settings-general'].map(name => {

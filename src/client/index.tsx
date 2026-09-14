@@ -48,6 +48,7 @@ interface CompatibleSlots {
 type ClientContext = Context & { readonly slots: CompatibleSlots }
 
 const zh = {
+  unavailable: 'Auto Review 未就绪：审查服务不可用。请检查 DSH 兼容版本和服务器日志。插件列表中的“运行中”仅表示组件已加载，不代表审查已启用；Full Access 不应被视为受到保护。',
   invalidSettings: '无法保存：数值须为正整数，尝试次数为 1–3、历史条目最多 64；启用的模型配置必须填写 Provider 和模型 ID。',
   saving: '正在保存…', pending: '有未保存的修改', active: '已启用', inactive: '已关闭', readOnly: '当前连接无设置写入权限', fullAccessNative: 'Full Access：使用原生审批流程。', fullAccessReview: 'Full Access：所有非硬禁动作进入审查。', loading: '正在加载…', badgeCompatibility: '兼容性提示：官方 Harness 尚无逐工具徽章与设置导航图标插槽。设置与审查可用；命令右侧审查/拒绝图标和设置选项卡 SVG 需要配套的 tool.call.badges 与 settings.section.icon 补丁，未安装时保留原生显示。',
   nav: '自动审批审查', title: 'Auto Review', subtitle: '独立审查，安全继续。',
@@ -75,6 +76,7 @@ const zh = {
   behavior: '查看当前权限行为', behaviorDisabled: 'Auto Review 已关闭：所有权限档位均完全使用 Harness 原生审批链。', behaviorDefault: '只读/工作区写入：沙盒内普通动作直接通过；越界、敏感和网络动作进入 Reviewer。', behaviorStrict: '只读/工作区写入：沙盒内动作也进入 Reviewer，但实际执行仍受原生沙盒约束。',
 }
 const en = {
+  unavailable: 'Auto Review is not ready: the review service is unavailable. Check the supported DSH version and server logs. A running entry means its loader shell is loaded, not that review is active. Do not assume Full Access is protected.',
   invalidSettings: 'Cannot save: use positive integers, 1–3 attempts and at most 64 history entries; active model profiles require both provider and model ID.',
   saving: 'Saving…', pending: 'Unsaved changes', active: 'Enabled', inactive: 'Disabled', readOnly: 'This connection cannot change settings', fullAccessNative: 'Full Access: native approval flow.', fullAccessReview: 'Full Access: all actions except hard denials are reviewed.', loading: 'Loading…', badgeCompatibility: 'Compatibility: official Harness has no per-tool badge or settings-navigation icon slots. Settings and review work; the command reviewing/denied glyph and settings-tab SVG require the accompanying tool.call.badges and settings.section.icon patches. Without them, native display is retained.',
   nav: 'Auto Review', title: 'Auto Review', subtitle: 'Route actions to an isolated reviewer according to the permission mode, native sandbox boundary, and active policy.',
@@ -287,17 +289,21 @@ export function AutoReviewSettingsSection({ read, update, reset: resetSettings, 
   }, [read])
 
   useEffect(() => {
+    if (snapshot.status !== 'ready') return
     const abort = new AbortController()
+    let busy = false
     const refresh = (): void => {
+      if (busy) return
+      busy = true
       void Promise.all([readMetrics(abort.signal), read(abort.signal)]).then(([metrics, status]) => {
         if (!abort.signal.aborted) setSnapshot(current => ({ ...current, metrics, activation: status.activation }))
       }, () => {
-        if (!abort.signal.aborted) setSnapshot(current => ({ ...current, activation: [{name: 'runtime', state: 'failed', reason: 'Status unavailable'}] }))
-      })
+        if (!abort.signal.aborted) setSnapshot(current => ({ ...current, status: 'unavailable', writable: false, activation: [{name: 'runtime', state: 'failed', reason: 'Status unavailable'}] }))
+      }).finally(() => { busy = false })
     }
     const timer = setInterval(refresh, 5000)
     return () => { clearInterval(timer); abort.abort() }
-  }, [readMetrics, read])
+  }, [readMetrics, read, snapshot.status])
 
   const invalid = useMemo(() => draft === undefined || NUMERIC_FIELDS.some(field => {
     const value = draft[field]
@@ -307,7 +313,7 @@ export function AutoReviewSettingsSection({ read, update, reset: resetSettings, 
     || (draft.modelStrategy === 'risk-tiered' && (draft.strongProvider.trim().length === 0 || draft.strongModel.trim().length === 0)), [draft])
 
   if (snapshot.status !== 'ready' || draft === undefined) {
-    return <section className="ar-page" aria-busy={snapshot.status === 'loading'}><p className="ar-muted">{snapshot.status === 'unavailable' ? t('failed') : t('loading')}</p></section>
+    return <section className="ar-page" aria-busy={snapshot.status === 'loading'}><p role={snapshot.status === 'unavailable' ? 'alert' : 'status'} className="ar-muted">{snapshot.status === 'unavailable' ? t('unavailable') : t('loading')}</p></section>
   }
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(snapshot.value)

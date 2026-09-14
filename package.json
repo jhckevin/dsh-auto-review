@@ -31,6 +31,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
+    "./entries/runtime/package.json": "./client-entry.json",
     "./entries/*": {
       "types": "./lib/entries/*.d.ts",
       "default": "./lib/entries/*.js"
@@ -87,12 +88,15 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "client-entry.json",
     "scripts/install-ui.mjs",
     "scripts/prepare-ui.mjs",
+    "scripts/prepare-profile-ui.mjs",
     "ui/manifest.json",
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "lib/client.js.map",
+    "lib/client-guarded.js.map",
     "policies/**/*.md",
     "cordis.patch.yml",
     "README.md",
