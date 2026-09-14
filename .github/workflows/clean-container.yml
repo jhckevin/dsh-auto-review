@@ -1,0 +1,81 @@
+name: Clean container acceptance
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cold-install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        dsh: ['0.1.0-rc.6', '0.1.1-rc.2', '0.1.2-alpha.5']
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.20.0'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run check
+      - name: Build the exact artifact and disposable toolchain
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/container work
+          npm pack --pack-destination artifacts/container --json > artifacts/container/pack.json
+          cp "artifacts/container/$(jq -r '.[0].filename' artifacts/container/pack.json)" artifacts/container/candidate.tgz
+          docker build -f ci/issue34/Dockerfile -t ar-ci-toolchain ci/issue34
+      - name: Install the complete historical DSH family from an empty filesystem
+        env:
+          DSH_VERSION: ${{ matrix.dsh }}
+        run: |
+          set -euo pipefail
+          docker run --name ar-ci-install --memory 4g --cpus 2 \
+            -e DSH_VERSION -e DSH_EXACT_FAMILY=1 -e ARTIFACT=/artifacts/candidate.tgz \
+            -v "$PWD/scripts:/ci:ro" -v "$PWD/work:/work" \
+            -v "$PWD/artifacts/container:/artifacts:ro" ar-ci-toolchain sh /ci/ci-issue34-install.sh
+          test "$(docker inspect -f '{{.State.Status}}:{{.State.ExitCode}}' ar-ci-install)" = exited:0
+          docker commit ar-ci-install ar-ci-installed
+      - name: Prepare public npm native bridge and both profiles
+        run: |
+          set -euo pipefail
+          npm pack @jhckevin/dsh-auto-review-bridge-linux-x64-gnu@0.1.0-rc.2 --ignore-scripts --registry=https://registry.npmjs.org --pack-destination artifacts/container --json > artifacts/container/native-pack.json
+          cp "artifacts/container/$(jq -r '.[0].filename' artifacts/container/native-pack.json)" artifacts/container/native.tgz
+          docker run --name ar-ci-prepare --memory 4g --cpus 2 \
+            -e ARTIFACT=/artifacts/candidate.tgz -e NATIVE_ARTIFACT=/artifacts/native.tgz \
+            -v "$PWD/scripts:/ci:ro" -v "$PWD/work:/work" \
+            -v "$PWD/artifacts/container:/artifacts:ro" ar-ci-installed sh -c 'sh /ci/ci-issue34-prepare.sh && sh /ci/ci-issue34-upgrade.sh'
+          test "$(docker inspect -f '{{.State.Status}}:{{.State.ExitCode}}' ar-ci-prepare)" = exited:0
+          docker commit ar-ci-prepare ar-ci-ready
+      - name: Offline native preflight and real Loop cancellation/recovery
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/container/preflight artifacts/container/loop
+          sudo chown -R 1000:1000 artifacts/container/preflight artifacts/container/loop
+          docker run --name ar-ci-preflight --network none --memory 2g --user 1000:1000 \
+            -e HOME=/work/user -e DSH_HOME=/work/user/.dsh -e PREFLIGHT_ONLY=1 -e EXPECT_UI=1 \
+            -e DSH_AUTO_REVIEW_NATIVE_RUNTIME=/opt/dsh-auto-review-native/0.1.0-rc.2/node_modules/@jhckevin/dsh-auto-review-bridge-linux-x64-gnu \
+            -v "$PWD/work/user:/work/user" -v "$PWD/scripts:/ci:ro" -v "$PWD/artifacts/container/preflight:/results" \
+            ar-ci-ready timeout 60 node /opt/cli/lib/node_modules/@deepseek-ai/dsh/lib/bin.js --profile web --patch /ci/ci-issue34-whitebox.yml
+          test -f artifacts/container/preflight/whitebox/PREFLIGHT_COMPLETE
+          docker run --name ar-ci-loop --network none --memory 2g --user 1000:1000 \
+            -v "$PWD/work/user:/work/user:ro" -v "$PWD/scripts:/ci:ro" -v "$PWD/artifacts/container/loop:/results" \
+            ar-ci-ready timeout 60 node /ci/ci-issue34-loop.mjs
+          jq -e '.pass and .thirdDenialAborted and .nextTurnRecovered' artifacts/container/loop/loop/result.json
+      - name: Capture test-only logs and destroy temporary containers
+        if: always()
+        run: |
+          mkdir -p artifacts/container/logs
+          for name in ar-ci-install ar-ci-prepare ar-ci-preflight ar-ci-loop; do
+            docker logs "$name" 2>&1 | sed -E 's/(token=)[A-Za-z0-9_-]+/\1[REDACTED]/g' > "artifacts/container/logs/$name.log" || true
+            docker rm -f "$name" || true
+          done
+          if [ -d work/results ]; then sudo cp -a work/results artifacts/container/install-results; fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: clean-container-${{ matrix.dsh }}
+          path: artifacts/container/
+          retention-days: 14

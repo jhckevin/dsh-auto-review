@@ -1,0 +1,1 @@
+This is a transport smoke test. Reply exactly READY. Do not call tools, edit files, or access the network.
